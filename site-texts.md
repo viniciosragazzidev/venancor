@@ -1,4 +1,4 @@
-# Textos do Site — Venancor Saúde
+# Textos do Site — Venacor Saúde
 
 ## Layout / Metadata
 
@@ -47,7 +47,7 @@
 ## Hero
 
 - **Tag:** Cotação Rápida Sem Compromisso
-- **Headline:** Encontre com a Venancor Saúde o Plano Ideal da Unimed Nova Iguaçu Hoje.
+- **Headline:** Encontre com a Venacor Saúde o Plano Ideal da Unimed Nova Iguaçu Hoje.
 - **Subheadline:** Compare tabelas de preços, carências e coberturas direto com um consultor especialista na Baixada Fluminense.
 - **Placeholder input:** (21) 99999-9999
 - **Botão:** Cotação Rápida
@@ -60,7 +60,7 @@
 
 - **Tag:** Acompanhamento Inteligente
 - **Headline:** Seu Histórico de Saúde Sob Controle Permanente.
-- **Parágrafo:** Com a Venancor Saúde, você acessa o painel da Unimed para gerenciar exames, consultas e históricos de tratamentos de forma intuitiva e moderna.
+- **Parágrafo:** Com a Venacor Saúde, você acessa o painel da Unimed para gerenciar exames, consultas e históricos de tratamentos de forma intuitiva e moderna.
 
 **Card:**
 - **Badge:** Unimed
@@ -109,7 +109,7 @@
 **Alt imagem:** Hospital Geral Unimed Nova Iguaçu e infraestrutura moderna
 
 - **Headline:** Acesso a uma única rede. Mais de 120 pontos de atendimento.
-- **Parágrafo:** A Venancor Saúde reúne o Hospital Geral Unimed Nova Iguaçu, Prontomed e os laboratórios mais confiáveis da Baixada Fluminense nos planos que selecionamos para garantir sua total tranquilidade.
+- **Parágrafo:** A Venacor Saúde reúne o Hospital Geral Unimed Nova Iguaçu, Prontomed e os laboratórios mais confiáveis da Baixada Fluminense nos planos que selecionamos para garantir sua total tranquilidade.
 - **Botão CTA:** Consultar Hospitais na Rede
 - **Estatística:** 120+
 - **Label:** Clínicas e laboratórios credenciados na região
@@ -120,7 +120,7 @@
 
 - **Tag:** Diferenciais
 - **Headline:** É hora de ter um suporte de saúde que funciona de verdade.
-- **Parágrafo:** Mais do que vender contratos, a Venancor Saúde acompanha você do momento da contratação ao pós-venda.
+- **Parágrafo:** Mais do que vender contratos, a Venacor Saúde acompanha você do momento da contratação ao pós-venda.
 
 ### Aba 1 — Família
 - **Step:** Etapa 1
@@ -245,7 +245,7 @@ Isso depende da abrangência que você escolher. A Unimed Nova Iguaçu oferece t
 ## Footer
 
 ### Branding
-- **Título:** Venancor Saúde
+- **Título:** Venacor Saúde
 - **Descrição:** Especialistas em encontrar a cobertura de saúde perfeita na Baixada Fluminense. Cuidado, economia e transparência da contratação ao pós-venda.
 
 ### Soluções
@@ -259,10 +259,10 @@ Isso depende da abrangência que você escolher. A Unimed Nova Iguaçu oferece t
 - Duque de Caxias: Av. Nilo Peçanha, 120 - Centro
 
 ### Fale Conosco
-- contato@venancorsaude.com.br
+- contato@venacorsaude.com.br
 - (21) 99999-9999
 
 ### Rodapé
-- © 2026 Venancor Saúde. CNPJ: 00.000.000/0001-00. Registro ANS nº 000000. Todos os direitos reservados.
+- © 2026 Venacor Saúde. CNPJ: 00.000.000/0001-00. Registro ANS nº 000000. Todos os direitos reservados.
 - Políticas de Privacidade → `/privacidade`
 - Termos de Uso → `/termos`

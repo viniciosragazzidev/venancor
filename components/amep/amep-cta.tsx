@@ -35,7 +35,7 @@ export default function AmepCta() {
                     <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-neutral-800/90 border border-neutral-700/80 text-xs font-semibold shadow-inner">
                         <Image 
                             src="/logo.webp" 
-                            alt="Venancor Saúde" 
+                            alt="Venacor Saúde" 
                             width={90} 
                             height={26} 
                             className="h-5.5 w-auto object-contain brightness-0 invert drop-shadow-[0_1px_4px_rgba(255,255,255,0.2)]" 
@@ -63,7 +63,7 @@ export default function AmepCta() {
                         to={{ opacity: 1, y: 0 }}
                         threshold={0.1}
                     >
-                        Fale com a Venancor Saúde e garanta as condições do Plano Amep Saúde de Junho.
+                        Fale com a Venacor Saúde e garanta as condições do Plano Amep Saúde de Junho.
                     </SplitText>
 
                     {/* Subheadline */}

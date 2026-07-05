@@ -96,7 +96,7 @@ export default function AmepHero() {
                             className="flex flex-wrap items-center gap-3 p-2 pr-4 rounded-full bg-muted/60 border border-border/60 backdrop-blur-md shadow-xs"
                         >
                             <div className="flex items-center gap-2.5 bg-background px-4 py-1.5 rounded-full border border-border/40 shadow-2xs">
-                                <Image src="/logo.webp" alt="Venancor Saúde" width={85} height={26} className="h-5 sm:h-6 w-auto object-contain dark:brightness-0 dark:invert" priority />
+                                <Image src="/logo.webp" alt="Venacor Saúde" width={85} height={26} className="h-5 sm:h-6 w-auto object-contain dark:brightness-0 dark:invert" priority />
                                 <span className="text-xs font-bold text-muted-foreground">×</span>
                                 <Image src="/amep_saude_logo.png" alt="Amep Saúde" width={110} height={32} className="h-6 sm:h-7 w-auto object-contain" priority />
                             </div>
@@ -208,7 +208,7 @@ export default function AmepHero() {
                                     Mais de 15.000 vidas protegidas pelo AMEP SAÚDE
                                 </p>
                                 <p className="text-[11px] text-muted-foreground mt-0.5 font-light">
-                                    Suporte direto do Hospital Prontonil e consultoria Venancor Saúde no Centro de Nova Iguaçu.
+                                    Suporte direto do Hospital Prontonil e consultoria Venacor Saúde no Centro de Nova Iguaçu.
                                 </p>
                             </div>
                         </motion.div>
@@ -316,7 +316,7 @@ export default function AmepHero() {
 
                             <div className="mt-4 pt-4 border-t border-border/40 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
                                 <ShieldCheck className="size-3.5 text-primary shrink-0" />
-                                <span>Consultoria sem compromisso da Venancor Saúde.</span>
+                                <span>Consultoria sem compromisso da Venacor Saúde.</span>
                             </div>
 
                         </div>

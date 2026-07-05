@@ -11,7 +11,7 @@ const depoimentos = [
     {
         name: "Mariana Souza",
         local: "Nova Iguaçu - RJ",
-        text: "Fechei o plano Amep para mim e meus 2 filhos pelo WhatsApp da Venancor Saúde. No mesmo mês precisei levar meu filho ao Hospital Prontonil e o atendimento foi rápido, sem pagar nada a mais!",
+        text: "Fechei o plano Amep para mim e meus 2 filhos pelo WhatsApp da Venacor Saúde. No mesmo mês precisei levar meu filho ao Hospital Prontonil e o atendimento foi rápido, sem pagar nada a mais!",
         rating: 5,
         badge: "Cliente Individual",
         avatar: "/image1.png"
@@ -27,7 +27,7 @@ const depoimentos = [
     {
         name: "Camila Ribeiro",
         local: "Nova Iguaçu - RJ",
-        text: "Fui muito bem atendida na sede da Venancor Saúde no Centro de Nova Iguaçu. A carência zero para consultas salvou minha rotina médica. Recomendo demais!",
+        text: "Fui muito bem atendida na sede da Venacor Saúde no Centro de Nova Iguaçu. A carência zero para consultas salvou minha rotina médica. Recomendo demais!",
         rating: 5,
         badge: "Cliente Amep Saúde",
         avatar: "/image4.png"
@@ -126,7 +126,7 @@ export default function AmepTestimonials() {
                             Carência ZERO Imediata + Estudo de Custos Gratuito
                         </h3>
                         <p className="text-xs sm:text-sm text-white/90 font-light leading-relaxed">
-                            Contratando hoje com a Venancor Saúde, você não paga nenhuma taxa de adesão extra e garante liberação imediata para consultas na rede própria Amep Saúde.
+                            Contratando hoje com a Venacor Saúde, você não paga nenhuma taxa de adesão extra e garante liberação imediata para consultas na rede própria Amep Saúde.
                         </p>
                     </div>
 

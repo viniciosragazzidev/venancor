@@ -99,7 +99,7 @@ const tabData: TabContent[] = [
     },
     {
         id: 'posvenda',
-        stepLabel: 'Diferencial Venancor',
+        stepLabel: 'Diferencial Venacor',
         title: 'Suporte Pós-Venda Especializado',
         bullets: [
             'Gestão de reembolsos e inclusão de dependentes',
@@ -109,7 +109,7 @@ const tabData: TabContent[] = [
         ],
         imageSrc: '/image2.png',
         overlayText: {
-            title: 'Equipe de Suporte Venancor Saúde',
+            title: 'Equipe de Suporte Venacor Saúde',
             subtitle: 'Atendimento Ativo',
             avatarInitials: 'AC'
         },
@@ -173,7 +173,7 @@ const SectionFour: React.FC = () => {
                         <span>Diferenciais Exclusivos</span>
                     </div>
                     <h2 className="text-2xl sm:text-4xl font-medium tracking-tight text-foreground leading-tight mb-2">
-                        O que você ganha ao contratar com a Venancor Saúde.
+                        O que você ganha ao contratar com a Venacor Saúde.
                     </h2>
                     <p className="text-muted-foreground text-sm sm:text-base font-light">
                         Soluções sob medida para o seu momento com suporte dedicado do início ao fim.

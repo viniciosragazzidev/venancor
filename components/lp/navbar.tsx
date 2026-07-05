@@ -103,7 +103,7 @@ const NavbarLp: React.FC = () => {
                 <section className={`w-full border-b border-border/20 transition-all duration-300 ${isScrolled ? 'bg-background/85 backdrop-blur-md' : 'bg-transparent'}`}>
                     <nav className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center justify-between md:grid md:grid-cols-[auto_1fr_auto] h-20 md:h-24">
                         <Link className="flex items-center z-50 shrink-0 py-2" href="/">
-                            <Image src="/logo.webp" alt="Venancor Saúde" width={180} height={60} priority className="h-11 sm:h-13 md:h-15 w-auto object-contain" />
+                            <Image src="/logo.webp" alt="Venacor Saúde" width={180} height={60} priority className="h-11 sm:h-13 md:h-15 w-auto object-contain" />
                         </Link>
 
                         {/* Navigation Menu Desktop */}
@@ -174,7 +174,7 @@ const NavbarLp: React.FC = () => {
                 <div className="flex items-center justify-between gap-2.5 px-3.5 py-2 bg-background/85 dark:bg-background/90 backdrop-blur-xl border border-border/50 rounded-full shadow-xl shadow-black/10 select-none">
                     {/* Logo */}
                     <Link className="flex items-center shrink-0 pl-1" href="/">
-                        <Image src="/logo.webp" alt="Venancor Saúde" width={130} height={42} className="h-7 sm:h-8 w-auto object-contain" />
+                        <Image src="/logo.webp" alt="Venacor Saúde" width={130} height={42} className="h-7 sm:h-8 w-auto object-contain" />
                     </Link>
 
                     {/* Divisor Desktop */}
@@ -239,7 +239,7 @@ const NavbarLp: React.FC = () => {
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 top-0 bg-background/95 backdrop-blur-2xl z-[70] md:hidden flex flex-col p-6 animate-in fade-in slide-in-from-top duration-300">
                     <div className="flex items-center justify-between pb-4 border-b border-border/40">
-                        <Image src="/logo.webp" alt="Venancor Saúde" width={150} height={50} className="h-9 sm:h-10 w-auto object-contain" />
+                        <Image src="/logo.webp" alt="Venacor Saúde" width={150} height={50} className="h-9 sm:h-10 w-auto object-contain" />
                         <button
                             onClick={toggleMobileMenu}
                             className="p-2 rounded-full bg-muted/60 text-foreground hover:bg-muted transition-colors"

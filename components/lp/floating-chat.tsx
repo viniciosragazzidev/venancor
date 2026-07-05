@@ -96,7 +96,7 @@ const FloatingChat: React.FC = () => {
                                             </span>
                                         </div>
                                         <span className="text-[11px] text-muted-foreground font-light">
-                                            Consultora Venancor Saúde
+                                            Consultora Venacor Saúde
                                         </span>
                                     </div>
                                 </div>

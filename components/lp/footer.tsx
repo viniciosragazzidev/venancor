@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
                         <Link href="/" className="inline-block">
                             <Image 
                                 src="/logo.webp" 
-                                alt="Venancor Saúde" 
+                                alt="Venacor Saúde" 
                                 width={140} 
                                 height={40} 
                                 className="h-8 w-auto object-contain brightness-0 invert" 
@@ -122,11 +122,11 @@ const Footer: React.FC = () => {
                         <ul className="space-y-3 text-xs sm:text-sm font-light">
                             <li>
                                 <a 
-                                    href="mailto:contato@venancorsaude.com.br"
+                                    href="mailto:contato@Venacorsaude.com.br"
                                     className="flex items-center gap-2.5 hover:text-white transition-colors duration-200"
                                 >
                                     <Mail className="size-4 text-primary shrink-0" />
-                                    <span className="truncate">contato@venancorsaude.com.br</span>
+                                    <span className="truncate">contato@Venacorsaude.com.br</span>
                                 </a>
                             </li>
                             <li>
@@ -147,7 +147,7 @@ const Footer: React.FC = () => {
                 {/* Sub-footer Line */}
                 <div className="mt-8 pt-8 border-t border-neutral-900 flex flex-col md:flex-row items-center justify-between gap-4">
                     <p className="text-[10px] sm:text-xs text-neutral-500 font-light text-center md:text-left leading-relaxed">
-                        © 2026 Venancor Saúde. CNPJ: 00.000.000/0001-00. Registro ANS nº 000000. Todos os direitos reservados.
+                        © 2026 Venacor Saúde. CNPJ: 00.000.000/0001-00. Registro ANS nº 000000. Todos os direitos reservados.
                     </p>
                     <div className="flex gap-4 text-[10px] sm:text-xs text-neutral-500 font-light shrink-0">
                         <Link href="/privacidade" className="hover:text-white transition-colors duration-200">

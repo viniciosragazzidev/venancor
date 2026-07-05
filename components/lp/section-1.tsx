@@ -44,7 +44,7 @@ const SectionOne: React.FC = () => {
                     <div className="relative rounded-[2rem] overflow-hidden aspect-[4/5] shadow-2xl border border-border/40 group">
                         <Image
                             src="/image1.png"
-                            alt="Atendimento presencial Venancor Saúde Nova Iguaçu"
+                            alt="Atendimento presencial Venacor Saúde Nova Iguaçu"
                             fill
                             className="object-cover transition-transform duration-700 group-hover:scale-102"
                             priority
@@ -94,7 +94,7 @@ const SectionOne: React.FC = () => {
                         Tradição e Segurança para Escolher o Seu Plano.
                     </h2>
                     <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-6 font-light">
-                        Não somos um robô de vendas sem suporte. A <strong className="text-foreground font-semibold">Venancor Saúde</strong> possui sede própria no Centro de Nova Iguaçu e atende clientes em todo o Rio de Janeiro com suporte humano do primeiro atendimento ao pós-venda.
+                        Não somos um robô de vendas sem suporte. A <strong className="text-foreground font-semibold">Venacor Saúde</strong> possui sede própria no Centro de Nova Iguaçu e atende clientes em todo o Rio de Janeiro com suporte humano do primeiro atendimento ao pós-venda.
                     </p>
 
                     {/* Card de Informações da Corretora */}

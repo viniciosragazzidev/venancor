@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Venancor Saúde | Planos de Saúde e Odonto em Nova Iguaçu e RJ",
+  title: "Venacor Saúde | Planos de Saúde e Odonto em Nova Iguaçu e RJ",
   description: "Cotação rápida de planos de saúde e odontológicos multimarcas. Compare Amil, Bradesco, SulAmérica, Unimed, Assim, Cemeru e Porto Saúde.",
   icons: {
     icon: [
