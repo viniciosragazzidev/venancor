@@ -122,10 +122,10 @@ export default function SectionDiferenciais() {
                         <span className="size-2 rounded-full bg-[#0066ff]" />
                         <span>Diferenciais Exclusivos</span>
                     </div>
-                    <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.1] max-w-2xl">
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight leading-[1.15] max-w-2xl">
                         O que você ganha ao contratar com a Venacor Saúde.
                     </h2>
-                    <p className="text-slate-500 text-sm md:text-base font-light max-w-2xl">
+                    <p className="text-slate-500 text-sm md:text-base font-light leading-relaxed max-w-xl">
                         Soluções sob medida para o seu momento com suporte dedicado do início ao fim.
                     </p>
                 </div>
@@ -257,28 +257,7 @@ export default function SectionDiferenciais() {
                                     </div>
                                 ))}
 
-                                {/* Floating Overlapping Agent Card */}
-                                <div className="absolute -bottom-8 -right-4 bg-white border border-slate-200/60 rounded-3xl p-4 flex items-center gap-3 shadow-[0_12px_24px_-10px_rgba(0,0,0,0.1)] select-none max-w-[280px]">
-                                    <div className="size-10 rounded-full bg-slate-100 overflow-hidden relative shrink-0">
-                                        <Image
-                                            src="/image1.png"
-                                            alt="Agente Venacor"
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 flex flex-col text-left">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[9px] font-black text-[#0066ff] uppercase tracking-widest">
-                                                Vanessa
-                                            </span>
-                                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        </div>
-                                        <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
-                                            {currentTab.badgeVanessaText || 'Vanessa liberou tabela PME com 35%'}
-                                        </p>
-                                    </div>
-                                </div>
+
                             </div>
 
                         </motion.div>
