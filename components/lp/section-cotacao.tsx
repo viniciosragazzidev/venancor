@@ -100,7 +100,7 @@ export default function SectionCotacao() {
                             </div>
 
                             {/* Conteúdo da Tela do Celular */}
-                            <div className="w-full h-full bg-slate-50 rounded-[2.5rem] p-5 sm:p-6 pt-10 flex flex-col justify-between overflow-hidden relative">
+                            <div className="w-full h-full bg-slate-50 rounded-[2.5rem] p-5 sm:p-6 pt-8 flex flex-col justify-start gap-4 overflow-hidden relative">
 
                                 {isSubmitted ? (
                                     <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 animate-fade-in">
@@ -126,7 +126,7 @@ export default function SectionCotacao() {
                                         </div>
 
                                         {/* Elemento de Progresso entre Título e Campos */}
-                                        <div className="w-full flex items-center justify-between gap-2 my-2 select-none">
+                                        <div className="w-full flex items-center justify-between gap-2 select-none">
                                             <div className="flex-1 flex items-center gap-1.5 py-1 px-2.5 rounded-md bg-[#3b2dff]/5 border border-[#3b2dff]/10 text-[#3b2dff]">
                                                 <span className="size-1.5 rounded-full bg-[#3b2dff] animate-pulse" />
                                                 <span className="text-[9px] font-extrabold uppercase tracking-wider">Identificação</span>
@@ -137,7 +137,7 @@ export default function SectionCotacao() {
                                         </div>
 
                                         {/* Formulário */}
-                                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center gap-3">
+                                        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                                             {/* Nome */}
                                             <div className="space-y-1 text-left">
                                                 <label className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Nome Completo</label>
