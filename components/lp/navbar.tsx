@@ -75,6 +75,26 @@ const NavbarLp: React.FC = () => {
                     showMain ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
                 }`}
             >
+                {/* Top Alert/Announcement Bar */}
+                <div className="w-full bg-[#0C4BA1] text-white py-2 px-4 text-[11px] sm:text-xs font-semibold select-none border-b border-white/10">
+                    <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-4">
+                        <div className="flex items-center gap-2 text-center sm:text-left">
+                            <span className="inline-flex items-center justify-center bg-white/20 px-2 py-0.5 rounded text-[9px] uppercase font-bold tracking-wider shrink-0">Promoção</span>
+                            <span>⚡ Descontos exclusivos de até 35% para planos CNPJ ou MEI.</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <a href="https://wa.me/5521964469750?text=Ol%C3%A1!%20Gostaria%20de%20uma%20cota%C3%A7%C3%A3o%20r%C3%A1pida." target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1 font-bold text-white transition-all">
+                                📞 (21) 96446-9750
+                            </a>
+                            <span className="hidden sm:inline text-white/40">|</span>
+                            <span className="hidden sm:inline flex items-center gap-1.5 text-emerald-400 font-bold">
+                                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                                Consultores Online
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
                 <section className={`w-full border-b border-border/20 transition-all duration-300 ${isScrolled ? 'bg-background/85 backdrop-blur-md' : 'bg-transparent'}`}>
                     <nav className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center justify-between md:grid md:grid-cols-[auto_1fr_auto] h-20 md:h-24">
                         <Link className="flex items-center z-50 shrink-0 py-2" href="/">
