@@ -45,7 +45,7 @@ const SectionThree: React.FC<Props> = () => {
     ];
 
     return (
-        <section className="w-full bg-background py-16 md:py-24 font-sans overflow-hidden border-t border-border/20">
+        <section id="hospitais" className="w-full bg-background py-16 md:py-24 font-sans overflow-hidden border-t border-border/20">
             <div className="w-full max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
 
                 {/* COLUNA DA ESQUERDA (Visual com Tags Embutidas) */}

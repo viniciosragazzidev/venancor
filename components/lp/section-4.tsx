@@ -157,7 +157,7 @@ const SectionFour: React.FC = () => {
     };
 
     return (
-        <section className="w-full bg-background py-16 md:py-24 font-sans overflow-hidden border-t border-border/20">
+        <section id="simulador" className="w-full bg-background py-16 md:py-24 font-sans overflow-hidden border-t border-border/20">
             <div className="w-full max-w-[1200px] mx-auto px-6">
 
                 {/* A. CABEÇALHO DA SEÇÃO */}

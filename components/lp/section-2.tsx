@@ -196,7 +196,7 @@ const SectionTwo: React.FC = () => {
     };
 
     return (
-        <section className="w-full bg-slate-50/60 dark:bg-background/90 py-20 md:py-28 font-sans border-y border-border/30 relative overflow-hidden">
+        <section id="planos" className="w-full bg-slate-50/60 dark:bg-background/90 py-20 md:py-28 font-sans border-y border-border/30 relative overflow-hidden">
             {/* Elemento decorativo sutil */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-px bg-gradient-to-r from-transparent via-border/60 to-transparent pointer-events-none" />
 

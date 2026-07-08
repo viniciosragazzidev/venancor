@@ -61,7 +61,7 @@ const SectionSix: React.FC = () => {
     };
 
     return (
-        <section className="w-full bg-background py-16 md:py-24 font-sans border-t border-border/20">
+        <section id="faq" className="w-full bg-background py-16 md:py-24 font-sans border-t border-border/20">
             <div className="w-full max-w-3xl mx-auto px-6">
                 
                 {/* Section Header */}

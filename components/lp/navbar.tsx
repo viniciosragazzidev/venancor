@@ -2,54 +2,34 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ChevronDown, MessageSquare } from 'lucide-react';
-import {
-    NavigationMenu,
-    NavigationMenuContent,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import { Menu, X, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const navItems = [
-    {
-        title: "Coberturas",
-        items: [
-            { title: "Planos de Saúde Premium", href: "#planos" },
-            { title: "Planos de Saúde Regionais", href: "#planos" },
-            { title: "Planos Odontológicos", href: "#planos" },
-            { title: "Planos Coletivos por Adesão", href: "#planos" },
-        ],
-    },
-    {
-        title: "Empresarial",
-        items: [
-            { title: "Saúde para MEI (a partir de 2 vidas)", href: "#planos" },
-            { title: "Saúde PME (até 99 vidas)", href: "#planos" },
-            { title: "Corporate (acima de 100 vidas)", href: "#planos" },
-            { title: "Odonto Empresa", href: "#planos" },
-        ],
-    },
-    {
-        title: "Sobre",
-        items: [
-            { title: "Nossa Corretora", href: "#sobre" },
-            { title: "Por que Multimarcas?", href: "#diferenciais" },
-            { title: "Simulador Gratuito", href: "#simulador" },
-            { title: "Dúvidas Frequentes", href: "#faq" },
-        ],
-    },
-];
-
 const NavbarLp: React.FC = () => {
+    const pathname = usePathname();
+    const isAmepPage = pathname?.startsWith('/amep');
+
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
     const [showMain, setShowMain] = useState(true);
     const [showReduced, setShowReduced] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
+
+    // Links específicos para cada página (Home vs AMEP)
+    const currentNavItems = isAmepPage 
+        ? [
+            { title: "Rede Própria", href: "#unidades" },
+            { title: "Expansão Regional", href: "#expansao" },
+            { title: "Simulador AMEP", href: "#simulador" },
+            { title: "Tabela de Preços", href: "#precos" },
+          ]
+        : [
+            { title: "Planos", href: "#planos" },
+            { title: "Rede de Hospitais", href: "#hospitais" },
+            { title: "Simulador Gratuito", href: "#simulador" },
+            { title: "Dúvidas Frequentes", href: "#faq" },
+          ];
 
     useEffect(() => {
         const handleScroll = () => {
@@ -72,11 +52,6 @@ const NavbarLp: React.FC = () => {
 
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
-        setExpandedGroup(null);
-    };
-
-    const toggleGroup = (groupTitle: string) => {
-        setExpandedGroup(expandedGroup === groupTitle ? null : groupTitle);
     };
 
     const handleCotarClick = () => {
@@ -107,40 +82,22 @@ const NavbarLp: React.FC = () => {
                         </Link>
 
                         {/* Navigation Menu Desktop */}
-                        <div className="hidden md:flex justify-center">
-                            <NavigationMenu>
-                                <NavigationMenuList>
-                                    {navItems.map((group) => (
-                                        <NavigationMenuItem key={group.title}>
-                                            <NavigationMenuTrigger className="text-muted-foreground hover:text-foreground font-medium transition-colors text-sm">
-                                                {group.title}
-                                            </NavigationMenuTrigger>
-                                            <NavigationMenuContent>
-                                                <ul className="grid gap-1 p-2 w-[220px] bg-popover rounded-xl shadow-lg border border-border/50">
-                                                    {group.items.map((item) => (
-                                                        <li key={item.title}>
-                                                            <NavigationMenuLink
-                                                                href={item.href}
-                                                                className="block rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200"
-                                                            >
-                                                                {item.title}
-                                                            </NavigationMenuLink>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </NavigationMenuContent>
-                                        </NavigationMenuItem>
-                                    ))}
-                                    <NavigationMenuItem>
-                                        <NavigationMenuLink
-                                            href="#contatos"
-                                            className="inline-flex h-9 items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200 hover:bg-muted/60"
-                                        >
-                                            Contatos
-                                        </NavigationMenuLink>
-                                    </NavigationMenuItem>
-                                </NavigationMenuList>
-                            </NavigationMenu>
+                        <div className="hidden md:flex justify-center items-center gap-6">
+                            {currentNavItems.map((item) => (
+                                <Link 
+                                    key={item.title} 
+                                    href={item.href} 
+                                    className="text-muted-foreground hover:text-foreground font-medium transition-colors text-sm"
+                                >
+                                    {item.title}
+                                </Link>
+                            ))}
+                            <Link 
+                                href="#contatos" 
+                                className="text-muted-foreground hover:text-foreground font-medium transition-colors text-sm"
+                            >
+                                Contatos
+                            </Link>
                         </div>
 
                         {/* CTA Desktop */}
@@ -172,47 +129,29 @@ const NavbarLp: React.FC = () => {
                 }`}
             >
                 <div className="flex items-center justify-between gap-2.5 px-3.5 py-2 bg-background/85 dark:bg-background/90 backdrop-blur-xl border border-border/50 rounded-full shadow-xl shadow-black/10 select-none">
-                    {/* Logo */}
                     <Link className="flex items-center shrink-0 pl-1" href="/">
                         <Image src="/logo.webp" alt="Venacor Saúde" width={130} height={42} className="h-7 sm:h-8 w-auto object-contain" />
                     </Link>
 
-                    {/* Divisor Desktop */}
                     <div className="hidden lg:block w-px h-4 bg-border/60 mx-1" />
 
-                    {/* Links Desktop */}
-                    <div className="hidden lg:flex items-center gap-1">
+                    <div className="hidden lg:flex items-center gap-3">
                         <Link href="/" className="px-3 py-1 text-xs sm:text-sm font-medium text-foreground rounded-full hover:bg-muted transition-colors">
                             Início
                         </Link>
-                        {navItems.map((group) => (
-                            <NavigationMenu key={group.title}>
-                                <NavigationMenuList>
-                                    <NavigationMenuItem>
-                                        <NavigationMenuTrigger className="h-7 px-2.5 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground">
-                                            {group.title}
-                                        </NavigationMenuTrigger>
-                                        <NavigationMenuContent>
-                                            <ul className="grid gap-1 p-2 w-[200px] bg-popover rounded-xl shadow-lg border border-border/50">
-                                                {group.items.map((item) => (
-                                                    <li key={item.href}>
-                                                        <NavigationMenuLink href={item.href} className="block rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-200">
-                                                            {item.title}
-                                                        </NavigationMenuLink>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </NavigationMenuContent>
-                                    </NavigationMenuItem>
-                                </NavigationMenuList>
-                            </NavigationMenu>
+                        {currentNavItems.map((item) => (
+                            <Link 
+                                key={item.title} 
+                                href={item.href} 
+                                className="px-3 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+                            >
+                                {item.title}
+                            </Link>
                         ))}
                     </div>
 
-                    {/* Divisor Desktop */}
                     <div className="hidden lg:block w-px h-4 bg-border/60 mx-1" />
 
-                    {/* Ações Mobile & Desktop */}
                     <div className="flex items-center gap-1.5">
                         <Button 
                             onClick={handleCotarClick}
@@ -223,7 +162,6 @@ const NavbarLp: React.FC = () => {
                             <span>Cotar Agora</span>
                         </Button>
 
-                        {/* Hamburger extra para Mobile quando a pill está visível */}
                         <button
                             onClick={toggleMobileMenu}
                             className="flex md:hidden p-1.5 rounded-full text-foreground hover:bg-muted/80 transition-colors"
@@ -250,31 +188,26 @@ const NavbarLp: React.FC = () => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto space-y-4 pt-6">
-                        {navItems.map((group) => {
-                            const isExpanded = expandedGroup === group.title;
-                            return (
-                                <div key={group.title} className="border-b border-border/30 pb-3">
-                                    <button
-                                        onClick={() => toggleGroup(group.title)}
-                                        className="w-full flex items-center justify-between text-base font-semibold text-foreground py-2"
-                                    >
-                                        <span>{group.title}</span>
-                                        <ChevronDown className={`size-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {isExpanded && (
-                                        <ul className="mt-2 pl-4 space-y-2.5 animate-in slide-in-from-top-2 duration-200">
-                                            {group.items.map((item) => (
-                                                <li key={item.href}>
-                                                    <Link href={item.href} onClick={toggleMobileMenu} className="block py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                                        {item.title}
-                                                    </Link>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            );
-                        })}
+                        {currentNavItems.map((item) => (
+                            <div key={item.title} className="border-b border-border/30 pb-3">
+                                <Link 
+                                    href={item.href} 
+                                    onClick={toggleMobileMenu} 
+                                    className="block w-full text-base font-semibold text-foreground py-2"
+                                >
+                                    {item.title}
+                                </Link>
+                            </div>
+                        ))}
+                        <div className="border-b border-border/30 pb-3">
+                            <Link 
+                                href="#contatos" 
+                                onClick={toggleMobileMenu} 
+                                className="block w-full text-base font-semibold text-foreground py-2"
+                            >
+                                Contatos
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="pt-6 border-t border-border/40 flex flex-col gap-3">
