@@ -6,6 +6,7 @@ import SectionSimulador from '@/components/lp/section-simulador';
 import SectionFaq from '@/components/lp/section-faq';
 import SectionCta from '@/components/lp/section-cta';
 import Navbar from '@/components/navbar';
+import Footer from '@/components/footer';
 import React from 'react';
 
 export default function Home() {
@@ -21,6 +22,7 @@ export default function Home() {
         <SectionSimulador />
         <SectionFaq />
         <SectionCta variant="bottom" />
+        <Footer />
       </div>
     </main>
   );
