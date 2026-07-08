@@ -118,7 +118,7 @@ export default function SectionPlanos() {
     return (
         <section className="w-full bg-white py-20 md:py-28 font-sans select-none">
             <div className="w-full max-w-[1280px] mx-auto px-6 flex flex-col gap-12 md:gap-16">
-                
+
                 {/* Cabeçalho da Seção */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="flex flex-col items-start text-left space-y-4 max-w-2xl">
@@ -148,7 +148,7 @@ export default function SectionPlanos() {
                     </div>
 
                     {/* Shadcn-like Tab Pill Switcher */}
-                    <div className="flex bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50 shrink-0 self-start md:self-end">
+                    <div className="flex bg-primary/5 p-1.5 rounded-2xl border border-slate-200/50 shrink-0 self-start md:self-end">
                         <button
                             onClick={() => setActiveTab('saude')}
                             className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-tight transition-all duration-200 cursor-pointer ${activeTab === 'saude' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
@@ -168,7 +168,7 @@ export default function SectionPlanos() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12 md:gap-y-16">
                     {items.map((item) => (
                         <div key={item.id} className="flex items-start gap-4 md:gap-5 group text-left">
-                            
+
                             {/* Logo Wrapper Container (Left side) */}
                             <div className="size-14 rounded-2xl bg-white border border-slate-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex items-center justify-center p-2.5 shrink-0 group-hover:scale-105 transition-all duration-300">
                                 <Image
@@ -191,13 +191,13 @@ export default function SectionPlanos() {
                                 <p className="text-slate-500 text-xs sm:text-sm font-normal leading-relaxed mt-1 select-text">
                                     {item.description}
                                 </p>
-                                
+
                                 {/* Link Button CTA */}
                                 <button className="inline-flex items-center gap-1 text-xs font-bold text-[#3b2dff] hover:text-[#2d20e0] mt-3 transition-colors cursor-pointer group-hover:underline">
                                     <span>Ver Tabelas</span>
-                                    <HugeiconsIcon 
-                                        icon={ArrowRight01Icon} 
-                                        className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" 
+                                    <HugeiconsIcon
+                                        icon={ArrowRight01Icon}
+                                        className="size-3.5 transition-transform duration-200 group-hover:translate-x-1"
                                     />
                                 </button>
                             </div>
