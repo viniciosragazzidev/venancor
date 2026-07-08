@@ -148,7 +148,7 @@ export default function SectionPlanos() {
                     </div>
 
                     {/* Shadcn-like Tab Pill Switcher */}
-                    <div className="flex bg-primary/5 p-1.5 rounded-2xl border border-slate-200/50 shrink-0 self-start md:self-end">
+                    <div className="flex bg-primary/2 p-1.5 rounded-2xl border border-slate-200/50 shrink-0 self-start md:self-end">
                         <button
                             onClick={() => setActiveTab('saude')}
                             className={`px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-tight transition-all duration-200 cursor-pointer ${activeTab === 'saude' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
@@ -186,7 +186,7 @@ export default function SectionPlanos() {
                                 <h3 className="text-lg font-extrabold text-slate-900 leading-tight">
                                     {item.name}
                                 </h3>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                                     {item.category}
                                 </span>
                                 <p className="text-slate-500 text-xs sm:text-sm font-normal leading-relaxed mt-1 select-text">

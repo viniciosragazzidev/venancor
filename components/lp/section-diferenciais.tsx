@@ -113,11 +113,11 @@ export default function SectionDiferenciais() {
     const currentTab = tabData[activeIndex] || tabData[0];
 
     return (
-        <section className="w-full bg-white py-20 md:py-28 font-sans select-none overflow-hidden">
-            <div className="w-full max-w-[1280px] mx-auto px-6 flex flex-col gap-12 md:gap-16">
+        <section className="w-full bg-white py-16 md:py-20 font-sans select-none overflow-hidden">
+            <div className="w-full max-w-[1280px] mx-auto px-6 flex flex-col gap-8 md:gap-10">
                 
                 {/* 1. Cabeçalho */}
-                <div className="w-full text-left space-y-4">
+                <div className="w-full text-left space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                         <span className="size-2 rounded-full bg-[#0066ff]" />
                         <span>Diferenciais Exclusivos</span>
@@ -131,7 +131,7 @@ export default function SectionDiferenciais() {
                 </div>
 
                 {/* 2. Menu de Abas / Tabs Switcher */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100 pb-6 w-full">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100 pb-4 w-full">
                     <div className="flex flex-wrap gap-2">
                         {tabData.map((tab) => (
                             <button
