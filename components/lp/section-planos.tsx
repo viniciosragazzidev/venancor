@@ -122,27 +122,27 @@ export default function SectionPlanos() {
                 {/* Cabeçalho da Seção */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="flex flex-col items-start text-left space-y-4 max-w-2xl">
-                        <h2 className="text-4xl md:text-5xl font-extrabold text-[#111827] tracking-tight leading-[1.1]">
+                        <h2 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight leading-[1.15]">
                             As <span className="relative inline-block text-[#3b2dff]">
                                 Melhores opções
                                 <svg
-                                    className="absolute -bottom-2 left-0 w-full h-2.5 text-[#3b2dff]"
+                                    className="absolute -bottom-2 left-0 w-full h-2 text-[#3b2dff]"
                                     viewBox="0 0 100 10"
                                     preserveAspectRatio="none"
                                 >
                                     <path
                                         d="M2 7 C 20 2, 80 2, 98 7"
                                         stroke="currentColor"
-                                        strokeWidth="4"
+                                        strokeWidth="3.5"
                                         strokeLinecap="round"
                                         fill="none"
                                     />
                                 </svg>
                             </span>
                             <br />
-                            <div className="mt-2 text-slate-900">de Saúde e Odonto em um só lugar.</div>
+                            <div className="mt-1 text-slate-900">de Saúde e Odonto em um só lugar.</div>
                         </h2>
-                        <p className="text-slate-500 text-base md:text-lg font-normal leading-relaxed">
+                        <p className="text-slate-500 text-sm md:text-base font-light leading-relaxed max-w-xl">
                             Cotação instantânea com tabela oficial de coparticipação e carências.
                         </p>
                     </div>
