@@ -64,11 +64,11 @@ export default function SectionHero() {
                         </div>
 
                         {/* Card Estatístico Azul (Sobrepõe o canto inferior direito da imagem esquerda) */}
-                        <div className="absolute -right-10 -bottom-8 sm:-right-30 outline-9 outline-white sm:-bottom-15 z-20 w-[160px] sm:w-[200px] bg-[#3b2dff] text-white p-6 sm:p-7 rounded-md shadow-xl shadow-[#3b2dff]/20 text-center flex flex-col justify-center items-center gap-1 select-none">
-                            <span className="text-4xl sm:text-5xl font-black tracking-tight">+145</span>
-                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">Milhões</span>
+                        <div className="absolute -right-10 -bottom-8 sm:-right-30 outline-9 outline-white sm:-bottom-7 z-20 w-[160px] sm:w-[180px] bg-[#3b2dff] text-white p-4 sm:px-6 sm:py-4 rounded-md shadow-xl shadow-[#3b2dff]/20 text-center flex flex-col justify-center items-center gap-1 select-none">
+                            <span className="text-4xl sm:text-5xl font-black tracking-tight">+10</span>
+                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-white/90">Marcas</span>
                             <p className="text-[9px] sm:text-[11px] text-white/70 font-medium leading-tight mt-1">
-                                de pessoas atendidas em todo o mundo
+                                de saúde e odonto comparadas em um só lugar.
                             </p>
                         </div>
                     </div>

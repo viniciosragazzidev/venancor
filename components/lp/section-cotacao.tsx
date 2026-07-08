@@ -54,20 +54,19 @@ export default function SectionCotacao() {
 
             <div className="w-full max-w-[1280px] mx-auto px-6 relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-
-                    {/* COLUNA ESQUERDA: Atendimento 24/7 & Videoconferência */}
+                    {/* COLUNA ESQUERDA: Economia via CNPJ & Aproveite seu Plano Antigo */}
                     <div className="lg:col-span-4 flex flex-col gap-10 md:gap-12 text-left">
                         {/* Bloco 1 */}
                         <div className="flex items-start gap-4 group">
                             <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
-                                <HugeiconsIcon icon={CustomerSupportIcon} className="size-6" />
+                                <HugeiconsIcon icon={LicenseIcon} className="size-6" />
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-lg md:text-xl font-bold tracking-tight text-white select-text">
-                                    Atendimento 24/7
+                                    Economia via CNPJ
                                 </h3>
                                 <p className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text">
-                                    Telemedicina Amil com Pronto Atendimento 24h por dia, 7 dias por semana. Não importa a hora, a prioridade é você.
+                                    Tem MEI ou empresa ativa? Garanta até 35% de redução no valor das mensalidades automaticamente em relação ao plano físico tradicional.
                                 </p>
                             </div>
                         </div>
@@ -75,14 +74,14 @@ export default function SectionCotacao() {
                         {/* Bloco 2 */}
                         <div className="flex items-start gap-4 group">
                             <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
-                                <HugeiconsIcon icon={Video01Icon} className="size-6" />
+                                <HugeiconsIcon icon={CustomerSupportIcon} className="size-6" />
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-lg md:text-xl font-bold tracking-tight text-white select-text">
-                                    Videoconferência
+                                    Aproveite seu Plano Antigo
                                 </h3>
                                 <p className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text">
-                                    Uma equipe de profissionais da saúde que irá tirar todas as suas dúvidas e te orientar da maneira mais adequada.
+                                    Nossa equipe avalia o tempo de permanência no seu convênio atual para reduzir ou zerar os prazos de espera na nova operadora.
                                 </p>
                             </div>
                         </div>
@@ -116,12 +115,12 @@ export default function SectionCotacao() {
                                     <>
                                         {/* Cabeçalho do App */}
                                         <div className="text-left">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-[#3b2dff]">Simulador Venacor</span>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-[#3b2dff]">SIMULADOR VENACOR</span>
                                             <h4 className="text-xl font-black tracking-tight text-slate-900 mt-0.5">
-                                                Cotação Rápida
+                                                Cotação Inteligente
                                             </h4>
                                             <p className="text-[10px] text-slate-400 font-medium leading-none mt-1">
-                                                Tabelas oficiais e carências.
+                                                Preencha abaixo e receba o estudo comparativo de preços no WhatsApp em poucos minutos.
                                             </p>
                                         </div>
 
@@ -194,24 +193,24 @@ export default function SectionCotacao() {
                                                 <span>Simular Agora</span>
                                                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
                                             </button>
-                                        </form>
+                                         </form>
 
-                                        {/* Status Bar / Safe Badge */}
-                                        <div className="text-center pt-2 select-none border-t border-slate-100 flex items-center justify-center gap-1">
-                                            <span className="relative flex size-1.5">
-                                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                                                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500"></span>
-                                            </span>
-                                            <span className="text-[9px] font-bold text-slate-400">Consultores online</span>
-                                        </div>
-                                    </>
+                                         {/* Status Bar / Safe Badge */}
+                                         <div className="text-center pt-2 select-none border-t border-slate-100 flex items-center justify-center gap-1">
+                                             <span className="relative flex size-1.5">
+                                                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                                                 <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500"></span>
+                                             </span>
+                                             <span className="text-[9px] font-bold text-slate-400">Consultores online</span>
+                                         </div>
+                                     </>
                                 )}
 
                             </div>
                         </div>
                     </div>
 
-                    {/* COLUNA DIREITA: Tudo em um só lugar & Praticidade */}
+                    {/* COLUNA DIREITA: Todas as Marcas Clínicas & Praticidade Digital */}
                     <div className="lg:col-span-4 flex flex-col gap-10 md:gap-12 text-left">
                         {/* Bloco 3 */}
                         <div className="flex items-start gap-4 group">
@@ -220,10 +219,10 @@ export default function SectionCotacao() {
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-lg md:text-xl font-bold tracking-tight text-white select-text">
-                                    Tudo em um só lugar
+                                    Todas as Marcas Clínicas
                                 </h3>
                                 <p className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text">
-                                    Realize buscas por médicos, clínicas, hospitais e serviços de diagnóstico da rede credenciada do seu plano.
+                                    Cote Amil, Bradesco, SulAmérica, Unimed e operadoras regionais de uma só vez com total independência e sem taxas ocultas.
                                 </p>
                             </div>
                         </div>
@@ -231,14 +230,14 @@ export default function SectionCotacao() {
                         {/* Bloco 4 */}
                         <div className="flex items-start gap-4 group">
                             <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
-                                <HugeiconsIcon icon={LicenseIcon} className="size-6" />
+                                <HugeiconsIcon icon={Video01Icon} className="size-6" />
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-lg md:text-xl font-bold tracking-tight text-white select-text">
-                                    Praticidade
+                                    Praticidade Digital
                                 </h3>
                                 <p className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text">
-                                    Acesse tokens e os cartões virtuais de identificação do seu plano e dos seus dependentes.
+                                    Esqueça a burocracia ou ligações chatas. Você recebe as tabelas comerciais vigentes organizadas diretamente no seu WhatsApp de forma rápida.
                                 </p>
                             </div>
                         </div>

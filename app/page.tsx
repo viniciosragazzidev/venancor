@@ -1,5 +1,6 @@
 import SectionCotacao from '@/components/lp/section-cotacao';
 import SectionHero from '@/components/lp/section-hero';
+import SectionPlanos from '@/components/lp/section-planos';
 import Navbar from '@/components/navbar';
 import React from 'react';
 
@@ -10,6 +11,7 @@ export default function Home() {
         <Navbar />
         <SectionHero />
         <SectionCotacao />
+        <SectionPlanos />
       </div>
     </main>
   );
