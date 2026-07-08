@@ -119,7 +119,7 @@ export default function SectionDiferenciais() {
                 {/* 1. Cabeçalho */}
                 <div className="w-full text-left space-y-3">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                        <span className="size-2 rounded-full bg-[#0066ff]" />
+                        <span className="size-2 rounded-full bg-[#3b2dff]" />
                         <span>Diferenciais Exclusivos</span>
                     </div>
                     <h2 className="text-3xl md:text-4xl font-extrabold text-[#111827] tracking-tight leading-[1.15] max-w-2xl">
@@ -139,7 +139,7 @@ export default function SectionDiferenciais() {
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-tight transition-all duration-200 cursor-pointer ${
                                     activeTab === tab.id 
-                                        ? 'bg-slate-950 text-white shadow-sm' 
+                                        ? 'bg-[#3b2dff] text-white shadow-sm' 
                                         : 'text-slate-500 hover:text-slate-800 bg-transparent'
                                 }`}
                             >
@@ -152,7 +152,7 @@ export default function SectionDiferenciais() {
                     <div className="flex items-center gap-3 text-xs text-slate-400 font-bold shrink-0">
                         <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
                             <div 
-                                className="h-full bg-[#0066ff] transition-all duration-300"
+                                className="h-full bg-[#3b2dff] transition-all duration-300"
                                 style={{ width: `${progressPercent}%` }}
                             />
                         </div>
@@ -174,7 +174,7 @@ export default function SectionDiferenciais() {
                             
                             {/* Esquerda: Textos + Checklist */}
                             <div className="lg:col-span-4 flex flex-col items-start gap-6 text-left w-full">
-                                <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 text-[#0066ff] border border-blue-200/30">
+                                <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#3b2dff]/5 text-[#3b2dff] border border-[#3b2dff]/15">
                                     {currentTab.tag}
                                 </span>
                                 
@@ -185,7 +185,7 @@ export default function SectionDiferenciais() {
                                 <ul className="flex flex-col gap-3.5 w-full">
                                     {currentTab.checklist.map((item, idx) => (
                                         <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-600 font-normal leading-normal">
-                                            <div className="size-5 rounded-full bg-blue-50 border border-blue-200/30 text-[#0066ff] flex items-center justify-center shrink-0 mt-0.5">
+                                            <div className="size-5 rounded-full bg-[#3b2dff]/5 border border-[#3b2dff]/15 text-[#3b2dff] flex items-center justify-center shrink-0 mt-0.5">
                                                 <HugeiconsIcon icon={Tick02Icon} className="size-3.5" />
                                             </div>
                                             <span className="select-text">{item}</span>
@@ -207,14 +207,14 @@ export default function SectionDiferenciais() {
                                     
                                     {/* Testimonial Badge */}
                                     <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md p-4 rounded-3xl border border-slate-200/50 flex items-center gap-3 shadow-md">
-                                        <div className="size-10 rounded-full bg-blue-50 text-[#0066ff] border border-blue-200/30 font-black text-sm flex items-center justify-center shrink-0">
+                                        <div className="size-10 rounded-full bg-[#3b2dff]/5 text-[#3b2dff] border border-[#3b2dff]/15 font-black text-sm flex items-center justify-center shrink-0">
                                             {currentTab.testimonial.avatarInitials}
                                         </div>
                                         <div className="flex-1 flex flex-col text-left">
                                             <span className="text-xs font-black text-slate-800">{currentTab.testimonial.name}</span>
                                             <span className="text-[10px] text-slate-400 font-medium">{currentTab.testimonial.desc}</span>
                                         </div>
-                                        <div className="size-5 rounded-full bg-blue-50 border border-blue-200/30 text-[#0066ff] flex items-center justify-center shrink-0">
+                                        <div className="size-5 rounded-full bg-[#3b2dff]/5 border border-[#3b2dff]/15 text-[#3b2dff] flex items-center justify-center shrink-0">
                                             <HugeiconsIcon icon={Tick02Icon} className="size-3.5" />
                                         </div>
                                     </div>
@@ -236,7 +236,7 @@ export default function SectionDiferenciais() {
                                             {card.statusBadge && (
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                                                     card.statusType === 'success' 
-                                                        ? 'bg-blue-50 text-[#0066ff]' 
+                                                        ? 'bg-[#3b2dff]/5 text-[#3b2dff]' 
                                                         : 'bg-emerald-50 text-emerald-600 flex items-center gap-1'
                                                 }`}>
                                                     {card.statusType === 'active' && <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />}
@@ -251,7 +251,7 @@ export default function SectionDiferenciais() {
 
                                         {card.hasProgress && (
                                             <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden mt-1">
-                                                <div className="w-[85%] h-full bg-[#0066ff] rounded-full" />
+                                                <div className="w-[85%] h-full bg-[#3b2dff] rounded-full" />
                                             </div>
                                         )}
                                     </div>
