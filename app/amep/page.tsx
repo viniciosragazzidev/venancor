@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: 'Plano Amep Saúde — Venancor Corretora | Tabelas Ambulatoriais a partir de R$ 82,94',
   description: 'Consulte a tabela oficial de preços, carências e hospitais credenciados do plano Amep Saúde. Simulação rápida e consultoria isenta na Baixada Fluminense.',
   alternates: {
-    canonical: 'https://www.venancor.com.br/amep',
+    canonical: 'https://www.venacorseguros.com/amep',
   },
 };
 
@@ -46,7 +46,7 @@ export default function AmepPage() {
                 "@context": "https://schema.org",
                 "@type": "Product",
                 "name": "Plano Amep Saúde",
-                "image": "https://www.venancor.com.br/amep_saude_logo.png",
+                "image": "https://www.venacorseguros.com/amep_saude_logo.png",
                 "description": "Plano de saúde ambulatorial completo com consultas, exames e carência reduzida na Baixada Fluminense e Região dos Lagos.",
                 "brand": {
                   "@type": "Brand",

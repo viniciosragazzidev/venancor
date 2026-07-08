@@ -121,7 +121,7 @@ export default function Footer() {
 
               {/* Email */}
               <a
-                href="mailto:contato@venancor.com.br"
+                href="mailto:contato@venacorseguros.com"
                 className="group flex items-center gap-3 text-xs sm:text-sm text-slate-500 hover:text-[#3b2dff] transition-colors"
               >
                 <div className="size-8 rounded-lg bg-slate-100 border border-slate-200/50 flex items-center justify-center text-slate-400 group-hover:bg-[#3b2dff]/5 group-hover:border-[#3b2dff]/10 group-hover:text-[#3b2dff] transition-colors">
@@ -129,7 +129,7 @@ export default function Footer() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[9px] uppercase tracking-wider text-slate-400 font-semibold leading-none">E-mail</span>
-                  <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors mt-0.5">contato@venancor.com.br</span>
+                  <span className="font-bold text-slate-700 group-hover:text-slate-900 transition-colors mt-0.5">contato@venacorseguros.com</span>
                 </div>
               </a>
 

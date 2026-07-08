@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: 'Planos de Saúde | Venancor Corretora Nova Iguaçu e Baixada Fluminense',
   description: 'Contrate seu Plano de Saúde com desconto de até 35% via CNPJ/MEI. Tabelas completas Amil, Assim, SulAmérica, Unimed e Leve Saúde. Simulação grátis.',
   alternates: {
-    canonical: 'https://www.venancor.com.br',
+    canonical: 'https://www.venacorseguros.com',
   },
 };
 
@@ -40,12 +40,13 @@ export default function Home() {
               "@type": "InsuranceAgency",
               "name": "Venancor Corretora de Seguros",
               "alternateName": ["Venacor Seguros", "Venancor Saúde"],
-              "url": "https://www.venancor.com.br",
-              "logo": "https://www.venancor.com.br/logo.svg",
+              "url": "https://www.venacorseguros.com",
+              "logo": "https://www.venacorseguros.com/logo.svg",
               "description": "Corretora de planos de saúde e odontológicos em Nova Iguaçu e Baixada Fluminense. Tabelas Amil, Assim, SulAmérica e Leve Saúde com descontos para PME e MEI.",
               "contactPoint": {
                 "@type": "ContactPoint",
                 "telephone": "+55-21-96446-9750",
+                "email": "contato@venacorseguros.com",
                 "contactType": "sales",
                 "areaServed": "BR",
                 "availableLanguage": "Portuguese"

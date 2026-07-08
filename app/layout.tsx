@@ -14,7 +14,7 @@ const amilFont = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.venancor.com.br'),
+  metadataBase: new URL('https://www.venacorseguros.com'),
   title: {
     default: 'Venancor Corretora | Planos de Saúde e Odontológicos',
     template: '%s | Venancor Corretora'
@@ -49,12 +49,12 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://www.venancor.com.br',
+    canonical: 'https://www.venacorseguros.com',
   },
   openGraph: {
     title: 'Venancor Corretora | Planos de Saúde e Odontológicos',
     description: 'Compare e contrate os melhores planos de saúde com até 35% de desconto via CNPJ/MEI. Consultoria gratuita.',
-    url: 'https://www.venancor.com.br',
+    url: 'https://www.venacorseguros.com',
     siteName: 'Venancor Corretora',
     locale: 'pt_BR',
     type: 'website',
