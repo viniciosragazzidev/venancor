@@ -115,18 +115,29 @@ export default function SectionCotacao() {
                                 ) : (
                                     <>
                                         {/* Cabeçalho do App */}
-                                        <div className="text-left mb-4">
+                                        <div className="text-left">
                                             <span className="text-[9px] font-black uppercase tracking-widest text-[#3b2dff]">Simulador Venacor</span>
                                             <h4 className="text-xl font-black tracking-tight text-slate-900 mt-0.5">
                                                 Cotação Rápida
                                             </h4>
-                                            <p className="text-[10px] text-slate-400 font-medium">
-                                                Insira os dados abaixo para receber as tabelas atualizadas.
+                                            <p className="text-[10px] text-slate-400 font-medium leading-none mt-1">
+                                                Tabelas oficiais e carências.
                                             </p>
                                         </div>
 
+                                        {/* Elemento de Progresso entre Título e Campos */}
+                                        <div className="w-full flex items-center justify-between gap-2 my-2 select-none">
+                                            <div className="flex-1 flex items-center gap-1.5 py-1 px-2.5 rounded-md bg-[#3b2dff]/5 border border-[#3b2dff]/10 text-[#3b2dff]">
+                                                <span className="size-1.5 rounded-full bg-[#3b2dff] animate-pulse" />
+                                                <span className="text-[9px] font-extrabold uppercase tracking-wider">Identificação</span>
+                                            </div>
+                                            <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                <div className="w-1/2 h-full bg-[#3b2dff] rounded-full" />
+                                            </div>
+                                        </div>
+
                                         {/* Formulário */}
-                                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center gap-3.5">
+                                        <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-center gap-3">
                                             {/* Nome */}
                                             <div className="space-y-1 text-left">
                                                 <label className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Nome Completo</label>
@@ -136,7 +147,7 @@ export default function SectionCotacao() {
                                                     value={nome}
                                                     onChange={(e) => setNome(e.target.value)}
                                                     placeholder="Ex: Carlos Silva"
-                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:border-[#3b2dff] focus:ring-2 focus:ring-[#3b2dff]/10 outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400"
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:border-[#3b2dff] focus:ring-4 focus:ring-[#3b2dff]/5 outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400 transition-all duration-200 shadow-2xs"
                                                 />
                                             </div>
 
@@ -151,7 +162,7 @@ export default function SectionCotacao() {
                                                     onFocus={() => setIsFocused(true)}
                                                     onBlur={() => setIsFocused(false)}
                                                     placeholder="(21) 99999-9999"
-                                                    className={`w-full px-3.5 py-2.5 rounded-xl border outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400 ${isFocused ? 'bg-white border-[#3b2dff] ring-2 ring-[#3b2dff]/10' : 'bg-white border-slate-200'}`}
+                                                    className={`w-full px-3.5 py-2.5 rounded-xl border outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400 transition-all duration-200 shadow-2xs ${isFocused ? 'bg-white border-[#3b2dff] ring-4 ring-[#3b2dff]/5' : 'bg-white border-slate-200'}`}
                                                 />
                                             </div>
 
@@ -162,7 +173,7 @@ export default function SectionCotacao() {
                                                     <select
                                                         value={tipo}
                                                         onChange={(e) => setTipo(e.target.value)}
-                                                        className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 outline-none text-xs font-semibold appearance-none cursor-pointer"
+                                                        className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 outline-none text-xs font-semibold appearance-none cursor-pointer transition-all duration-200 shadow-2xs focus:border-[#3b2dff] focus:ring-4 focus:ring-[#3b2dff]/5"
                                                     >
                                                         <option value="pme">Empresa (PME / CNPJ)</option>
                                                         <option value="individual">Individual (CPF)</option>
@@ -178,7 +189,7 @@ export default function SectionCotacao() {
                                             <button
                                                 type="submit"
                                                 disabled={!nome || whatsapp.length < 14}
-                                                className="w-full py-3 mt-2 rounded-xl bg-[#3b2dff] hover:bg-[#2d20e0] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                                                className="w-full py-3 mt-1.5 rounded-xl bg-[#3b2dff] hover:bg-[#2d20e0] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs shadow-sm hover:shadow-md hover:shadow-[#3b2dff]/10 hover:scale-[1.01] transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
                                             >
                                                 <span>Simular Agora</span>
                                                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
