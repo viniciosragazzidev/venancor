@@ -39,6 +39,16 @@ const saudeProducts: ProductCard[] = [
         startingPrice: 'R$ 210,00'
     },
     {
+        id: 'amep',
+        name: 'AMEP Saúde',
+        logo: '/amep_saude_logo.png',
+        category: 'saude',
+        badge: 'Carência Zero Amil',
+        badgeVariant: 'regional',
+        description: 'Carência zero em atendimentos ambulatoriais na rede própria e hospitais parceiros.',
+        startingPrice: 'R$ 82,94'
+    },
+    {
         id: 'unimed',
         name: 'Unimed Nova Iguaçu',
         logo: '/unimed_logo.webp',
