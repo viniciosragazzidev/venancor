@@ -22,6 +22,6 @@ export function proxy(request: NextRequest) {
 // ignorando arquivos estáticos, imagens e APIs para não perder desempenho
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.png$|.*\\.svg$|.*\\.webp$|.*\\.jpg$|.*\\.jpeg$).*)',
   ],
 }
