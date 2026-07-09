@@ -8,13 +8,29 @@ export function proxy(request: NextRequest) {
 
   // Detecta se o usuário está acessando pelo subdomínio crm
   // Funciona para crm.venacorseguros.com, crm.venacorsaude.com.br e crm.localhost em dev
-  if (hostname.startsWith('crm.')) {
-    // Evita loops caso a URL interna processada já tenha o prefixo /crm
-    if (!url.pathname.startsWith('/crm')) {
-      // Reescreve a rota adicionando /crm no início, preservando o resto (ex: /dashboard)
-      url.pathname = `/crm${url.pathname}`
-      return NextResponse.rewrite(url)
+  const isCrmSubdomain = hostname.startsWith('crm.');
+  const isCrmPath = url.pathname.startsWith('/crm');
+
+  if (isCrmSubdomain && !isCrmPath) {
+    url.pathname = `/crm${url.pathname}`;
+  }
+
+  // Verifica proteção da página principal do crm
+  if (url.pathname.startsWith('/crm') && url.pathname !== '/crm/login' && !url.pathname.startsWith('/crm/api')) {
+    const sessionToken = request.cookies.get('better-auth.session_token') || 
+                         request.cookies.get('__secure-better-auth.session_token');
+
+    if (!sessionToken) {
+      // Se estiver no subdomínio crm, redireciona para a raiz de login (/login que reescreve para /crm/login)
+      // Se não, redireciona para /crm/login
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = isCrmSubdomain ? '/login' : '/crm/login';
+      return NextResponse.redirect(redirectUrl);
     }
+  }
+
+  if (isCrmSubdomain && !isCrmPath) {
+    return NextResponse.rewrite(url);
   }
 }
 

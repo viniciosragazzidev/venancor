@@ -36,6 +36,11 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Exclude navbar/breadcrumbs layout for the login page (handles both main domain and CRM subdomain)
+  if (pathname === '/crm/login' || pathname === '/login') {
+    return <>{children}</>;
+  }
+
   // Close mobile menu on path changes
   useEffect(() => {
     setMobileMenuOpen(false);
