@@ -183,7 +183,7 @@ export default function SectionDiferenciais() {
       tag: 'Plano Empresarial',
       support: 'Benefício bom é aquele que o colaborador realmente valoriza e pode usar com a Amep Saúde!',
       content: (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end w-full text-left">
           <div className="lg:col-span-6 space-y-5">
             <h4 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">Proteja sua equipe com facilidade e baixo custo</h4>
             <p className="text-slate-500 text-sm sm:text-base font-light leading-relaxed">
@@ -248,7 +248,7 @@ export default function SectionDiferenciais() {
       tag: 'Viver Mais e Melhor',
       support: 'Investir em você não tem idade!',
       content: (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end w-full text-left">
           <div className="lg:col-span-6 space-y-5">
             <h4 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">Qualidade de vida e segurança em todas as fases</h4>
             <p className="text-slate-500 text-sm sm:text-base font-light leading-relaxed">
@@ -390,7 +390,7 @@ export default function SectionDiferenciais() {
         </div>
 
         {/* 3. Grid de Conteúdo Dinâmico */}
-        <div className="min-h-[350px] w-full relative pt-2">
+        <div className="min-h-[350px] w-full relative pt-8 md:pt-10">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
