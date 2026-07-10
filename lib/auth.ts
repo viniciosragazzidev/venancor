@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { pool } from "./db";
 
 function getBaseURL(): string {
@@ -38,6 +39,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  plugins: [
+    nextCookies(),
+  ],
   advanced: {
     useSecureCookies: baseURL.startsWith("https"),
     crossSubDomainCookies: {

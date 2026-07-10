@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from '@/lib/auth-client';
+import { useDemoMode } from '@/lib/demo-mode';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   GridViewIcon,
@@ -12,6 +13,7 @@ import {
   BubbleChatIcon,
   Briefcase01Icon,
   Task01Icon,
+  CodeIcon,
   Settings02Icon,
   Search01Icon,
   BellIcon,
@@ -36,6 +38,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const { data: session } = useSession();
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
   const isUserAdmin = session && (session.user as any).role === 'ADMIN';
 
   // Categorized navigation items matching the visual design
@@ -63,6 +66,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
     {
       title: 'Gestão',
       items: [
+        ...(isUserAdmin ? [{ href: '/crm/dev-roadmap', label: 'Dev Roadmap', icon: CodeIcon }] : []),
         { href: '/crm/settings', label: 'Configurações', icon: Settings02Icon }
       ]
     }
@@ -75,6 +79,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
       case '/crm/chat': return 'Conversas';
       case '/crm/corretores': return 'Corretores';
       case '/crm/planos': return 'Planos';
+      case '/crm/dev-roadmap': return 'Dev Roadmap';
       case '/crm/settings': return 'Configurações';
       default: return 'Geral';
     }
@@ -148,6 +153,26 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+
+        {/* Demo Mode Toggle */}
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-50/40 border border-amber-200/30">
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-bold text-amber-700">Modo Demonstração</span>
+              <span className="text-[8px] font-medium text-amber-500 uppercase tracking-wider">
+                {isDemoMode ? 'Ativado' : 'Desativado'}
+              </span>
+            </div>
+            <button
+              onClick={toggleDemoMode}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isDemoMode ? 'bg-amber-500' : 'bg-slate-200'}`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${isDemoMode ? 'translate-x-4' : 'translate-x-0'}`}
+              />
+            </button>
+          </div>
+        </div>
 
         {/* Bottom Profile / Account Panel */}
         <div className="p-4 border-t border-slate-100/50">
@@ -338,6 +363,25 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 ))}
               </nav>
+
+              <div className="pt-4 border-t border-slate-100 mb-4">
+                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-amber-50/40 border border-amber-200/30">
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] font-bold text-amber-700">Modo Demonstração</span>
+                    <span className="text-[8px] font-medium text-amber-500 uppercase tracking-wider">
+                      {isDemoMode ? 'Ativado' : 'Desativado'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleDemoMode}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isDemoMode ? 'bg-amber-500' : 'bg-slate-200'}`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${isDemoMode ? 'translate-x-4' : 'translate-x-0'}`}
+                    />
+                  </button>
+                </div>
+              </div>
 
               <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
                 <Link
