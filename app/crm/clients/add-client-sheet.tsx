@@ -242,7 +242,7 @@ export function AddClientSheet({
                 <Label className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Operadora
                 </Label>
-                <Select value={operadora} onValueChange={setOperadora}>
+                <Select value={operadora} onValueChange={(v) => setOperadora(v ?? "")}>
                   <SelectTrigger className="w-full h-9 rounded-xl border-neutral-200 bg-neutral-50/30 focus:bg-white focus:border-[#3b2dff] text-xs font-semibold outline-none transition-all">
                     <SelectValue placeholder="Selecione a operadora" />
                   </SelectTrigger>

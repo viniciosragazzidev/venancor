@@ -464,8 +464,19 @@ export default function ClientsPage() {
             Gerencie leads inbound e acompanhe negociações em andamento.
           </p>
         </div>
-        {/* KPI strip */}
         <div className="flex items-center gap-3 shrink-0">
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsAddSheetOpen(true)}
+            className="bg-[#3b2dff] hover:bg-[#2d20e0] text-white text-[10px] font-bold uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Adicionar Cliente
+          </motion.button>
+          {/* KPI strip */}
           {[
             { label: "Leads na Fila", value: leadsList.length, accent: "#3b2dff" },
             { label: "Em Negociação", value: clientsList.filter(c => c.status === "Em Atendimento").length, accent: "#3b90ff" },
@@ -851,7 +862,7 @@ export default function ClientsPage() {
         )}
       </AnimatePresence>
 
-      {/* �€�€ Docs Drawer �€�€ */}
+      {/* ── Docs Drawer ── */}
       <AnimatePresence>
         {drawerClient && (
           <DocsDrawer
@@ -862,6 +873,14 @@ export default function ClientsPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* ── Add Client Sheet ── */}
+      <AddClientSheet
+        open={isAddSheetOpen}
+        onOpenChange={setIsAddSheetOpen}
+        onClientAdded={handleClientAdded}
+        sessionUserId={session?.user.id || ""}
+      />
     </div>
   );
 }
