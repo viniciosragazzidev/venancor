@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { db } from "@/lib/db";
+import { operadoras, planos, precos } from "@/lib/schema";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { eq, sql, asc } from "drizzle-orm";
 
 export interface Operadora {
   id: number;
@@ -44,7 +46,6 @@ export interface Precos {
   faixa59mais: number;
 }
 
-// Helper to check if the current user is an Admin
 async function checkAdminSession() {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -69,15 +70,19 @@ export async function getOperadorasWithPlansCountAction() {
       return { error: authCheck.error };
     }
 
-    const operadoras = await query<Operadora>(`
-      SELECT o.id, o.nome, o.logo_url, COUNT(p.id)::int as "planosCount"
-      FROM operadoras o
-      LEFT JOIN planos p ON o.id = p."operadoraId"
-      GROUP BY o.id, o.nome, o.logo_url
-      ORDER BY o.nome ASC
-    `);
+    const result = await db
+      .select({
+        id: operadoras.id,
+        nome: operadoras.nome,
+        logo_url: operadoras.logoUrl,
+        planosCount: sql<number>`count(${planos.id})::int`,
+      })
+      .from(operadoras)
+      .leftJoin(planos, eq(operadoras.id, planos.operadoraId))
+      .groupBy(operadoras.id, operadoras.nome, operadoras.logoUrl)
+      .orderBy(asc(operadoras.nome));
 
-    return { data: operadoras };
+    return { data: result };
   } catch (error: any) {
     console.error("Error in getOperadorasAction:", error);
     return { error: error.message || "Erro ao buscar marcas operadoras" };
@@ -91,14 +96,28 @@ export async function getPlanosForOperadoraAction(operadoraId: number) {
       return { error: authCheck.error };
     }
 
-    const planos = await query<Plano>(
-      `SELECT * FROM planos 
-       WHERE "operadoraId" = $1 
-       ORDER BY nome ASC`,
-      [operadoraId]
-    );
+    const result = await db
+      .select({
+        id: planos.id,
+        operadoraId: planos.operadoraId,
+        nome: planos.nome,
+        tipoContratacao: sql<Plano["tipoContratacao"]>`COALESCE(${planos.tipoContratacao}, 'ADESAO')`,
+        segmentacao: sql<Plano["segmentacao"]>`COALESCE(${planos.segmentacao}, 'AMBULATORIAL')`,
+        abrangencia: sql<Plano["abrangencia"]>`COALESCE(${planos.abrangencia}, 'REGIONAL')`,
+        beneficios: planos.beneficios,
+        coparticipacao: sql<Plano["coparticipacao"]>`CASE WHEN COALESCE(${planos.coparticipacao}, 'false') = 'true' THEN true ELSE false END`,
+        cidades: planos.cidades,
+        carenciaUrgencia: sql<Plano["carenciaUrgencia"]>`CAST(COALESCE(${planos.carenciaUrgencia}, '0') AS INTEGER)`,
+        carenciaConsultas: sql<Plano["carenciaConsultas"]>`CAST(COALESCE(${planos.carenciaConsultas}, '0') AS INTEGER)`,
+        carenciaExamesSimples: sql<Plano["carenciaExamesSimples"]>`CAST(COALESCE(${planos.carenciaExamesSimples}, '0') AS INTEGER)`,
+        carenciaAltaComplexidade: sql<Plano["carenciaAltaComplexidade"]>`CAST(COALESCE(${planos.carenciaAltaComplexidade}, '0') AS INTEGER)`,
+        carenciaPreexistencias: sql<Plano["carenciaPreexistencias"]>`CAST(COALESCE(${planos.carenciaPreexistencias}, '0') AS INTEGER)`,
+      })
+      .from(planos)
+      .where(eq(planos.operadoraId, operadoraId))
+      .orderBy(asc(planos.nome));
 
-    return { data: planos };
+    return { data: result };
   } catch (error: any) {
     console.error("Error in getPlanosForOperadoraAction:", error);
     return { error: error.message || "Erro ao buscar planos da operadora" };
@@ -112,23 +131,51 @@ export async function getPlanoDetailsAction(planoId: number) {
       return { error: authCheck.error };
     }
 
-    const planoRes = await query<Plano>(
-      `SELECT * FROM planos WHERE id = $1`,
-      [planoId]
-    );
+    const [planoRes] = await db
+      .select({
+        id: planos.id,
+        operadoraId: planos.operadoraId,
+        nome: planos.nome,
+        tipoContratacao: sql<Plano["tipoContratacao"]>`COALESCE(${planos.tipoContratacao}, 'ADESAO')`,
+        segmentacao: sql<Plano["segmentacao"]>`COALESCE(${planos.segmentacao}, 'AMBULATORIAL')`,
+        abrangencia: sql<Plano["abrangencia"]>`COALESCE(${planos.abrangencia}, 'REGIONAL')`,
+        beneficios: planos.beneficios,
+        coparticipacao: sql<Plano["coparticipacao"]>`CASE WHEN COALESCE(${planos.coparticipacao}, 'false') = 'true' THEN true ELSE false END`,
+        cidades: planos.cidades,
+        carenciaUrgencia: sql<Plano["carenciaUrgencia"]>`CAST(COALESCE(${planos.carenciaUrgencia}, '0') AS INTEGER)`,
+        carenciaConsultas: sql<Plano["carenciaConsultas"]>`CAST(COALESCE(${planos.carenciaConsultas}, '0') AS INTEGER)`,
+        carenciaExamesSimples: sql<Plano["carenciaExamesSimples"]>`CAST(COALESCE(${planos.carenciaExamesSimples}, '0') AS INTEGER)`,
+        carenciaAltaComplexidade: sql<Plano["carenciaAltaComplexidade"]>`CAST(COALESCE(${planos.carenciaAltaComplexidade}, '0') AS INTEGER)`,
+        carenciaPreexistencias: sql<Plano["carenciaPreexistencias"]>`CAST(COALESCE(${planos.carenciaPreexistencias}, '0') AS INTEGER)`,
+      })
+      .from(planos)
+      .where(eq(planos.id, planoId));
 
-    if (planoRes.length === 0) {
+    if (!planoRes) {
       return { error: "Plano não encontrado" };
     }
 
-    const precosRes = await query<Precos>(
-      `SELECT * FROM precos WHERE "planoId" = $1`,
-      [planoId]
-    );
+    const [precosRes] = await db
+      .select({
+        id: precos.id,
+        planoId: precos.planoId,
+        faixa0a18: sql<Precos["faixa0a18"]>`CAST(COALESCE(${precos.faixa0a18}, '0') AS NUMERIC)`,
+        faixa19a23: sql<Precos["faixa19a23"]>`CAST(COALESCE(${precos.faixa19a23}, '0') AS NUMERIC)`,
+        faixa24a28: sql<Precos["faixa24a28"]>`CAST(COALESCE(${precos.faixa24a28}, '0') AS NUMERIC)`,
+        faixa29a33: sql<Precos["faixa29a33"]>`CAST(COALESCE(${precos.faixa29a33}, '0') AS NUMERIC)`,
+        faixa34a38: sql<Precos["faixa34a38"]>`CAST(COALESCE(${precos.faixa34a38}, '0') AS NUMERIC)`,
+        faixa39a43: sql<Precos["faixa39a43"]>`CAST(COALESCE(${precos.faixa39a43}, '0') AS NUMERIC)`,
+        faixa44a48: sql<Precos["faixa44a48"]>`CAST(COALESCE(${precos.faixa44a48}, '0') AS NUMERIC)`,
+        faixa49a53: sql<Precos["faixa49a53"]>`CAST(COALESCE(${precos.faixa49a53}, '0') AS NUMERIC)`,
+        faixa54a58: sql<Precos["faixa54a58"]>`CAST(COALESCE(${precos.faixa54a58}, '0') AS NUMERIC)`,
+        faixa59mais: sql<Precos["faixa59mais"]>`CAST(COALESCE(${precos.faixa59mais}, '0') AS NUMERIC)`,
+      })
+      .from(precos)
+      .where(eq(precos.planoId, planoId));
 
     return {
-      plano: planoRes[0],
-      precos: precosRes[0] || null,
+      plano: planoRes,
+      precos: precosRes || null,
     };
   } catch (error: any) {
     console.error("Error in getPlanoDetailsAction:", error);
@@ -166,95 +213,74 @@ export async function savePlanoAction(
     let planoId = id;
 
     if (id) {
-      // 1. Update existing plan
-      await query(
-        `UPDATE planos 
-         SET nome = $1, "tipoContratacao" = $2, segmentacao = $3, abrangencia = $4, beneficios = $5,
-             coparticipacao = $6, cidades = $7, "carenciaUrgencia" = $8, "carenciaConsultas" = $9, 
-             "carenciaExamesSimples" = $10, "carenciaAltaComplexidade" = $11, "carenciaPreexistencias" = $12
-         WHERE id = $13`,
-        [
+      await db
+        .update(planos)
+        .set({
           nome,
           tipoContratacao,
           segmentacao,
           abrangencia,
           beneficios,
-          coparticipacao,
+          coparticipacao: coparticipacao ? "true" : "false",
           cidades,
-          carenciaUrgencia,
-          carenciaConsultas,
-          carenciaExamesSimples,
-          carenciaAltaComplexidade,
-          carenciaPreexistencias,
-          id,
-        ]
-      );
+          carenciaUrgencia: String(carenciaUrgencia),
+          carenciaConsultas: String(carenciaConsultas),
+          carenciaExamesSimples: String(carenciaExamesSimples),
+          carenciaAltaComplexidade: String(carenciaAltaComplexidade),
+          carenciaPreexistencias: String(carenciaPreexistencias),
+        })
+        .where(eq(planos.id, id));
 
-      // 2. Update prices
-      await query(
-        `UPDATE precos
-         SET "faixa0a18" = $1, "faixa19a23" = $2, "faixa24a28" = $3, "faixa29a33" = $4, "faixa34a38" = $5,
-             "faixa39a43" = $6, "faixa44a48" = $7, "faixa49a53" = $8, "faixa54a58" = $9, "faixa59mais" = $10
-         WHERE "planoId" = $11`,
-        [
-          precosData.faixa0a18,
-          precosData.faixa19a23,
-          precosData.faixa24a28,
-          precosData.faixa29a33,
-          precosData.faixa34a38,
-          precosData.faixa39a43,
-          precosData.faixa44a48,
-          precosData.faixa49a53,
-          precosData.faixa54a58,
-          precosData.faixa59mais,
-          id,
-        ]
-      );
+      await db
+        .update(precos)
+        .set({
+          faixa0a18: String(precosData.faixa0a18),
+          faixa19a23: String(precosData.faixa19a23),
+          faixa24a28: String(precosData.faixa24a28),
+          faixa29a33: String(precosData.faixa29a33),
+          faixa34a38: String(precosData.faixa34a38),
+          faixa39a43: String(precosData.faixa39a43),
+          faixa44a48: String(precosData.faixa44a48),
+          faixa49a53: String(precosData.faixa49a53),
+          faixa54a58: String(precosData.faixa54a58),
+          faixa59mais: String(precosData.faixa59mais),
+        })
+        .where(eq(precos.planoId, id));
     } else {
-      // 1. Create new plan
-      const insertPlanoRes = await query<{ id: number }>(
-        `INSERT INTO planos ("operadoraId", nome, "tipoContratacao", segmentacao, abrangencia, beneficios, 
-                              coparticipacao, cidades, "carenciaUrgencia", "carenciaConsultas", 
-                              "carenciaExamesSimples", "carenciaAltaComplexidade", "carenciaPreexistencias")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-         RETURNING id`,
-        [
+      const [inserted] = await db
+        .insert(planos)
+        .values({
           operadoraId,
           nome,
           tipoContratacao,
           segmentacao,
           abrangencia,
           beneficios,
-          coparticipacao,
+          coparticipacao: coparticipacao ? "true" : "false",
           cidades,
-          carenciaUrgencia,
-          carenciaConsultas,
-          carenciaExamesSimples,
-          carenciaAltaComplexidade,
-          carenciaPreexistencias,
-        ]
-      );
-      planoId = insertPlanoRes[0].id;
+          carenciaUrgencia: String(carenciaUrgencia),
+          carenciaConsultas: String(carenciaConsultas),
+          carenciaExamesSimples: String(carenciaExamesSimples),
+          carenciaAltaComplexidade: String(carenciaAltaComplexidade),
+          carenciaPreexistencias: String(carenciaPreexistencias),
+        })
+        .returning({ id: planos.id });
 
-      // 2. Create prices
-      await query(
-        `INSERT INTO precos ("planoId", "faixa0a18", "faixa19a23", "faixa24a28", "faixa29a33", "faixa34a38",
-                              "faixa39a43", "faixa44a48", "faixa49a53", "faixa54a58", "faixa59mais")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-        [
-          planoId,
-          precosData.faixa0a18,
-          precosData.faixa19a23,
-          precosData.faixa24a28,
-          precosData.faixa29a33,
-          precosData.faixa34a38,
-          precosData.faixa39a43,
-          precosData.faixa44a48,
-          precosData.faixa49a53,
-          precosData.faixa54a58,
-          precosData.faixa59mais,
-        ]
-      );
+      planoId = inserted.id;
+
+      await db.insert(precos).values({
+        planoId: planoId,
+        faixa0a18: String(precosData.faixa0a18),
+        faixa19a23: String(precosData.faixa19a23),
+        faixa24a28: String(precosData.faixa24a28),
+        faixa29a33: String(precosData.faixa29a33),
+        faixa34a38: String(precosData.faixa34a38),
+        faixa39a43: String(precosData.faixa39a43),
+        faixa44a48: String(precosData.faixa44a48),
+        faixa49a53: String(precosData.faixa49a53),
+        faixa54a58: String(precosData.faixa54a58),
+        faixa59mais: String(precosData.faixa59mais),
+      });
     }
 
     revalidatePath("/crm/planos");
@@ -276,11 +302,7 @@ export async function createOperadoraAction(nome: string, logoUrl: string | null
       return { error: "O nome da operadora é obrigatório." };
     }
 
-    await query(
-      `INSERT INTO operadoras (nome, logo_url) 
-       VALUES ($1, $2)`,
-      [nome, logoUrl]
-    );
+    await db.insert(operadoras).values({ nome, logoUrl });
 
     revalidatePath("/crm/planos");
     return { success: true };

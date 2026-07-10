@@ -1,6 +1,8 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { pool } from "./db";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "./db";
+import * as authSchema from "./schema/auth";
 
 function getBaseURL(): string {
   if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
@@ -35,7 +37,10 @@ const baseURL = getBaseURL();
 
 export const auth = betterAuth({
   baseURL,
-  database: pool,
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: authSchema,
+  }),
   emailAndPassword: {
     enabled: true,
   },

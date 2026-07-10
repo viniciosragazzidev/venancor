@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { db } from "@/lib/db";
+import { user } from "@/lib/schema";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { eq, asc, sql } from "drizzle-orm";
 
 export interface Corretor {
   id: string;
@@ -13,7 +15,6 @@ export interface Corretor {
   status: "ONLINE" | "PAUSADO" | "INATIVO";
 }
 
-// Helper to check if the current user is an Admin
 async function checkAdminSession() {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -38,11 +39,16 @@ export async function getCorretoresAction() {
       return { error: authCheck.error };
     }
 
-    const corretores = await query<Corretor>(`
-      SELECT id, name, email, role, status 
-      FROM "user" 
-      ORDER BY name ASC
-    `);
+    const corretores = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: sql<Corretor["role"]>`COALESCE(${user.role}, 'CORRETOR')`,
+        status: sql<Corretor["status"]>`COALESCE(${user.status}, 'ONLINE')`,
+      })
+      .from(user)
+      .orderBy(asc(user.name));
 
     return { data: corretores };
   } catch (error: any) {
@@ -54,7 +60,7 @@ export async function getCorretoresAction() {
 export interface CreateCorretorInput {
   name: string;
   email: string;
-  passwordHash: string; // password from UI form
+  passwordHash: string;
   role: "ADMIN" | "CORRETOR";
 }
 
@@ -75,8 +81,6 @@ export async function createCorretorAction(input: CreateCorretorInput) {
       return { error: "A senha inicial deve ter pelo menos 6 caracteres." };
     }
 
-    // Call better-auth's API to sign up the new user
-    // Note: Since this is executed server-to-server, it registers the user securely
     const signUpResult = await auth.api.signUpEmail({
       body: {
         email,
@@ -91,18 +95,15 @@ export async function createCorretorAction(input: CreateCorretorInput) {
 
     const newUserId = signUpResult.user.id;
 
-    // Update their role and default status (ONLINE) in the user table
-    await query(`
-      UPDATE "user" 
-      SET role = $1, status = $2 
-      WHERE id = $3
-    `, [input.role, "ONLINE", newUserId]);
+    await db
+      .update(user)
+      .set({ role: input.role, status: "ONLINE" })
+      .where(eq(user.id, newUserId));
 
     revalidatePath("/crm/corretores");
     return { success: true };
   } catch (error: any) {
     console.error("Error in createCorretorAction:", error);
-    // User-friendly error mapping for duplicate emails
     if (error.message?.includes("already exists") || error.code === "23505") {
       return { error: "Este endereço de e-mail já está cadastrado no sistema." };
     }
@@ -120,12 +121,10 @@ export async function updateCorretorStatusAction(
       return { error: authCheck.error };
     }
 
-    // Update the corretor status
-    await query(`
-      UPDATE "user" 
-      SET status = $1 
-      WHERE id = $2
-    `, [status, corretorId]);
+    await db
+      .update(user)
+      .set({ status })
+      .where(eq(user.id, corretorId));
 
     revalidatePath("/crm/corretores");
     return { success: true };
@@ -147,12 +146,10 @@ export async function desativarCorretorAction(corretorId: string) {
       return { error: "Você não pode desativar seu próprio usuário administrador." };
     }
 
-    // Set status to INATIVO
-    await query(`
-      UPDATE "user" 
-      SET status = 'INATIVO' 
-      WHERE id = $1
-    `, [corretorId]);
+    await db
+      .update(user)
+      .set({ status: "INATIVO" })
+      .where(eq(user.id, corretorId));
 
     revalidatePath("/crm/corretores");
     return { success: true };

@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { db } from "@/lib/db";
+import { devTasks } from "@/lib/schema";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { eq, sql, desc } from "drizzle-orm";
 
 export interface DevTask {
   id: number;
@@ -39,23 +41,18 @@ export async function getDevTasksAction() {
       return { error: authCheck.error };
     }
 
-    await query(`
-      CREATE TABLE IF NOT EXISTS dev_tasks (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        description TEXT DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'backlog',
-        priority TEXT NOT NULL DEFAULT 'medium',
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    const tasks = await query<DevTask>(`
-      SELECT id, title, description, status, priority, created_at, updated_at
-      FROM dev_tasks
-      ORDER BY created_at DESC
-    `);
+    const tasks = await db
+      .select({
+        id: devTasks.id,
+        title: devTasks.title,
+        description: sql<string>`COALESCE(${devTasks.description}, '')`,
+        status: sql<DevTask["status"]>`COALESCE(${devTasks.status}, 'backlog')`,
+        priority: sql<DevTask["priority"]>`COALESCE(${devTasks.priority}, 'medium')`,
+        created_at: sql<string>`${devTasks.createdAt}::text`,
+        updated_at: sql<string>`${devTasks.updatedAt}::text`,
+      })
+      .from(devTasks)
+      .orderBy(desc(devTasks.createdAt));
 
     return { data: tasks };
   } catch (error: any) {
@@ -83,14 +80,26 @@ export async function createDevTaskAction(input: CreateDevTaskInput) {
       return { error: "O título da tarefa é obrigatório." };
     }
 
-    const result = await query<DevTask>(`
-      INSERT INTO dev_tasks (title, description, priority, status)
-      VALUES ($1, $2, $3, 'backlog')
-      RETURNING id, title, description, status, priority, created_at, updated_at
-    `, [title.trim(), description || '', priority]);
+    const [result] = await db
+      .insert(devTasks)
+      .values({
+        title: title.trim(),
+        description: description || "",
+        priority,
+        status: "backlog",
+      })
+      .returning({
+        id: devTasks.id,
+        title: devTasks.title,
+        description: sql<string>`COALESCE(${devTasks.description}, '')`,
+        status: sql<DevTask["status"]>`COALESCE(${devTasks.status}, 'backlog')`,
+        priority: sql<DevTask["priority"]>`COALESCE(${devTasks.priority}, 'medium')`,
+        created_at: sql<string>`${devTasks.createdAt}::text`,
+        updated_at: sql<string>`${devTasks.updatedAt}::text`,
+      });
 
     revalidatePath("/crm/dev-roadmap");
-    return { success: true, data: result[0] };
+    return { success: true, data: result };
   } catch (error: any) {
     console.error("Error in createDevTaskAction:", error);
     return { error: error.message || "Erro ao criar tarefa." };
@@ -107,11 +116,10 @@ export async function updateDevTaskStatusAction(
       return { error: authCheck.error };
     }
 
-    await query(`
-      UPDATE dev_tasks
-      SET status = $1, updated_at = NOW()
-      WHERE id = $2
-    `, [status, taskId]);
+    await db
+      .update(devTasks)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(devTasks.id, taskId));
 
     revalidatePath("/crm/dev-roadmap");
     return { success: true };
@@ -137,11 +145,15 @@ export async function updateDevTaskAction(
       return { error: "O título da tarefa é obrigatório." };
     }
 
-    await query(`
-      UPDATE dev_tasks
-      SET title = $1, description = $2, priority = $3, updated_at = NOW()
-      WHERE id = $4
-    `, [title.trim(), description || '', priority, taskId]);
+    await db
+      .update(devTasks)
+      .set({
+        title: title.trim(),
+        description: description || "",
+        priority,
+        updatedAt: new Date(),
+      })
+      .where(eq(devTasks.id, taskId));
 
     revalidatePath("/crm/dev-roadmap");
     return { success: true };
@@ -158,9 +170,7 @@ export async function deleteDevTaskAction(taskId: number) {
       return { error: authCheck.error };
     }
 
-    await query(`
-      DELETE FROM dev_tasks WHERE id = $1
-    `, [taskId]);
+    await db.delete(devTasks).where(eq(devTasks.id, taskId));
 
     revalidatePath("/crm/dev-roadmap");
     return { success: true };

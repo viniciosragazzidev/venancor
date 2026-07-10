@@ -36,7 +36,17 @@ async function main() {
     `);
     console.log("leads table created or verified!");
 
-    // 3. Let's see what users are in the table
+    // 3. Add UTM tracking columns to leads table
+    console.log("Adding UTM tracking columns to leads table...");
+    await client.query(`
+      ALTER TABLE leads
+        ADD COLUMN IF NOT EXISTS utm_source   VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS utm_medium   VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS utm_campaign VARCHAR(255)
+    `);
+    console.log("UTM columns added or verified!");
+
+    // 4. Let's see what users are in the table
     const usersRes = await client.query('SELECT id, name, email, role FROM "user"');
     console.log("\nUsers currently in database:", usersRes.rows);
 
@@ -55,7 +65,7 @@ async function main() {
       console.log(`User ${usersRes.rows[0].email} is now ADMIN.`);
     }
 
-    // 4. Let's seed some mock leads if the table is empty
+    // 5. Let's seed some mock leads if the table is empty
     const leadsCountRes = await client.query('SELECT COUNT(*) FROM leads');
     const leadsCount = parseInt(leadsCountRes.rows[0].count);
     console.log(`Current leads count: ${leadsCount}`);

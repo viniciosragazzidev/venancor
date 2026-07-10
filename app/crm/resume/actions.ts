@@ -1,8 +1,10 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { db } from "@/lib/db";
+import { leads, user } from "@/lib/schema";
 import { headers } from "next/headers";
+import { count, sql, eq, and } from "drizzle-orm";
 
 export interface DashboardData {
   totalLeads: number;
@@ -49,60 +51,60 @@ export async function getDashboardAction(): Promise<{ data?: DashboardData; erro
       return { error: "Não autenticado." };
     }
 
-    const [
-      totalLeads,
-      aguardando,
-      emAtendimento,
-      propostasEnviadas,
-      vendasConcluidas,
-      ultimosLeads,
-      leadsPorCorretor,
-      leadsPorOperadora,
-    ] = await Promise.all([
-      query<{ count: string }>("SELECT COUNT(*) as count FROM leads"),
-      query<{ count: string }>("SELECT COUNT(*) as count FROM leads WHERE status = 'Aguardando'"),
-      query<{ count: string }>("SELECT COUNT(*) as count FROM leads WHERE status = 'Em Atendimento'"),
-      query<{ count: string }>("SELECT COUNT(*) as count FROM leads WHERE status = 'Proposta Enviada'"),
-      query<{ count: string }>("SELECT COUNT(*) as count FROM leads WHERE status = 'Venda Concluída'"),
-      query<LeadItem>(`
-        SELECT l.id, l.nome, l.status, l.perfil, u.name as "corretorNome"
-        FROM leads l
-        LEFT JOIN "user" u ON l."corretorId" = u.id
-        ORDER BY l.id DESC
-        LIMIT 8
-      `),
-      query<CorretorRow>(`
-        SELECT
-          u.id,
-          u.name as nome,
-          COUNT(*)::int as total,
-          COUNT(*) FILTER (WHERE l.status = 'Em Atendimento')::int as "emAtendimento",
-          COUNT(*) FILTER (WHERE l.status = 'Proposta Enviada')::int as propostas,
-          COUNT(*) FILTER (WHERE l.status = 'Venda Concluída')::int as vendas
-        FROM leads l
-        JOIN "user" u ON l."corretorId" = u.id
-        GROUP BY u.id, u.name
-        ORDER BY total DESC
-      `),
-      query<OperadoraRow>(`
-        SELECT
-          l.perfil,
-          COUNT(*)::int as total,
-          COUNT(*) FILTER (WHERE l.status = 'Em Atendimento')::int as "emAtendimento",
-          COUNT(*) FILTER (WHERE l.status = 'Venda Concluída')::int as vendas
-        FROM leads l
-        GROUP BY l.perfil
-        ORDER BY total DESC
-      `),
-    ]);
+    const [totalLeads, aguardando, emAtendimento, propostasEnviadas, vendasConcluidas] =
+      await Promise.all([
+        db.select({ value: count() }).from(leads),
+        db.select({ value: count() }).from(leads).where(eq(leads.status, "Aguardando")),
+        db.select({ value: count() }).from(leads).where(eq(leads.status, "Em Atendimento")),
+        db.select({ value: count() }).from(leads).where(eq(leads.status, "Proposta Enviada")),
+        db.select({ value: count() }).from(leads).where(eq(leads.status, "Venda Concluída")),
+      ]);
+
+    const ultimosLeads = await db
+      .select({
+        id: leads.id,
+        nome: leads.nome,
+        status: sql<string>`COALESCE(${leads.status}, '')`,
+        perfil: sql<string>`COALESCE(${leads.perfil}, '')`,
+        corretorNome: user.name,
+      })
+      .from(leads)
+      .leftJoin(user, eq(leads.corretorId, user.id))
+      .orderBy(sql`${leads.id} DESC`)
+      .limit(8);
+
+    const leadsPorCorretor = await db
+      .select({
+        id: user.id,
+        nome: user.name,
+        total: count(),
+        emAtendimento: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'Em Atendimento')`,
+        propostas: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'Proposta Enviada')`,
+        vendas: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'Venda Concluída')`,
+      })
+      .from(leads)
+      .innerJoin(user, eq(leads.corretorId, user.id))
+      .groupBy(user.id, user.name)
+      .orderBy(sql`count DESC`);
+
+    const leadsPorOperadora = await db
+      .select({
+        perfil: sql<string>`COALESCE(${leads.perfil}, 'Sem operadora')`,
+        total: count(),
+        emAtendimento: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'Em Atendimento')`,
+        vendas: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'Venda Concluída')`,
+      })
+      .from(leads)
+      .groupBy(leads.perfil)
+      .orderBy(sql`count DESC`);
 
     return {
       data: {
-        totalLeads: parseInt(totalLeads[0]?.count || "0"),
-        aguardando: parseInt(aguardando[0]?.count || "0"),
-        emAtendimento: parseInt(emAtendimento[0]?.count || "0"),
-        propostasEnviadas: parseInt(propostasEnviadas[0]?.count || "0"),
-        vendasConcluidas: parseInt(vendasConcluidas[0]?.count || "0"),
+        totalLeads: Number(totalLeads[0]?.value ?? 0),
+        aguardando: Number(aguardando[0]?.value ?? 0),
+        emAtendimento: Number(emAtendimento[0]?.value ?? 0),
+        propostasEnviadas: Number(propostasEnviadas[0]?.value ?? 0),
+        vendasConcluidas: Number(vendasConcluidas[0]?.value ?? 0),
         ultimosLeads,
         leadsPorCorretor,
         leadsPorOperadora,

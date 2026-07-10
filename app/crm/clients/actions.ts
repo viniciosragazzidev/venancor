@@ -1,9 +1,11 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { db } from "@/lib/db";
+import { leads, user } from "@/lib/schema";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 export interface ClientLead {
   id: number;
@@ -29,40 +31,51 @@ export async function getClientsAction() {
     const role = (session.user as any).role;
     const userId = session.user.id;
 
+    const selectFields = {
+      id: leads.id,
+      nome: leads.nome,
+      whatsapp: leads.whatsapp,
+      perfil: sql<string>`COALESCE(${leads.perfil}, '')`,
+      idades: sql<string>`COALESCE(${leads.idades}, '')`,
+      status: sql<ClientLead["status"]>`COALESCE(${leads.status}, 'Aguardando')`,
+      corretorId: leads.corretorId,
+    };
+
     if (role === "ADMIN") {
-      // Admin sees all inbound leads (Aguardando)
-      const leads = await query<ClientLead>(`
-        SELECT * FROM leads 
-        WHERE status = 'Aguardando' 
-        ORDER BY id DESC
-      `);
+      const pendingLeads = await db
+        .select(selectFields)
+        .from(leads)
+        .where(eq(leads.status, "Aguardando"))
+        .orderBy(desc(leads.id));
 
-      // Admin sees all qualified clients, joined with their broker names
-      const clients = await query<ClientLead>(`
-        SELECT l.*, u.name as "corretorNome"
-        FROM leads l
-        LEFT JOIN "user" u ON l."corretorId" = u.id
-        WHERE l.status != 'Aguardando'
-        ORDER BY l.id DESC
-      `);
+      const assignedClients = await db
+        .select({
+          ...selectFields,
+          corretorNome: user.name,
+        })
+        .from(leads)
+        .leftJoin(user, eq(leads.corretorId, user.id))
+        .where(sql`${leads.status} != 'Aguardando'`)
+        .orderBy(desc(leads.id));
 
-      return { data: { leads, clients } };
+      return { data: { leads: pendingLeads, clients: assignedClients } };
     } else {
-      // Broker sees all inbound leads to claim them
-      const leads = await query<ClientLead>(`
-        SELECT * FROM leads 
-        WHERE status = 'Aguardando' 
-        ORDER BY id DESC
-      `);
+      const pendingLeads = await db
+        .select(selectFields)
+        .from(leads)
+        .where(eq(leads.status, "Aguardando"))
+        .orderBy(desc(leads.id));
 
-      // Broker sees only their claimed clients
-      const clients = await query<ClientLead>(`
-        SELECT * FROM leads 
-        WHERE status != 'Aguardando' AND "corretorId" = $1
-        ORDER BY id DESC
-      `, [userId]);
+      const assignedClients = await db
+        .select(selectFields)
+        .from(leads)
+        .where(and(
+          sql`${leads.status} != 'Aguardando'`,
+          eq(leads.corretorId, userId)
+        ))
+        .orderBy(desc(leads.id));
 
-      return { data: { leads, clients } };
+      return { data: { leads: pendingLeads, clients: assignedClients } };
     }
   } catch (error: any) {
     console.error("Error in getClientsAction:", error);
@@ -82,25 +95,26 @@ export async function startAttendanceAction(clientId: number) {
 
     const userId = session.user.id;
 
-    // Check if the lead is still available
-    const checkLead = await query(`
-      SELECT status, "corretorId" FROM leads WHERE id = $1
-    `, [clientId]);
+    const [checkLead] = await db
+      .select({
+        status: leads.status,
+        corretorId: leads.corretorId,
+      })
+      .from(leads)
+      .where(eq(leads.id, clientId));
 
-    if (checkLead.length === 0) {
+    if (!checkLead) {
       return { error: "Registro não encontrado." };
     }
 
-    if (checkLead[0].status !== "Aguardando") {
+    if (checkLead.status !== "Aguardando") {
       return { error: "Este lead já foi assumido por outro corretor." };
     }
 
-    // Assign to corretor and update status to 'Em Atendimento'
-    await query(`
-      UPDATE leads 
-      SET status = 'Em Atendimento', "corretorId" = $1 
-      WHERE id = $2
-    `, [userId, clientId]);
+    await db
+      .update(leads)
+      .set({ status: "Em Atendimento", corretorId: userId })
+      .where(eq(leads.id, clientId));
 
     revalidatePath("/crm/clients");
     return { success: true };
@@ -126,25 +140,23 @@ export async function updateClientStatusAction(
     const role = (session.user as any).role;
     const userId = session.user.id;
 
-    // Verify ownership or admin rights
-    const checkLead = await query(`
-      SELECT "corretorId" FROM leads WHERE id = $1
-    `, [clientId]);
+    const [checkLead] = await db
+      .select({ corretorId: leads.corretorId })
+      .from(leads)
+      .where(eq(leads.id, clientId));
 
-    if (checkLead.length === 0) {
+    if (!checkLead) {
       return { error: "Cliente não encontrado." };
     }
 
-    if (role !== "ADMIN" && checkLead[0].corretorId !== userId) {
+    if (role !== "ADMIN" && checkLead.corretorId !== userId) {
       return { error: "Não autorizado. Este cliente pertence a outro corretor." };
     }
 
-    // Update status
-    await query(`
-      UPDATE leads 
-      SET status = $1 
-      WHERE id = $2
-    `, [status, clientId]);
+    await db
+      .update(leads)
+      .set({ status })
+      .where(eq(leads.id, clientId));
 
     revalidatePath("/crm/clients");
     return { success: true };
@@ -183,11 +195,14 @@ export async function createLeadAction(input: CreateLeadInput) {
     const status = destino === "Em Atendimento" ? "Em Atendimento" : "Aguardando";
     const assignedCorretor = destino === "Em Atendimento" ? corretorId || session.user.id : null;
 
-    await query(
-      `INSERT INTO leads (nome, whatsapp, perfil, idades, status, "corretorId")
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [nome, cleanedWhatsapp, perfil, idades, status, assignedCorretor]
-    );
+    await db.insert(leads).values({
+      nome,
+      whatsapp: cleanedWhatsapp,
+      perfil,
+      idades,
+      status,
+      corretorId: assignedCorretor,
+    });
 
     revalidatePath("/crm/clients");
     return { success: true };

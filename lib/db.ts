@@ -1,4 +1,6 @@
 import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
 
 const globalForDb = globalThis as unknown as {
   connPool: Pool | undefined;
@@ -30,6 +32,8 @@ export const pool = globalForDb.connPool ?? createPool();
 if (process.env.NODE_ENV !== "production") {
   globalForDb.connPool = pool;
 }
+
+export const db = drizzle(pool, { schema });
 
 export async function query<T = any>(text: string, params?: any[]) {
   const res = await pool.query(text, params);
