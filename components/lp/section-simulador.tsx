@@ -9,8 +9,6 @@ import {
     WhatsappIcon,
     UserIcon
 } from '@hugeicons/core-free-icons';
-import { createLeadAction } from '@/app/crm/clients/actions';
-
 type PlanType = 'saude' | 'odonto' | 'ambos' | null;
 type ProfileType = 'individual' | 'corporate' | null;
 
@@ -69,13 +67,26 @@ export default function SectionSimulador() {
         const perfilText = profileType === 'individual' ? 'Individual (CPF)' : 'Empresa (CNPJ/MEI)';
         const idadesText = `Titular: ${titularAge} anos.${dependents.length > 0 ? ` Dependentes: ${dependents.join(', ')} anos.` : ''}`;
         
-        // Register lead in CRM database
-        await createLeadAction({
-            nome,
-            whatsapp,
-            perfil: profileType === 'individual' ? 'Individual' : 'PME (Empresa)',
-            idades: idadesText
-        });
+        // Register lead in CRM database via API First Gateway
+        try {
+            const apiHost = process.env.NEXT_PUBLIC_CRM_API_URL || window.location.origin;
+            const token = process.env.NEXT_PUBLIC_CRM_TOKEN || 'afed418c-1e4b-4172-b472-5b69e9171f98';
+            await fetch(`${apiHost}/api/webhooks/leads?token=${token}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nome,
+                    whatsapp,
+                    perfil: profileType === 'individual' ? 'Individual' : 'PME (Empresa)',
+                    idades: idadesText,
+                    origin_domain: typeof window !== 'undefined' ? window.location.hostname : 'venancor.com.br'
+                })
+            });
+        } catch (err) {
+            console.error('Failed to register lead via API:', err);
+        }
 
         const msg = `Olá! Gostaria de uma cotação de plano de saúde.\n\nTipo: ${planType === 'ambos' ? 'Saúde + Odonto' : planType === 'saude' ? 'Saúde' : 'Odonto'}\nPerfil: ${perfilText}\nIdade: ${titularAge} anos${dependentesText}\nNome: ${nome}`;
         window.open(`https://wa.me/5521964469750?text=${encodeURIComponent(msg)}`, '_blank');

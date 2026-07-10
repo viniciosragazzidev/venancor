@@ -3,6 +3,7 @@ import "./globals.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DemoModeProvider } from "@/lib/demo-mode";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -76,10 +77,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${plusJakartaSans.variable} ${amilFont.variable} ${plusJakartaSans.className}`}>
       <body className="antialiased">
-        <DemoModeProvider>
-          {children}
-        </DemoModeProvider>
-        <Toaster closeButton position="top-right" richColors />
+        <TooltipProvider>
+          <DemoModeProvider>
+            {children}
+          </DemoModeProvider>
+          <Toaster closeButton position="top-right" richColors />
+        </TooltipProvider>
       </body>
     </html>
   );

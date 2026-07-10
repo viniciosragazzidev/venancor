@@ -30,6 +30,7 @@ type NormalizedLead = {
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
+  idades?: string | null;
 };
 
 function normalizeMeta(payload: Record<string, unknown>): NormalizedLead {
@@ -65,6 +66,7 @@ function normalizeGeneric(payload: Record<string, unknown>): NormalizedLead {
     utm_source: p.utm_source || null,
     utm_medium: p.utm_medium || null,
     utm_campaign: p.utm_campaign || null,
+    idades: p.idades || null,
   };
 }
 
@@ -104,6 +106,7 @@ export async function POST(request: NextRequest) {
       nome: lead.nome,
       whatsapp: lead.whatsapp,
       perfil: lead.perfil,
+      idades: lead.idades || null,
       status: "Aguardando",
       utmSource: lead.utm_source,
       utmMedium: lead.utm_medium,

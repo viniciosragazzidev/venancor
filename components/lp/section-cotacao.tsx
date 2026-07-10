@@ -12,8 +12,6 @@ import {
 } from '@hugeicons/core-free-icons';
 import { motion } from 'framer-motion';
 import { AutoHeight } from '@/components/animate-ui/primitives/effects/auto-height';
-import { createLeadAction } from '@/app/crm/clients/actions';
-
 export default function SectionCotacao() {
     const [nome, setNome] = useState('');
     const [whatsapp, setWhatsapp] = useState('');
@@ -47,12 +45,25 @@ export default function SectionCotacao() {
                 familiar: 'Familiar'
             };
 
-            await createLeadAction({
-                nome,
-                whatsapp,
-                perfil: perfilMap[tipo] || 'Simulador',
-                idades: 'Landing Page'
-            });
+            try {
+                const apiHost = process.env.NEXT_PUBLIC_CRM_API_URL || window.location.origin;
+                const token = process.env.NEXT_PUBLIC_CRM_TOKEN || 'afed418c-1e4b-4172-b472-5b69e9171f98';
+                await fetch(`${apiHost}/api/webhooks/leads?token=${token}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        nome,
+                        whatsapp,
+                        perfil: perfilMap[tipo] || 'Simulador',
+                        idades: 'Landing Page',
+                        origin_domain: typeof window !== 'undefined' ? window.location.hostname : 'venancor.com.br'
+                    })
+                });
+            } catch (err) {
+                console.error('Failed to register lead via API:', err);
+            }
 
             setTimeout(() => {
                 window.open(`https://wa.me/5521964469750?text=${encodeURIComponent(`Olá! Quero simular um plano de saúde Tipo: ${tipo.toUpperCase()}. Nome: ${nome}.`)}`, '_blank');
