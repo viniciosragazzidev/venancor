@@ -1,4 +1,38 @@
-import type { DashboardData, LeadItem, CorretorRow, OperadoraRow } from "@/app/crm/resume/actions";
+// Tipos locais (equivalentes aos originais de @/app/crm/resume/actions, módulo removido)
+export interface LeadItem {
+  id: number;
+  nome: string;
+  status: string;
+  perfil: string;
+  corretorNome: string | null;
+}
+
+export interface CorretorRow {
+  id: string;
+  nome: string;
+  total: number;
+  emAtendimento: number;
+  propostas: number;
+  vendas: number;
+}
+
+export interface OperadoraRow {
+  perfil: string;
+  total: number;
+  emAtendimento: number;
+  vendas: number;
+}
+
+export interface DashboardData {
+  totalLeads: number;
+  aguardando: number;
+  emAtendimento: number;
+  propostasEnviadas: number;
+  vendasConcluidas: number;
+  ultimosLeads: LeadItem[];
+  leadsPorCorretor: CorretorRow[];
+  leadsPorOperadora: OperadoraRow[];
+}
 
 export interface ChartDataPoint {
   date: string;

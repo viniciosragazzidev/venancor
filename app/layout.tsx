@@ -17,7 +17,7 @@ const amilFont = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.venacorseguros.com'),
+  metadataBase: new URL('https://www.venancorseguros.com'),
   title: {
     default: 'Venancor Corretora | Planos de Saúde e Odontológicos',
     template: '%s | Venancor Corretora'
@@ -26,23 +26,33 @@ export const metadata: Metadata = {
   keywords: [
     'Planos de saúde',
     'Planos de saúde Nova Iguaçu',
+    'Planos de saúde Baixada Fluminense',
     'Venancor Corretora',
     'Venancor Saúde',
     'Venacor Seguros',
-    'Planos de saúde Baixada Fluminense',
-    'Tabelas de planos de saúde',
     'Plano de saúde MEI',
     'Plano de saúde empresarial',
-    'Amil Saúde',
+    'Plano de saúde CNPJ',
+    'Tabelas de planos de saúde',
+    'Amil Saúde Nova Iguaçu',
     'Amep Saúde',
-    'SulAmérica Saúde'
+    'SulAmérica Saúde',
+    'Assim Saúde',
+    'Leve Saúde',
+    'Corretora de seguros Nova Iguaçu',
+    'Plano de saúde Duque de Caxias',
+    'Portabilidade de carência plano de saúde',
   ],
-  authors: [{ name: 'Venancor Corretora' }],
+  authors: [{ name: 'Venancor Corretora', url: 'https://www.venancorseguros.com' }],
   creator: 'Venancor Corretora',
   publisher: 'Venancor Corretora',
+  applicationName: 'Venancor Corretora',
+  category: 'insurance',
+  classification: 'Health Insurance Broker',
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
@@ -52,21 +62,42 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://www.venacorseguros.com',
+    canonical: 'https://www.venancorseguros.com',
+    languages: {
+      'pt-BR': 'https://www.venancorseguros.com',
+    },
   },
   openGraph: {
     title: 'Venancor Corretora | Planos de Saúde e Odontológicos',
-    description: 'Compare e contrate os melhores planos de saúde com até 35% de desconto via CNPJ/MEI. Consultoria gratuita.',
-    url: 'https://www.venacorseguros.com',
+    description: 'Compare e contrate os melhores planos de saúde com até 35% de desconto via CNPJ/MEI. Consultoria gratuita na Baixada Fluminense.',
+    url: 'https://www.venancorseguros.com',
     siteName: 'Venancor Corretora',
     locale: 'pt_BR',
     type: 'website',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Venancor Corretora — Planos de Saúde na Baixada Fluminense',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Venancor Corretora | Planos de Saúde e Odontológicos',
     description: 'Compare e contrate os melhores planos de saúde com até 35% de desconto via CNPJ/MEI.',
-  }
+    images: ['/opengraph-image'],
+  },
+  other: {
+    // Geo meta tags — indexação local (Google Maps, buscas locais, Bing Places)
+    'geo.region': 'BR-RJ',
+    'geo.placename': 'Nova Iguaçu, Rio de Janeiro, Brasil',
+    'geo.position': '-22.7562;-43.4608',
+    'ICBM': '-22.7562, -43.4608',
+    // Idioma do conteúdo
+    'content-language': 'pt-BR',
+  },
 };
 
 export default function RootLayout({
