@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 
-import { db } from "./client";
+import { client, db } from "./client";
 import { account, user, usuarios } from "./schema";
 
 async function main() {
@@ -36,7 +36,9 @@ async function main() {
   console.info("Admin criado.");
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => client.end());
