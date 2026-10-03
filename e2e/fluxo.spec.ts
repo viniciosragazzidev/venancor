@@ -54,9 +54,6 @@ test("fluxo feliz: criar ordem → assinar com OTP → pagar (fake) → paga no 
     if (resposta.url().includes("/api/"))
       console.log(`[e2e:admin] ${resposta.status()} ${new URL(resposta.url()).pathname}`);
   });
-  page.on("console", (msg) => {
-    if (msg.type() === "error") console.log(`[e2e:admin] console: ${msg.text()}`);
-  });
   await page.goto("/login");
   await page.locator("#email").fill(adminEmail);
   await page.locator("#password").fill(adminSenha);
@@ -77,14 +74,9 @@ test("fluxo feliz: criar ordem → assinar com OTP → pagar (fake) → paga no 
   // 3) Cliente abre o link e avança até a assinatura
   const contextoCliente = await browser.newContext({ locale: "pt-BR" });
   const cliente = await contextoCliente.newPage();
-  cliente.on("response", async (resposta) => {
-    if (resposta.url().includes("/api/dev/simular-pagamento")) {
-      const corpo = await resposta.text().catch(() => "");
-      console.log(`[e2e] simular-pagamento ${resposta.status()} ${corpo}`);
-    }
-  });
-  cliente.on("console", (msg) => {
-    if (msg.type() === "error") console.log(`[e2e] console: ${msg.text()}`);
+  cliente.on("response", (resposta) => {
+    if (resposta.url().includes("/api/"))
+      console.log(`[e2e] ${resposta.status()} ${new URL(resposta.url()).pathname}`);
   });
   try {
     await cliente.goto(link);
@@ -133,5 +125,5 @@ test("fluxo feliz: criar ordem → assinar com OTP → pagar (fake) → paga no 
 
   // 6) O painel mostra a ordem como paga
   await page.goto("/painel/ordens");
-  await expect(page.getByText("Paga", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Paga", { exact: true }).first()).toBeVisible({ timeout: 30_000 });
 });
