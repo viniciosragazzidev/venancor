@@ -8,6 +8,20 @@
       "when": 1791045894438,
       "tag": "0000_crazy_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791059663711,
+      "tag": "0001_premium_havok",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791061389255,
+      "tag": "0002_absent_gambit",
+      "breakpoints": true
     }
   ]
 }
