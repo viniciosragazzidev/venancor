@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { formatarTelefone } from "./format";
+import { formatarCpfMascarado, formatarTelefone } from "./format";
 import type { OtpErro } from "./mock";
 
 const mensagensErroOtp: Record<OtpErro, string> = {
@@ -25,25 +25,31 @@ const mensagensErroOtp: Record<OtpErro, string> = {
   bloqueado: "Muitas tentativas. Peça ao seu corretor um novo código.",
 };
 
+type Consentimentos = { contrato: boolean; lgpd: boolean };
+
 export function TelaAssinatura({
   cliente,
+  consentimentos,
   onEnviarOtp,
   onValidarOtp,
   onConcluirAssinatura,
 }: {
   cliente: { nome: string; cpf: string; whatsapp: string };
+  consentimentos: Consentimentos;
   onEnviarOtp: (telefone: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onConcluirAssinatura: (dados: {
     nome: string;
     cpf: string;
     imagemDataUrl: string;
+    consentimentos: Consentimentos;
   }) => Promise<void>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
   const [nome, setNome] = useState(cliente.nome);
-  const [cpf, setCpf] = useState(cliente.cpf.replace(/\D/g, ""));
+  // CPF nunca pré-preenchido: o cliente digita e o servidor valida contra a ordem (Cofre, F5.3).
+  const [cpf, setCpf] = useState("");
   const [temTrazo, setTemTrazo] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigo, setCodigo] = useState("");
@@ -53,6 +59,7 @@ export function TelaAssinatura({
 
   const nomeOk = nome.trim().length >= 3;
   const cpfOk = cpf.length === 11;
+  const cpfTocado = cpf.length > 0;
   const podePedirCodigo = nomeOk && cpfOk && temTrazo;
 
   useEffect(() => {
@@ -115,7 +122,12 @@ export function TelaAssinatura({
     const resultado = await onValidarOtp(codigo);
     if ("ok" in resultado) {
       const imagemDataUrl = padRef.current?.toDataURL("image/png") ?? "";
-      await onConcluirAssinatura({ nome: nome.trim(), cpf, imagemDataUrl });
+      await onConcluirAssinatura({
+        nome: nome.trim(),
+        cpf,
+        imagemDataUrl,
+        consentimentos,
+      });
     } else {
       setErroOtp(mensagensErroOtp[resultado.erro]);
       setValidando(false);
@@ -156,11 +168,11 @@ export function TelaAssinatura({
                 onChange={(evento) => setCpf(evento.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
                 maxLength={11}
-                placeholder="00000000000"
+                placeholder={formatarCpfMascarado(cliente.cpf)}
                 autoComplete="off"
-                aria-invalid={!cpfOk || undefined}
+                aria-invalid={cpfTocado && !cpfOk ? true : undefined}
               />
-              {!cpfOk ? (
+              {cpfTocado && !cpfOk ? (
                 <p className="text-xs text-destructive" role="alert">
                   Informe os 11 dígitos do seu CPF.
                 </p>

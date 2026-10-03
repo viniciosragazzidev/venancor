@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ChevronRightIcon, ShieldCheckIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,14 +19,16 @@ import type { DadosOrdemCliente } from "./mock";
 
 export function TelaContrato({
   ordem,
+  consentimentos,
+  onConsentimentos,
   onAvancar,
 }: {
   ordem: DadosOrdemCliente;
+  consentimentos: { contrato: boolean; lgpd: boolean };
+  onConsentimentos: (valor: { contrato: boolean; lgpd: boolean }) => void;
   onAvancar: () => void;
 }) {
-  const [concordaContrato, setConcordaContrato] = useState(false);
-  const [concordaLgpd, setConcordaLgpd] = useState(false);
-  const podeAssinar = concordaContrato && concordaLgpd;
+  const podeAssinar = consentimentos.contrato && consentimentos.lgpd;
 
   return (
     <div className="flex flex-col gap-4">
@@ -46,8 +47,10 @@ export function TelaContrato({
               <Checkbox
                 id="concordo-contrato"
                 className="mt-0.5"
-                checked={concordaContrato}
-                onCheckedChange={(checked) => setConcordaContrato(checked === true)}
+                checked={consentimentos.contrato}
+                onCheckedChange={(checked) =>
+                  onConsentimentos({ ...consentimentos, contrato: checked === true })
+                }
               />
               <Label
                 htmlFor="concordo-contrato"
@@ -60,8 +63,10 @@ export function TelaContrato({
               <Checkbox
                 id="concordo-lgpd"
                 className="mt-0.5"
-                checked={concordaLgpd}
-                onCheckedChange={(checked) => setConcordaLgpd(checked === true)}
+                checked={consentimentos.lgpd}
+                onCheckedChange={(checked) =>
+                  onConsentimentos({ ...consentimentos, lgpd: checked === true })
+                }
               />
               <Label
                 htmlFor="concordo-lgpd"

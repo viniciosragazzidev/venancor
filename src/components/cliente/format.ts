@@ -11,6 +11,12 @@ export function formatarCPF(cpf: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9, 11)}`;
 }
 
+export function formatarCpfMascarado(cpf: string): string {
+  const d = cpf.replace(/\D/g, "");
+  if (d.length !== 11) return "000.000.***-**";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.***-**`;
+}
+
 export function formatarTelefone(e164: string): string {
   const d = e164.replace(/\D/g, "");
   if (d.length === 13) {

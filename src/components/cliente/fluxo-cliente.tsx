@@ -54,6 +54,8 @@ const titulos: Record<Etapa, { titulo: string; subtitulo: string }> = {
 
 const indiceEtapa = (etapa: Etapa) => passos.findIndex((passo) => passo.id === etapa);
 
+export type Consentimentos = { contrato: boolean; lgpd: boolean };
+
 export type AcoesFluxo = {
   onEnviarOtp: (telefone: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
@@ -61,6 +63,7 @@ export type AcoesFluxo = {
     nome: string;
     cpf: string;
     imagemDataUrl: string;
+    consentimentos: Consentimentos;
   }) => Promise<void>;
   onIniciarPagamento: (metodo: MetodoPagamento, parcelas?: number) => Promise<CobrancaCliente>;
   onBaixarContratoAssinado: () => void;
@@ -75,6 +78,12 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
   const [etapa, setEtapa] = useState<Etapa>("resumo");
   const [assinaturaConcluida, setAssinaturaConcluida] = useState(false);
   const [sucessoAssinatura, setSucessoAssinatura] = useState(false);
+  const [consentimentos, setConsentimentos] = useState<Consentimentos>({
+    contrato: false,
+    lgpd: false,
+  });
+  // TODO (Cofre, F5.2/F4.1): persistir aceite via action registrarConsentimento
+  // e retomar o fluxo (hoje o estado vive só em memória da sessão).
 
   const statusTerminal =
     ordem.status === "expirada" || ordem.status === "cancelada" || ordem.status === "paga";
@@ -128,11 +137,19 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
       case "resumo":
         return <TelaResumo ordem={ordem} onAvancar={() => setEtapa("contrato")} />;
       case "contrato":
-        return <TelaContrato ordem={ordem} onAvancar={() => setEtapa("assinatura")} />;
+        return (
+          <TelaContrato
+            ordem={ordem}
+            consentimentos={consentimentos}
+            onConsentimentos={setConsentimentos}
+            onAvancar={() => setEtapa("assinatura")}
+          />
+        );
       case "assinatura":
         return (
           <TelaAssinatura
             cliente={ordem.cliente}
+            consentimentos={consentimentos}
             onEnviarOtp={acoes.onEnviarOtp}
             onValidarOtp={acoes.onValidarOtp}
             onConcluirAssinatura={async (dados) => {
