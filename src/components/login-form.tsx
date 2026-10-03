@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { motion } from "motion/react";
+import { EyeIcon, EyeOffIcon, LoaderCircleIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+const loginSchema = z.object({
+  email: z.email("Informe um e-mail válido"),
+  password: z.string().min(8, "A senha deve ter no mínimo 8 caracteres"),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
+
+export function LoginForm() {
+  const [showPassword, setShowPassword] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  async function onSubmit() {
+    // TODO: receber (values: LoginValues) e chamar authClient.signIn.email(...),
+    // redirecionando para "/" quando src/lib/auth-client.ts existir (Cofre, F1.3)
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="email">E-mail</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="voce@empresa.com"
+          autoComplete="email"
+          aria-invalid={Boolean(errors.email) || undefined}
+          {...register("email")}
+        />
+        {errors.email ? (
+          <p className="text-xs text-destructive" role="alert">
+            {errors.email.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="password">Senha</Label>
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Sua senha"
+            autoComplete="current-password"
+            className="pr-9"
+            aria-invalid={Boolean(errors.password) || undefined}
+            {...register("password")}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="absolute top-1 right-1 text-muted-foreground"
+            onClick={() => setShowPassword((value) => !value)}
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            aria-pressed={showPassword}
+          >
+            <span className="relative grid size-3.5 place-items-center">
+              <motion.span
+                aria-hidden
+                className="col-start-1 row-start-1"
+                animate={{
+                  opacity: showPassword ? 0 : 1,
+                  scale: showPassword ? 0.25 : 1,
+                  filter: showPassword ? "blur(4px)" : "blur(0px)",
+                }}
+                transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+              >
+                <EyeIcon className="size-3.5" />
+              </motion.span>
+              <motion.span
+                aria-hidden
+                className="col-start-1 row-start-1 absolute"
+                animate={{
+                  opacity: showPassword ? 1 : 0,
+                  scale: showPassword ? 1 : 0.25,
+                  filter: showPassword ? "blur(0px)" : "blur(4px)",
+                }}
+                transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+              >
+                <EyeOffIcon className="size-3.5" />
+              </motion.span>
+            </span>
+          </Button>
+        </div>
+        {errors.password ? (
+          <p className="text-xs text-destructive" role="alert">
+            {errors.password.message}
+          </p>
+        ) : null}
+      </div>
+
+      <Button type="submit" disabled={isSubmitting} className="w-full">
+        {isSubmitting ? <LoaderCircleIcon aria-hidden className="animate-spin" /> : null}
+        {isSubmitting ? "Entrando…" : "Entrar"}
+      </Button>
+    </form>
+  );
+}
