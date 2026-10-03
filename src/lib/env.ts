@@ -13,12 +13,17 @@ const schema = z.object({
   SIGNATURE_PROVIDER: z.literal("inhouse").default("inhouse"),
   STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
   ASAAS_API_KEY: z.string().optional(),
+  ASAAS_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
   ASAAS_WEBHOOK_TOKEN: z.string().optional(),
   META_ACCESS_TOKEN: z.string().optional(),
+  META_PHONE_NUMBER_ID: z.string().optional(),
+  META_GRAPH_VERSION: z.string().optional(),
+  META_VERIFY_TOKEN: z.string().optional(),
   META_APP_SECRET: z.string().optional(),
   SUPABASE_URL: z.url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.email().optional(),
 });
 
 export type ServerEnv = z.infer<typeof schema>;
