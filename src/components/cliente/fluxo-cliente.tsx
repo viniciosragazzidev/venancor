@@ -22,7 +22,7 @@ import { TelaPagamento } from "./tela-pagamento";
 import { TelaResumo } from "./tela-resumo";
 import { TelaStatus, TelaSucesso } from "./tela-sucesso";
 import { Stepper } from "./stepper";
-import type { CobrancaCliente, DadosOrdemCliente, MetodoPagamento, OtpErro } from "./mock";
+import type { CobrancaCliente, DadosOrdemCliente, MetodoPagamento, OtpErro } from "./types";
 
 type Etapa = "resumo" | "contrato" | "assinatura" | "pagamento";
 
@@ -57,6 +57,7 @@ const indiceEtapa = (etapa: Etapa) => passos.findIndex((passo) => passo.id === e
 export type Consentimentos = { contrato: boolean; lgpd: boolean };
 
 export type AcoesFluxo = {
+  onAceitarConsentimentos: () => Promise<void>;
   onEnviarOtp: (telefone: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onConcluirAssinatura: (dados: {
@@ -67,23 +68,19 @@ export type AcoesFluxo = {
   }) => Promise<void>;
   onIniciarPagamento: (metodo: MetodoPagamento, parcelas?: number) => Promise<CobrancaCliente>;
   onBaixarContratoAssinado: () => void;
-  onBaixarBoleto: () => void;
-  onBaixarComprovante: () => void;
+  onBaixarBoleto: (url?: string) => void;
   onCompartilharLink: () => Promise<void>;
 };
 
 export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes: AcoesFluxo }) {
-  // TODO (Cofre, F4.1): etapa inicial e estados terminais (expirada/cancelada/paga)
-  // vêm da ordem real; a página deve retomar de onde o cliente parou.
-  const [etapa, setEtapa] = useState<Etapa>("resumo");
-  const [assinaturaConcluida, setAssinaturaConcluida] = useState(false);
+  const jaAssinada = ["assinada", "aguardando_pagamento", "paga"].includes(ordem.status);
+  const [etapa, setEtapa] = useState<Etapa>(jaAssinada ? "pagamento" : "resumo");
+  const [assinaturaConcluida, setAssinaturaConcluida] = useState(jaAssinada);
   const [sucessoAssinatura, setSucessoAssinatura] = useState(false);
   const [consentimentos, setConsentimentos] = useState<Consentimentos>({
     contrato: false,
     lgpd: false,
   });
-  // TODO (Cofre, F5.2/F4.1): persistir aceite via action registrarConsentimento
-  // e retomar o fluxo (hoje o estado vive só em memória da sessão).
 
   const statusTerminal =
     ordem.status === "expirada" || ordem.status === "cancelada" || ordem.status === "paga";
@@ -109,14 +106,13 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
       return <TelaStatus tipo="expirada" />;
     }
     if (ordem.status === "cancelada") {
-      return <TelaStatus tipo="cancelada" onBaixarContrato={acoes.onBaixarContratoAssinado} />;
+      return <TelaStatus tipo="cancelada" />;
     }
     if (ordem.status === "paga") {
       return (
         <TelaSucesso
           variante="pagamento"
           onAcaoPrimaria={acoes.onBaixarContratoAssinado}
-          onAcaoSecundaria={acoes.onBaixarComprovante}
         />
       );
     }
@@ -142,7 +138,14 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
             ordem={ordem}
             consentimentos={consentimentos}
             onConsentimentos={setConsentimentos}
-            onAvancar={() => setEtapa("assinatura")}
+            onAvancar={async () => {
+              try {
+                await acoes.onAceitarConsentimentos();
+                setEtapa("assinatura");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Não foi possível registrar os aceites.");
+              }
+            }}
           />
         );
       case "assinatura":
