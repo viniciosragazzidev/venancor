@@ -34,6 +34,19 @@ export function mascaraTelefone(valor: string): string {
   return d.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d{1,4})$/, "$1-$2");
 }
 
+export function mascaraCEP(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}
+
+/** "conjuge" → "Conjuge", "pai_mae" → "Pai Mae". */
+export function rotulo(valor: string): string {
+  return valor
+    .split("_")
+    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+    .join(" ");
+}
+
 export function formatarCentavos(centavos: number): string {
   return brl.format(centavos / 100);
 }

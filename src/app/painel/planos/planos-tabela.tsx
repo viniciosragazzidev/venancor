@@ -10,7 +10,7 @@ import { z } from "zod";
 
 import { Campo, inputPill } from "@/components/admin/campo";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { formatarCentavos, parseMoeda } from "@/components/admin/format";
+import { formatarCentavos, parseMoeda, rotulo } from "@/components/admin/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,13 +55,6 @@ type Operadora = Awaited<ReturnType<typeof listarOperadoras>>[number];
 
 const formSchema = planoSchema.omit({ precos: true, taxaAdesao: true });
 type FormValores = z.input<typeof formSchema>;
-
-function rotulo(valor: string): string {
-  return valor
-    .split("_")
-    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
-    .join(" ");
-}
 
 export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operadoras: Operadora[] }) {
   const router = useRouter();
