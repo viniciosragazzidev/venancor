@@ -5,7 +5,11 @@ import type { StorageAdapter } from "./types";
 let local: LocalStorage | undefined;
 export function getStorageAdapter(): StorageAdapter {
   const selected = process.env.STORAGE_DRIVER ?? "local";
-  if (selected === "local") return (local ??= new LocalStorage());
+  if (selected === "local") {
+    if (process.env.NODE_ENV === "production")
+      throw new Error("Storage local indisponível em produção");
+    return (local ??= new LocalStorage());
+  }
   if (selected === "supabase") {
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

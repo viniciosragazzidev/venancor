@@ -65,6 +65,7 @@ export type ResolucaoToken =
 
 const brl = (centavos: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(centavos / 100);
+const mascararCpf = (cpf: string) => cpf.replace(/^(\d{3})\d{5}(\d{3})$/, "$1*****$2");
 
 export async function resolverToken(token: string): Promise<ResolucaoToken> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return { tipo: "invalido" };
@@ -90,7 +91,10 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
     await transicionar(ordem.id, "expirada", "sistema");
     return { tipo: "expirada" };
   }
-  if (ordem.status === "enviada") await transicionar(ordem.id, "visualizada", "cliente");
+  if (ordem.status === "rascunho") {
+    await transicionar(ordem.id, "enviada", "cliente");
+    await transicionar(ordem.id, "visualizada", "cliente");
+  } else if (ordem.status === "enviada") await transicionar(ordem.id, "visualizada", "cliente");
   const [cliente] = await db
     .select()
     .from(clientes)
@@ -112,7 +116,7 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
   const { operadora, plano } = snapshotSchema.parse(snapshot.dados);
   const vars: Record<VariavelContrato, string> = {
     "cliente.nome": titular.nome,
-    "cliente.cpf": titular.cpf,
+    "cliente.cpf": mascararCpf(titular.cpf),
     "plano.nome": plano.nome,
     "valor.total": brl(ordem.valorCobrado),
     "valor.mensal": brl(ordem.valorMensal),
@@ -126,9 +130,9 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
   };
   const dados: DadosOrdemCliente = {
     id: ordem.id,
-    status: ordem.status === "enviada" ? "visualizada" : ordem.status,
+    status: ["rascunho", "enviada"].includes(ordem.status) ? "visualizada" : ordem.status,
     expira_em: ordem.expiraEm.toISOString(),
-    cliente: { nome: titular.nome, cpf: titular.cpf, whatsapp: cliente.whatsapp },
+    cliente: { nome: titular.nome, cpf: mascararCpf(titular.cpf), whatsapp: cliente.whatsapp },
     plano: {
       operadora_nome: operadora.nome,
       plano_nome: plano.nome,
@@ -144,7 +148,7 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
     beneficiarios: beneficiarios.map((b) => ({
       titular: b.titular,
       nome: b.nome,
-      cpf: b.cpf,
+      cpf: mascararCpf(b.cpf),
       nascimento: b.nascimento,
       faixa_etaria: b.faixaEtaria,
       valor: b.valor,
@@ -171,17 +175,16 @@ export async function registrarConsentimento(
   if (resolucao.tipo !== "ativa" || !["enviada", "visualizada"].includes(resolucao.dados.status))
     throw new Error("Ordem indisponível para consentimento");
   const { consentimentos } = await import("@/db/schema");
-  const versaoTexto = tipo === "contrato"
-    ? `sha256:${createHash("sha256").update(resolucao.dados.contrato_corpo).digest("hex")}`
-    : "lgpd-v1";
-  await db
-    .insert(consentimentos)
-    .values({
-      ordemId: resolucao.dados.id,
-      tipo,
-      aceitoEm: new Date(),
-      ip,
-      userAgent,
-      versaoTexto,
-    });
+  const versaoTexto =
+    tipo === "contrato"
+      ? `sha256:${createHash("sha256").update(resolucao.dados.contrato_corpo).digest("hex")}`
+      : "lgpd-v1";
+  await db.insert(consentimentos).values({
+    ordemId: resolucao.dados.id,
+    tipo,
+    aceitoEm: new Date(),
+    ip,
+    userAgent,
+    versaoTexto,
+  });
 }

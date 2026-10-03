@@ -69,6 +69,7 @@ export type AcoesFluxo = {
   onIniciarPagamento: (metodo: MetodoPagamento, parcelas?: number) => Promise<CobrancaCliente>;
   onBaixarContratoAssinado: () => void;
   onBaixarBoleto: (url?: string) => void;
+  onSimularPagamento?: (pagamentoId: string) => Promise<void>;
   onCompartilharLink: () => Promise<void>;
 };
 
@@ -109,12 +110,7 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
       return <TelaStatus tipo="cancelada" />;
     }
     if (ordem.status === "paga") {
-      return (
-        <TelaSucesso
-          variante="pagamento"
-          onAcaoPrimaria={acoes.onBaixarContratoAssinado}
-        />
-      );
+      return <TelaSucesso variante="pagamento" onAcaoPrimaria={acoes.onBaixarContratoAssinado} />;
     }
     if (sucessoAssinatura) {
       return (
@@ -143,7 +139,9 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
                 await acoes.onAceitarConsentimentos();
                 setEtapa("assinatura");
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Não foi possível registrar os aceites.");
+                toast.error(
+                  error instanceof Error ? error.message : "Não foi possível registrar os aceites.",
+                );
               }
             }}
           />
@@ -168,6 +166,7 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
             ordem={ordem}
             onIniciarPagamento={acoes.onIniciarPagamento}
             onBaixarBoleto={acoes.onBaixarBoleto}
+            onSimularPagamento={acoes.onSimularPagamento}
           />
         );
     }

@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
-import { assinaturas, auditoria, consentimentos, ordens } from "@/db/schema";
+import { assinaturas, auditoria, consentimentos, ordemBeneficiarios, ordens } from "@/db/schema";
 import { resolverToken } from "@/modules/ordens/cliente";
 import { getSignatureProvider } from "@/providers/signature";
 import { getStorageAdapter } from "@/providers/storage";
@@ -16,10 +16,18 @@ export async function concluirAssinatura(
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
     throw new Error("Ordem indisponível para assinatura");
   const dados = concluirAssinaturaSchema.parse(input);
+  const [titular] = await db
+    .select({ cpf: ordemBeneficiarios.cpf, nome: ordemBeneficiarios.nome })
+    .from(ordemBeneficiarios)
+    .where(
+      and(eq(ordemBeneficiarios.ordemId, ordem.dados.id), eq(ordemBeneficiarios.titular, true)),
+    )
+    .limit(1);
+  if (!titular) throw new Error("Titular ausente do snapshot");
   if (
     dados.nome.trim().toLocaleLowerCase("pt-BR") !==
-      ordem.dados.cliente.nome.trim().toLocaleLowerCase("pt-BR") ||
-    dados.cpf !== ordem.dados.cliente.cpf
+      titular.nome.trim().toLocaleLowerCase("pt-BR") ||
+    dados.cpf !== titular.cpf
   )
     throw new Error("Nome ou CPF não conferem com o titular");
   const otp = await otpValidado(ordem.dados.id);
@@ -75,33 +83,29 @@ export async function concluirAssinatura(
         .where(and(eq(ordens.id, ordem.dados.id), eq(ordens.status, "visualizada")))
         .returning({ id: ordens.id });
       if (!alterada) throw new Error("Ordem já assinada ou alterada");
-      await tx
-        .insert(assinaturas)
-        .values({
-          ordemId: ordem.dados.id,
-          imagemPath,
-          pdfPath,
-          evidenciasPdfPath,
-          hashSha256: assinada.hashSha256,
-          nome: dados.nome,
-          cpf: dados.cpf,
-          ip: contexto.ip,
-          userAgent: contexto.userAgent,
-          geo: dados.geo,
-          telefoneOtp: otp.telefone,
-          otpValidadoEm: otp.validadoEm,
-          assinadoEm: assinada.assinadoEm,
-          provider: getSignatureProvider().nome,
-        });
-      await tx
-        .insert(auditoria)
-        .values({
-          entidade: "ordens",
-          entidadeId: ordem.dados.id,
-          acao: "assinar",
-          ator: "cliente",
-          metadados: { hashSha256: assinada.hashSha256 },
-        });
+      await tx.insert(assinaturas).values({
+        ordemId: ordem.dados.id,
+        imagemPath,
+        pdfPath,
+        evidenciasPdfPath,
+        hashSha256: assinada.hashSha256,
+        nome: dados.nome,
+        cpf: dados.cpf,
+        ip: contexto.ip,
+        userAgent: contexto.userAgent,
+        geo: dados.geo,
+        telefoneOtp: otp.telefone,
+        otpValidadoEm: otp.validadoEm,
+        assinadoEm: assinada.assinadoEm,
+        provider: getSignatureProvider().nome,
+      });
+      await tx.insert(auditoria).values({
+        entidade: "ordens",
+        entidadeId: ordem.dados.id,
+        acao: "assinar",
+        ator: "cliente",
+        metadados: { hashSha256: assinada.hashSha256 },
+      });
     });
   } catch (error) {
     await Promise.allSettled(paths.map((path) => storage.delete(path)));

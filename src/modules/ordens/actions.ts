@@ -11,6 +11,7 @@ import {
   ordemBeneficiarios,
   ordemSnapshotPlano,
   ordens,
+  pagamentos,
   planoPrecos,
   planos,
 } from "@/db/schema";
@@ -18,6 +19,7 @@ import { calcularOrdem, type FaixaEtaria } from "@/lib/pricing";
 import { requireAdmin } from "@/lib/require-admin";
 import { gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
+import { getPaymentProvider } from "@/providers/payment";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
 import { transicionar } from "./state-machine";
 
@@ -148,15 +150,13 @@ export async function criarOrdem(input: CriarOrdemInput) {
       },
       contratoCorpo: generico.corpo,
     });
-    await tx
-      .insert(auditoria)
-      .values({
-        entidade: "ordens",
-        entidadeId: nova.id,
-        acao: "criar",
-        ator: `admin:${admin.id}`,
-        metadados: { planoId: plano.id },
-      });
+    await tx.insert(auditoria).values({
+      entidade: "ordens",
+      entidadeId: nova.id,
+      acao: "criar",
+      ator: `admin:${admin.id}`,
+      metadados: { planoId: plano.id },
+    });
     return nova;
   });
   return { ordem, link };
@@ -183,14 +183,12 @@ export async function gerarNovoLink(ordemId: string) {
     )
     .returning();
   if (!ordem) throw new Error("Ordem indisponível para novo link");
-  await db
-    .insert(auditoria)
-    .values({
-      entidade: "ordens",
-      entidadeId: ordemId,
-      acao: "regenerar_link",
-      ator: `admin:${admin.id}`,
-    });
+  await db.insert(auditoria).values({
+    entidade: "ordens",
+    entidadeId: ordemId,
+    acao: "regenerar_link",
+    ator: `admin:${admin.id}`,
+  });
   return link;
 }
 
@@ -226,5 +224,32 @@ export async function copiarLinkOrdem(ordemId: string) {
 
 export async function cancelarOrdem(ordemId: string) {
   const admin = await requireAdmin();
+  const [ordem] = await db
+    .select({ status: ordens.status })
+    .from(ordens)
+    .where(eq(ordens.id, ordemId))
+    .limit(1);
+  if (
+    !ordem ||
+    !["rascunho", "enviada", "visualizada", "assinada", "aguardando_pagamento"].includes(
+      ordem.status,
+    )
+  )
+    throw new Error("Ordem indisponível para cancelamento");
+  const pendentes = await db
+    .select()
+    .from(pagamentos)
+    .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
+  for (const pagamento of pendentes) {
+    if (!pagamento.providerPaymentId) continue;
+    const provider = getPaymentProvider();
+    if (provider.nome !== pagamento.provider)
+      throw new Error("Provedor da cobrança não configurado");
+    await provider.cancelarCobranca(pagamento.providerPaymentId);
+  }
   await transicionar(ordemId, "cancelada", `admin:${admin.id}`);
+  await db
+    .update(pagamentos)
+    .set({ status: "cancelado", atualizadoEm: new Date() })
+    .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
 }

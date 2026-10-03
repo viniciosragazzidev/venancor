@@ -15,9 +15,6 @@ export class FakePaymentProvider implements PaymentProvider {
       status: "pendente",
       ...(input.metodo === "pix" ? { pixPayload: `PIX-FAKE-${providerPaymentId}` } : {}),
       ...(input.metodo === "boleto" ? { boletoLinha: `BOLETO-FAKE-${providerPaymentId}` } : {}),
-      ...(input.metodo === "cartao"
-        ? { checkoutUrl: `http://localhost:3000/c/${input.ordemId}/pagamento-fake` }
-        : {}),
     };
     this.cobrancas.set(providerPaymentId, cobranca);
     return cobranca;

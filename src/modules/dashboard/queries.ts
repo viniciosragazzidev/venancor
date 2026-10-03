@@ -7,6 +7,8 @@ export interface DashboardResumo {
   periodo: { inicio: string; fim: string };
   ordens: { total: number; abertas: number; assinadas: number; pagas: number; expiradas: number };
   receitaConfirmadaCentavos: number;
+  pagamentosEstornados: number;
+  pagamentosOrfaos: number;
   recentes: {
     id: string;
     cliente: string;
@@ -21,7 +23,7 @@ export async function carregarDashboard(agora = new Date()): Promise<DashboardRe
   await requireAdmin();
   const inicio = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), 1));
   const fim = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth() + 1, 1));
-  const [[contagem], [receita], recentes] = await Promise.all([
+  const [[contagem], [receita], [estornos], [orfaos], recentes] = await Promise.all([
     db
       .select({
         total: sql<number>`count(*)::int`,
@@ -39,6 +41,20 @@ export async function carregarDashboard(agora = new Date()): Promise<DashboardRe
           gte(pagamentos.pagoEm, inicio),
           lt(pagamentos.pagoEm, fim),
           sql`${pagamentos.status} in ('confirmado','recebido')`,
+        ),
+      ),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(pagamentos)
+      .where(eq(pagamentos.status, "estornado")),
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(pagamentos)
+      .innerJoin(ordens, eq(pagamentos.ordemId, ordens.id))
+      .where(
+        and(
+          sql`${pagamentos.status} in ('confirmado','recebido')`,
+          sql`${ordens.status} in ('cancelada','expirada')`,
         ),
       ),
     db
@@ -60,6 +76,8 @@ export async function carregarDashboard(agora = new Date()): Promise<DashboardRe
     periodo: { inicio: inicio.toISOString(), fim: fim.toISOString() },
     ordens: contagem ?? { total: 0, abertas: 0, assinadas: 0, pagas: 0, expiradas: 0 },
     receitaConfirmadaCentavos: receita?.total ?? 0,
+    pagamentosEstornados: estornos?.total ?? 0,
+    pagamentosOrfaos: orfaos?.total ?? 0,
     recentes: recentes.map((r) => ({ ...r, criadaEm: r.criadaEm.toISOString() })),
   };
 }

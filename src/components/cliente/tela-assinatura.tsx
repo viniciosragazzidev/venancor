@@ -17,12 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { formatarCpfMascarado, formatarTelefone } from "./format";
-import type { OtpErro } from "./mock";
+import type { OtpErro } from "./types";
 
 const mensagensErroOtp: Record<OtpErro, string> = {
   invalido: "Código incorreto. Confira os 6 dígitos e tente novamente.",
   expirado: "O código expirou. Solicite um novo código.",
   bloqueado: "Muitas tentativas. Peça ao seu corretor um novo código.",
+  falha: "Não foi possível concluir agora. Tente novamente.",
 };
 
 type Consentimentos = { contrato: boolean; lgpd: boolean };
@@ -107,29 +108,29 @@ export function TelaAssinatura({
   async function pedirCodigo() {
     setEnviando(true);
     setErroOtp(null);
-    const resultado = await onEnviarOtp(cliente.whatsapp);
-    setEnviando(false);
-    if ("ok" in resultado) {
-      setCodigoEnviado(true);
-    } else {
-      setErroOtp(mensagensErroOtp[resultado.erro]);
+    try {
+      const resultado = await onEnviarOtp(cliente.whatsapp);
+      if ("ok" in resultado) setCodigoEnviado(true);
+      else setErroOtp(mensagensErroOtp[resultado.erro]);
+    } catch {
+      setErroOtp(mensagensErroOtp.falha);
+    } finally {
+      setEnviando(false);
     }
   }
 
   async function validarCodigo() {
     setValidando(true);
     setErroOtp(null);
-    const resultado = await onValidarOtp(codigo);
-    if ("ok" in resultado) {
-      const imagemDataUrl = padRef.current?.toDataURL("image/png") ?? "";
-      await onConcluirAssinatura({
-        nome: nome.trim(),
-        cpf,
-        imagemDataUrl,
-        consentimentos,
-      });
-    } else {
-      setErroOtp(mensagensErroOtp[resultado.erro]);
+    try {
+      const resultado = await onValidarOtp(codigo);
+      if ("ok" in resultado) {
+        const imagemDataUrl = padRef.current?.toDataURL("image/png") ?? "";
+        await onConcluirAssinatura({ nome: nome.trim(), cpf, imagemDataUrl, consentimentos });
+      } else setErroOtp(mensagensErroOtp[resultado.erro]);
+    } catch (error) {
+      setErroOtp(error instanceof Error ? error.message : mensagensErroOtp.falha);
+    } finally {
       setValidando(false);
     }
   }

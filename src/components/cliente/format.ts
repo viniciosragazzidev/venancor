@@ -12,6 +12,7 @@ export function formatarCPF(cpf: string): string {
 }
 
 export function formatarCpfMascarado(cpf: string): string {
+  if (/^\d{3}\*{5}\d{3}$/.test(cpf)) return `${cpf.slice(0, 3)}.***.***-**`;
   const d = cpf.replace(/\D/g, "");
   if (d.length !== 11) return "000.000.***-**";
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.***-**`;

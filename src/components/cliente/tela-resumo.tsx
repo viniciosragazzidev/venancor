@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronRightIcon, UsersIcon } from "lucide-react";
 
-import type { DadosOrdemCliente } from "./mock";
+import type { DadosOrdemCliente } from "./types";
 import {
   formatarBRL,
   formatarData,

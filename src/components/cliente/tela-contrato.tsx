@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-import type { DadosOrdemCliente } from "./mock";
+import type { DadosOrdemCliente } from "./types";
 
 export function TelaContrato({
   ordem,

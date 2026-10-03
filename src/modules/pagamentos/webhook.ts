@@ -32,28 +32,63 @@ export async function processarEventoPagamento(
         )
         .limit(1)
         .for("update");
-      if (!pagamento) throw new Error("Pagamento do webhook não encontrado");
+      if (!pagamento) {
+        await tx
+          .insert(auditoria)
+          .values({
+            entidade: "pagamentos",
+            entidadeId: evento.providerPaymentId,
+            acao: "pagamento_orfao",
+            ator: `webhook:${provider}`,
+            metadados: { eventoId: evento.eventId },
+          });
+        await tx
+          .update(webhookEventos)
+          .set({ processadoEm: new Date(), erro: "Pagamento não encontrado" })
+          .where(eq(webhookEventos.id, registro.id));
+        return "processado";
+      }
       const [ordem] = await tx
         .select({ status: ordens.status })
         .from(ordens)
         .where(eq(ordens.id, pagamento.ordemId))
         .limit(1)
         .for("update");
-      if (!ordem) throw new Error("Ordem do webhook não encontrada");
+      if (!ordem) {
+        await tx
+          .update(webhookEventos)
+          .set({ processadoEm: new Date(), erro: "Ordem não encontrada" })
+          .where(eq(webhookEventos.id, registro.id));
+        return "processado";
+      }
       if (evento.tipo === "confirmado" || evento.tipo === "recebido") {
         const [assinatura] = await tx
           .select({ id: assinaturas.id })
           .from(assinaturas)
           .where(eq(assinaturas.ordemId, pagamento.ordemId))
           .limit(1);
-        if (!assinatura || !["assinada", "aguardando_pagamento", "paga"].includes(ordem.status))
-          throw new Error("Pagamento não pode ser confirmado sem assinatura");
         const agora = new Date();
         await tx
           .update(pagamentos)
           .set({ status: evento.tipo, pagoEm: agora, atualizadoEm: agora })
           .where(eq(pagamentos.id, pagamento.id));
-        if (ordem.status === "aguardando_pagamento") {
+        if (!assinatura || !["assinada", "aguardando_pagamento", "paga"].includes(ordem.status)) {
+          const terminal = ordem.status === "cancelada" || ordem.status === "expirada";
+          await tx
+            .insert(auditoria)
+            .values({
+              entidade: "ordens",
+              entidadeId: pagamento.ordemId,
+              acao: terminal ? "pagamento_orfao" : "webhook_ignorado",
+              ator: `webhook:${provider}`,
+              metadados: {
+                pagamentoId: pagamento.id,
+                eventoId: evento.eventId,
+                motivo: !assinatura ? "sem_assinatura" : `status_${ordem.status}`,
+                requerAtencao: true,
+              },
+            });
+        } else if (ordem.status === "aguardando_pagamento") {
           await tx
             .update(ordens)
             .set({ status: "paga", pagaEm: agora, atualizadoEm: agora })
@@ -66,6 +101,24 @@ export async function processarEventoPagamento(
             metadados: { pagamentoId: pagamento.id, eventoId: evento.eventId },
           });
         }
+      } else if (evento.tipo === "estornado") {
+        await tx
+          .update(pagamentos)
+          .set({ status: "estornado", atualizadoEm: new Date() })
+          .where(eq(pagamentos.id, pagamento.id));
+        await tx
+          .insert(auditoria)
+          .values({
+            entidade: "ordens",
+            entidadeId: pagamento.ordemId,
+            acao: "pagamento_estornado",
+            ator: `webhook:${provider}`,
+            metadados: {
+              pagamentoId: pagamento.id,
+              eventoId: evento.eventId,
+              requerAtencao: ordem.status === "paga",
+            },
+          });
       } else if (pagamento.status !== "confirmado" && pagamento.status !== "recebido") {
         await tx
           .update(pagamentos)

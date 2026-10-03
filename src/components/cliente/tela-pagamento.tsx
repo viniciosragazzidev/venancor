@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -24,7 +25,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatarBRL, formatarData, rotulosMetodo } from "./format";
-import type { CobrancaCliente, DadosOrdemCliente, MetodoPagamento } from "./mock";
+import type { CobrancaCliente, DadosOrdemCliente, MetodoPagamento } from "./types";
 
 async function copiar(texto: string, mensagem: string) {
   try {
@@ -39,23 +40,32 @@ export function TelaPagamento({
   ordem,
   onIniciarPagamento,
   onBaixarBoleto,
+  onSimularPagamento,
 }: {
   ordem: DadosOrdemCliente;
   onIniciarPagamento: (metodo: MetodoPagamento, parcelas?: number) => Promise<CobrancaCliente>;
-  onBaixarBoleto: () => void;
+  onBaixarBoleto: (url?: string) => void;
+  onSimularPagamento?: (pagamentoId: string) => Promise<void>;
 }) {
   const [cobrancas, setCobrancas] = useState<Partial<Record<MetodoPagamento, CobrancaCliente>>>({});
   const [gerando, setGerando] = useState<MetodoPagamento | null>(null);
   const [parcelas, setParcelas] = useState(1);
+  const [metodoAtual, setMetodoAtual] = useState<MetodoPagamento>(ordem.formas_pagamento[0]);
+  const [simulando, setSimulando] = useState(false);
 
   const total = ordem.valor_cobrado;
   const vencimento = cobrancas.pix?.vencimento ?? ordem.expira_em;
 
   async function gerarCobranca(metodo: MetodoPagamento, parcelasAtual?: number) {
     setGerando(metodo);
-    const cobranca = await onIniciarPagamento(metodo, parcelasAtual);
-    setCobrancas((atual) => ({ ...atual, [metodo]: cobranca }));
-    setGerando(null);
+    try {
+      const cobranca = await onIniciarPagamento(metodo, parcelasAtual);
+      setCobrancas((atual) => ({ ...atual, [metodo]: cobranca }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.");
+    } finally {
+      setGerando(null);
+    }
   }
 
   return (
@@ -73,7 +83,11 @@ export function TelaPagamento({
         </CardContent>
       </Card>
 
-      <Tabs defaultValue={ordem.formas_pagamento[0]} className="gap-4">
+      <Tabs
+        value={metodoAtual}
+        onValueChange={(valor) => setMetodoAtual(valor as MetodoPagamento)}
+        className="gap-4"
+      >
         <TabsList className="h-auto w-full gap-1.5 rounded-full p-1.5">
           {ordem.formas_pagamento.map((metodo) => (
             <TabsTrigger
@@ -106,9 +120,12 @@ export function TelaPagamento({
                 </div>
               ) : cobrancas.pix ? (
                 cobrancas.pix.pix_qr_base64 ? (
-                  <img
+                  <Image
                     src={`data:image/png;base64,${cobrancas.pix.pix_qr_base64}`}
                     alt="QR Code Pix para pagamento"
+                    width={160}
+                    height={160}
+                    unoptimized
                     className="size-40 rounded-2xl outline outline-1 outline-black/10 dark:outline-white/10"
                   />
                 ) : (
@@ -197,15 +214,17 @@ export function TelaPagamento({
                       <CopyIcon aria-hidden strokeWidth={1.5} />
                       Copiar linha digitável
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="lg"
-                      className="h-12 rounded-full px-6 text-base text-muted-foreground"
-                      onClick={onBaixarBoleto}
-                    >
-                      <DownloadIcon aria-hidden strokeWidth={1.5} />
-                      Baixar boleto (PDF)
-                    </Button>
+                    {cobrancas.boleto.boleto_url ? (
+                      <Button
+                        variant="ghost"
+                        size="lg"
+                        className="h-12 rounded-full px-6 text-base text-muted-foreground"
+                        onClick={() => onBaixarBoleto(cobrancas.boleto?.boleto_url)}
+                      >
+                        <DownloadIcon aria-hidden strokeWidth={1.5} />
+                        Baixar boleto (PDF)
+                      </Button>
+                    ) : null}
                   </div>
                 </>
               )}
@@ -251,7 +270,7 @@ export function TelaPagamento({
                   )}
                   Ir para o pagamento
                 </Button>
-              ) : (
+              ) : cobrancas.cartao.checkout_url ? (
                 <Button
                   variant="outline"
                   size="lg"
@@ -267,6 +286,10 @@ export function TelaPagamento({
                   <ExternalLinkIcon aria-hidden strokeWidth={1.5} />
                   Abrir checkout seguro
                 </Button>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  Cobrança criada. Aguarde a confirmação.
+                </p>
               )}
               <p className="text-center text-xs text-pretty text-muted-foreground">
                 Você será direcionado ao ambiente seguro do provedor de pagamento.
@@ -275,6 +298,25 @@ export function TelaPagamento({
           </Card>
         </TabsContent>
       </Tabs>
+      {onSimularPagamento && cobrancas[metodoAtual] ? (
+        <Button
+          variant="outline"
+          className="w-full rounded-full"
+          disabled={simulando}
+          onClick={async () => {
+            setSimulando(true);
+            try {
+              await onSimularPagamento(cobrancas[metodoAtual]!.id);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Falha na simulação.");
+            } finally {
+              setSimulando(false);
+            }
+          }}
+        >
+          {simulando ? "Simulando…" : "Simular pagamento (dev)"}
+        </Button>
+      ) : null}
     </div>
   );
 }
