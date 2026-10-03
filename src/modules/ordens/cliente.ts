@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
@@ -106,10 +107,12 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
     .where(eq(ordemBeneficiarios.ordemId, ordem.id));
   if (!cliente || !snapshot || !beneficiarios.length)
     throw new Error("Snapshot da ordem incompleto");
+  const titular = beneficiarios.find((item) => item.titular);
+  if (!titular) throw new Error("Titular ausente do snapshot");
   const { operadora, plano } = snapshotSchema.parse(snapshot.dados);
   const vars: Record<VariavelContrato, string> = {
-    "cliente.nome": cliente.nome,
-    "cliente.cpf": cliente.cpf,
+    "cliente.nome": titular.nome,
+    "cliente.cpf": titular.cpf,
     "plano.nome": plano.nome,
     "valor.total": brl(ordem.valorCobrado),
     "valor.mensal": brl(ordem.valorMensal),
@@ -125,7 +128,7 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
     id: ordem.id,
     status: ordem.status === "enviada" ? "visualizada" : ordem.status,
     expira_em: ordem.expiraEm.toISOString(),
-    cliente: { nome: cliente.nome, cpf: cliente.cpf, whatsapp: cliente.whatsapp },
+    cliente: { nome: titular.nome, cpf: titular.cpf, whatsapp: cliente.whatsapp },
     plano: {
       operadora_nome: operadora.nome,
       plano_nome: plano.nome,
@@ -163,12 +166,14 @@ export async function registrarConsentimento(
   tipo: "contrato" | "lgpd",
   ip: string,
   userAgent: string,
-  versaoTexto: string,
 ) {
   const resolucao = await resolverToken(token);
   if (resolucao.tipo !== "ativa" || !["enviada", "visualizada"].includes(resolucao.dados.status))
     throw new Error("Ordem indisponível para consentimento");
   const { consentimentos } = await import("@/db/schema");
+  const versaoTexto = tipo === "contrato"
+    ? `sha256:${createHash("sha256").update(resolucao.dados.contrato_corpo).digest("hex")}`
+    : "lgpd-v1";
   await db
     .insert(consentimentos)
     .values({
