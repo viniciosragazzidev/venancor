@@ -1,5 +1,5 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 import type { AssinaturaConcluida, DadosAssinatura, SignatureProvider } from "./types";
 
 const A4 = { largura: 595.28, altura: 841.89 };

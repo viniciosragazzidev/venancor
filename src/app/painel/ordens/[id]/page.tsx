@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { DownloadIcon } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/page-header";
 import { formatarCentavos } from "@/components/admin/format";
@@ -16,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { listarClientes } from "@/modules/clientes/actions";
 import { listarOrdens } from "@/modules/ordens/actions";
-import { listarEventosOrdem } from "@/modules/ordens/queries";
+import { listarEventosOrdem, obterDownloadsOrdem } from "@/modules/ordens/queries";
 import { listarPlanos } from "@/modules/planos/actions";
 
 import { OrdemAcoes } from "./ordem-acoes";
@@ -66,7 +67,10 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
   ]);
   const ordem = ordens.find((item) => item.id === id);
   if (!ordem) notFound();
-  const eventos = await listarEventosOrdem(ordem.id);
+  const [eventos, downloads] = await Promise.all([
+    listarEventosOrdem(ordem.id),
+    obterDownloadsOrdem(ordem.id),
+  ]);
 
   const cliente = clientes.find((item) => item.id === ordem.clienteId);
   const plano = planos.find((item) => item.id === ordem.planoId);
@@ -134,6 +138,43 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
                 </li>
               ))}
             </ol>
+          )}
+        </Carta>
+
+        <Carta titulo="Documentos">
+          {downloads ? (
+            <div className="flex flex-col gap-3">
+              <dl className="flex flex-col gap-2.5">
+                <Linha rotulo="Assinado em" valor={formatarDataHora(downloads.assinadoEm)} />
+              </dl>
+              <p className="font-mono text-xs break-all text-muted-foreground">
+                SHA-256: {downloads.hashSha256}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href={downloads.contratoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-background px-6 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  <DownloadIcon aria-hidden strokeWidth={1.5} className="size-4" />
+                  Contrato assinado (PDF)
+                </a>
+                <a
+                  href={downloads.evidenciasUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-border bg-background px-6 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  <DownloadIcon aria-hidden strokeWidth={1.5} className="size-4" />
+                  Página de evidências (PDF)
+                </a>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-pretty text-muted-foreground">
+              O contrato ainda não foi assinado. Os downloads aparecem aqui depois da assinatura.
+            </p>
           )}
         </Carta>
 
