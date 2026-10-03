@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  variable: "--font-plus-jakarta-sans",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const amil = localFont({
+  src: "../../public/fonts/Amil Typeface Bold.ttf",
+  variable: "--font-amil",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -22,6 +24,7 @@ export const metadata: Metadata = {
     template: "%s · MedLink",
   },
   description: "Venda de planos de saúde com contrato, assinatura digital e link de pagamento.",
+  icons: { icon: "/favicon.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="pt-BR"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${amil.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
