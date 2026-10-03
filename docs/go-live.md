@@ -6,7 +6,7 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 
 - [ ] Conta Asaas aprovada (documentação do gestor/corregra completada, conta desbloqueada para receber)
 - [ ] API key de **produção** gerada (menu Integrações → Chaves de API) e configurada em `ASAAS_API_KEY`
-- [ ] `ASAAS_BASE_URL` apontando para `https://www.asaas.com/api/v3` (produção; sandbox é `https://api-sandbox.asaas.com/api/v3`)
+- [ ] `ASAAS_ENV=production` (sandbox é `ASAAS_ENV=sandbox` — só troque depois da checklist completa)
 - [ ] Webhook configurado no painel do Asaas: URL `https://seudominio.com.br/api/webhooks/asaas` com os eventos `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`, `PAYMENT_REFUNDED`
 - [ ] Token do webhook (`asaasToken`, enviado no header) configurado em `ASAAS_WEBHOOK_TOKEN`
 - [ ] Teste de fim a fim com valor baixo: Pix gerado, pago e ordem marcada como `paga`
@@ -17,9 +17,9 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 - [ ] Número de WhatsApp próprio (chip da operadora) migrado/vinculado ao WABA
 - [ ] Todos os 4 templates de `docs/whatsapp-templates.md` submetidos e **aprovados** em pt_BR, com os nomes exatos (`proposta_enviada`, `codigo_assinatura`, `pagamento_confirmado`, `lembrete_proposta`)
 - [ ] Números de destino testados (cada cliente precisa ter conversado com o número ao menos uma vez na janela de 24h, quando aplicável)
-- [ ] **Token permanente** gerado: usuário de sistema (System User) com permissão `whatsapp_business_messaging` no app → configurado em `WHATSAPP_ACCESS_TOKEN`
-- [ ] `WHATSAPP_PHONE_NUMBER_ID` e `WHATSAPP_VERIFY_TOKEN` configurados
-- [ ] Webhook da Meta configurado: URL `https://seudominio.com.br/api/webhooks/whatsapp`, assinando os campos `messages` e `message_status`, com verificação pelo `WHATSAPP_VERIFY_TOKEN`
+- [ ] **Token permanente** gerado: usuário de sistema (System User) com permissão `whatsapp_business_messaging` no app → configurado em `META_ACCESS_TOKEN`
+- [ ] `META_PHONE_NUMBER_ID` e `META_VERIFY_TOKEN` configurados (mais `META_APP_SECRET` para validar a assinatura do webhook)
+- [ ] Webhook da Meta configurado: URL `https://seudominio.com.br/api/webhooks/whatsapp`, assinando os campos `messages` e `message_status`, com verificação pelo `META_VERIFY_TOKEN`
 
 ## 3. Domínio
 
@@ -38,14 +38,16 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 ## 5. Autenticação do admin (Better Auth)
 
 - [ ] `BETTER_AUTH_SECRET` definido com valor forte e aleatório (32+ bytes)
+- [ ] `OTP_SECRET` definido com valor forte e aleatório (32+ bytes) — usado para os códigos de assinatura
 - [ ] `BETTER_AUTH_URL` apontando para o domínio de produção (base das URLs de sessão)
+- [ ] `APP_URL` apontando para o domínio de produção (base dos links `/c/<token>` enviados ao cliente)
 - [ ] Usuário admin do gestor criado com senha forte; e-mail verificado
 - [ ] Cookie de sessão testado no domínio de produção
 
 ## 6. Resend (e-mail de reserva)
 
 - [ ] Conta Resend criada e **domínio verificado** (DNS: SPF, DKIM e DMARC)
-- [ ] `RESEND_API_KEY` configurado e `EMAIL_FROM` com o remetente do domínio verificado
+- [ ] `RESEND_API_KEY` configurado e `RESEND_FROM_EMAIL` com o remetente do domínio verificado
 - [ ] Teste de envio com fallback (canal de reserva do WhatsApp) validado
 
 ## 7. Vercel e variáveis finais
@@ -53,7 +55,7 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 - [ ] Projeto deployado na Vercel, conectado ao repositório
 - [ ] Todas as variáveis de `.env.example` preenchidas no ambiente de produção da Vercel
 - [ ] Todos os segredos apenas em variáveis de ambiente (nunca no código)
-- [ ] Variável de ambiente que ativa o modo produção (sai do sandbox do Asaas) ligada só depois dos itens acima
+- [ ] Variável `ASAAS_ENV=production` ligada só depois dos itens acima (sai do sandbox)
 
 ## Smoke test final (com valores baixos)
 
