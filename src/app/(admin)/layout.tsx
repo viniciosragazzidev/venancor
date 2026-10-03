@@ -1,8 +1,13 @@
 import { AdminHeader } from "@/components/admin/admin-header";
 import { Brand } from "@/components/admin/brand";
 import { SidebarNav } from "@/components/admin/sidebar-nav";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
   return (
     <div className="min-h-svh bg-background">
       <div className="flex">

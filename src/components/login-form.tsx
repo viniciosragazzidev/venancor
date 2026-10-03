@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "motion/react";
+import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon, LoaderCircleIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
 
 const loginSchema = z.object({
   email: z.email("Informe um e-mail válido"),
@@ -19,6 +22,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -29,9 +33,15 @@ export function LoginForm() {
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit() {
-    // TODO: receber (values: LoginValues) e chamar authClient.signIn.email(...),
-    // redirecionando para "/" quando src/lib/auth-client.ts existir (Cofre, F1.3)
+  async function onSubmit(values: LoginValues) {
+    const { error } = await authClient.signIn.email(values);
+    if (error) {
+      toast.error("Não foi possível entrar. Confira e-mail e senha.");
+      return;
+    }
+    const callback = new URLSearchParams(window.location.search).get("callbackUrl");
+    router.push(callback?.startsWith("/") && !callback.startsWith("//") ? callback : "/");
+    router.refresh();
   }
 
   return (
@@ -44,10 +54,11 @@ export function LoginForm() {
           placeholder="voce@empresa.com"
           autoComplete="email"
           aria-invalid={Boolean(errors.email) || undefined}
+          aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
         />
         {errors.email ? (
-          <p className="text-xs text-destructive" role="alert">
+          <p id="email-error" className="text-xs text-destructive" role="alert">
             {errors.email.message}
           </p>
         ) : null}
@@ -63,13 +74,14 @@ export function LoginForm() {
             autoComplete="current-password"
             className="pr-9"
             aria-invalid={Boolean(errors.password) || undefined}
+            aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
           <Button
             type="button"
             variant="ghost"
-            size="icon-xs"
-            className="absolute top-1 right-1 text-muted-foreground"
+            size="icon-sm"
+            className="absolute top-0.5 right-1 text-muted-foreground"
             onClick={() => setShowPassword((value) => !value)}
             aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
             aria-pressed={showPassword}
@@ -103,7 +115,7 @@ export function LoginForm() {
           </Button>
         </div>
         {errors.password ? (
-          <p className="text-xs text-destructive" role="alert">
+          <p id="password-error" className="text-xs text-destructive" role="alert">
             {errors.password.message}
           </p>
         ) : null}

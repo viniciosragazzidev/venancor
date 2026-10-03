@@ -95,3 +95,21 @@ Donos: **C** = Cofre (núcleo/lógica/integrações), **M** = Mutirão (telas/CR
 ## Revisão (Arquiteto)
 
 Diff de cada tarefa C ou M entra em revisão ao fechar a fase; bloqueantes: F5.3, F6.1, F6.3, F5.1.
+
+## Fase V: migração para o repo Venancor (detalhes em `docs/VENANCOR-MIGRATION.md`)
+
+Dono: Mut = Mutirão, Cofre, Maestro, Vin = Vinicios. V0 é urgente; V1∥V2 rodam junto da F2; V3 a V6 só depois do fluxo principal (F3 a F6); V7 e V8 no fim.
+
+| ID  | Dono                         | Tarefa                                                                                                                   | Dep           | Pronto quando                                     |
+| --- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------- | ------------------------------------------------- |
+| V0  | Vin + Maestro                | Trocar Neon (senha), `BETTER_AUTH_SECRET` e token do webhook vazados em `split-guidelines.md`; remover o arquivo         | -             | segredos antigos inválidos                        |
+| V1  | Mut ∥V2                      | Marca Venancor: tokens de cor light/dark, Plus Jakarta Sans, Amil no logo, assets, `<Logo/>`                             | F1.6          | painel e página do cliente com a cara da Venancor |
+| V2  | Mut + Cofre (proxy/auth) ∥V1 | Mover painel de `(admin)` em `/` para `/painel/*` (layout, sidebar, proxy, redirect pós-login)                           | F1.3, F1.6    | `/` livre para a landing                          |
+| V3  | Mut                          | Portar landing `/` e `/amep`, componentes, assets, SEO (llms.txt, sitemap, robots, OG, manifest, JSON-LD) e deps         | V1, V2        | `/` e `/amep` idênticas à produção                |
+| V4  | Cofre                        | Simulador/planos da landing leem planos e preços do MedLink                                                              | V3, F2.1      | preço da landing = preço do painel                |
+| V5  | Cofre (back) + Mut (tela)    | `src/modules/leads` + `/api/webhooks/leads` (token validado, idempotente), tela de leads, "Gerar ordem" a partir do lead | V3, F3.3      | lead vira ordem em 1 clique                       |
+| V6  | Cofre                        | Script de migração Neon → banco final (leads; planos se reais)                                                           | V5            | contagem de linhas confere                        |
+| V7  | Maestro                      | Branch `medlink` no repo venancor, conteúdo substituído, histórico preservado, README e `.env.example`; PR               | V3 a V6, F9.3 | build verde na preview da Vercel                  |
+| V8  | Vin + Maestro                | Env vars na Vercel, domínio, smoke test (landing, login, ordem, link, assinatura, Pix sandbox), merge                    | V7, F9.4      | produção serve o MedLink com a marca Venancor     |
+
+Revisão do Arquiteto: V0 (confirmar segredos fora do histórico/árvore), V5 (token do webhook de leads, sem CPF/telefone em log) e V2 (guarda de rota cobrindo todo `/painel`).

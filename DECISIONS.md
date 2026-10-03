@@ -19,3 +19,8 @@ Registro de ambiguidades resolvidas. Ordem: ID, decisão, motivo.
 - **D14 CPF:** validado (dígitos verificadores) com Zod compartilhado em `lib/validators.ts`; logs só com máscara.
 - **D15 Estrutura:** `src/` conforme SPEC §3; pt-BR nos nomes de domínio, inglês em infra. `DECISIONS.md` na raiz; contratos e plano em `docs/`.
 - **D16 Dono por área:** Cofre = lib/, db/, providers/, modules/*/ lógica, webhooks, PDF, auth; Mutirão = telas (admin e `/c/[token]`), formulários, CRUDs UI, README/docs/templates, E2E. Telas consomem server actions/serviços do Cofre conforme `docs/CONTRACTS.md`; enquanto o Cofre não entrega, Mutirão usa o contrato com stub.
+- **D17 Base da migração Venancor:** o MedLink é a base (`src/`, módulos, providers, testes). Do Venancor entram marca, assets, landing `/` e `/amep`, SEO e o webhook de leads.
+- **D18 Marca vence as referências:** cores, fonte e logo da Venancor (primária `#3b2dff`, dark `#1F6FE5`, Plus Jakarta Sans, logo Amil). De `docs/design-refs.md` ficam só os padrões de layout (cards, pílulas, bottom sheets, tela de sucesso), pintados com a primária da Venancor.
+- **D19 Rotas:** landing pública em `/` e `/amep`; painel em `/painel/*` (substitui o `(admin)` em `/`); link do cliente `/c/[token]`; login `/login`.
+- **D20 Banco:** um só. Tabelas `operadoras/planos/precos` do Venancor são substituídas pelas do MedLink (faixas ANS, contratos); `leads` é migrada. Recomendação: Supabase (Storage dos PDFs), migrando `leads` do Neon. Decisão final do banco segue em aberto com o dono do projeto.
+- **D21 Deploy:** continua o projeto Vercel `venancor`; só trocam as env vars. Nada acoplado à Vercel (ver SPEC-OVERRIDES 3).

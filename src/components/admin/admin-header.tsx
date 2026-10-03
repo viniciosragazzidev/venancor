@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronsUpDownIcon, LogOutIcon, MenuIcon, UserRoundIcon } from "lucide-react";
 
 import { Brand } from "@/components/admin/brand";
@@ -16,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { authClient } from "@/lib/auth-client";
 import {
   Sheet,
   SheetContent,
@@ -26,9 +29,12 @@ import {
 } from "@/components/ui/sheet";
 
 export function AdminHeader() {
+  const router = useRouter();
+  const [menuAberto, setMenuAberto] = useState(false);
+
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-background/85 px-4 backdrop-blur lg:px-6">
-      <Sheet>
+      <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
         <SheetTrigger
           render={
             <Button
@@ -47,9 +53,12 @@ export function AdminHeader() {
             <SheetDescription className="sr-only">Navegação principal</SheetDescription>
             <Brand />
           </SheetHeader>
-          <SidebarNav className="p-2" />
+          <SidebarNav className="p-2" onNavigate={() => setMenuAberto(false)} />
         </SheetContent>
       </Sheet>
+      <div className="lg:hidden">
+        <Brand />
+      </div>
 
       <div className="ml-auto flex items-center gap-1.5">
         <ThemeToggle />
@@ -80,8 +89,14 @@ export function AdminHeader() {
           <DropdownMenuContent align="end" side="bottom" className="w-40">
             <DropdownMenuLabel>Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* TODO: exibir e-mail/nome reais da sessão e chamar authClient.signOut() quando src/lib/auth-client.ts existir (Cofre, F1.3) */}
-            <DropdownMenuItem className="gap-2">
+            <DropdownMenuItem
+              className="gap-2"
+              onClick={async () => {
+                await authClient.signOut();
+                router.push("/login");
+                router.refresh();
+              }}
+            >
               <LogOutIcon aria-hidden strokeWidth={1.5} />
               Sair
             </DropdownMenuItem>
