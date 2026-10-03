@@ -36,7 +36,17 @@ export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCl
   async function baixarContrato() {
     try {
       const url = await obterContratoAssinadoCliente(token);
-      window.location.assign(url);
+      if (url === "/api/cliente/documento") {
+        const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }) });
+        if (!response.ok) throw new Error("Contrato assinado indisponível");
+        const objeto = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = objeto;
+        link.download = "contrato-assinado.pdf";
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(objeto), 60_000);
+      } else window.location.assign(url);
     } catch (error) {
       toast.error(mensagemErro(error));
     }

@@ -25,6 +25,6 @@ export async function obterContratoAssinadoCliente(token: string): Promise<strin
     .limit(1);
   if (!assinatura) throw new Error("Contrato assinado não encontrado");
   if ((process.env.STORAGE_DRIVER ?? "local") === "local")
-    return `/api/cliente/documento?token=${encodeURIComponent(token)}`;
+    return "/api/cliente/documento";
   return getStorageAdapter().getSignedUrl(assinatura.pdfPath);
 }

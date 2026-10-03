@@ -5,10 +5,12 @@ import { db } from "@/db/client";
 import { assinaturas } from "@/db/schema";
 import { resolverToken } from "@/modules/ordens/cliente";
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   if ((process.env.STORAGE_DRIVER ?? "local") !== "local")
     return new Response(null, { status: 404 });
-  const token = new URL(request.url).searchParams.get("token") ?? "";
+  const body: unknown = await request.json().catch(() => null);
+  const token = body && typeof body === "object" && "token" in body && typeof body.token === "string"
+    ? body.token : "";
   const estado = await resolverToken(token);
   if (
     (estado.tipo !== "ativa" && estado.tipo !== "paga") ||
