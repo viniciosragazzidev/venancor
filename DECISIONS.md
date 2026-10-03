@@ -22,5 +22,6 @@ Registro de ambiguidades resolvidas. Ordem: ID, decisão, motivo.
 - **D17 Base da migração Venancor:** o MedLink é a base (`src/`, módulos, providers, testes). Do Venancor entram marca, assets, landing `/` e `/amep`, SEO e o webhook de leads.
 - **D18 Marca vence as referências:** cores, fonte e logo da Venancor (primária `#3b2dff`, dark `#1F6FE5`, Plus Jakarta Sans, logo Amil). De `docs/design-refs.md` ficam só os padrões de layout (cards, pílulas, bottom sheets, tela de sucesso), pintados com a primária da Venancor.
 - **D19 Rotas:** landing pública em `/` e `/amep`; painel em `/painel/*` (substitui o `(admin)` em `/`); link do cliente `/c/[token]`; login `/login`.
-- **D20 Banco:** um só. Tabelas `operadoras/planos/precos` do Venancor são substituídas pelas do MedLink (faixas ANS, contratos); `leads` é migrada. Recomendação: Supabase (Storage dos PDFs), migrando `leads` do Neon. Decisão final do banco segue em aberto com o dono do projeto.
+- **D20 Banco:** Supabase do zero. Tabelas `operadoras/planos/precos` seguem o schema MedLink (faixas ANS, contratos); `leads` nasce vazia. Nada é migrado do Neon (ver `docs/VENANCOR-MIGRATION.md`).
 - **D21 Deploy:** continua o projeto Vercel `venancor`; só trocam as env vars. Nada acoplado à Vercel (ver SPEC-OVERRIDES 3).
+- **D22 Valor cobrado:** `total_adesao_mensalidade_so` equivale a uma mensalidade líquida mais adesão no MVP; não há prazo contratual no schema para calcular outro total. O valor mensal armazenado é bruto, com desconto separado.
