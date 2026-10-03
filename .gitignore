@@ -1,0 +1,32 @@
+# deps
+/node_modules
+/.pnp
+.pnp.*
+
+# next
+/.next/
+/out/
+/build
+next-env.d.ts
+*.tsbuildinfo
+
+# testes
+/coverage
+/playwright-report
+/test-results
+
+# env (o .env.example vai pro git)
+.env
+.env*.local
+.env.*
+!.env.example
+
+# ferramentas
+.maestri/
+.vercel
+*.pem
+.DS_Store
+npm-debug.log*
+
+# cache do npm criado pelo sandbox do Codex
+.npm-cache/
