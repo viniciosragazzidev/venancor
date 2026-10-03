@@ -3,6 +3,7 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
+  OTP_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.url().optional(),
   APP_URL: z.url().optional(),
   ADMIN_EMAIL: z.email().optional(),
