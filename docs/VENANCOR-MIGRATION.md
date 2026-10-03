@@ -56,7 +56,8 @@ Ordem: V0 já; V1 e V2 em paralelo com a fase 2 do MVP; V3 a V6 depois do fluxo 
 - Landing usa `gsap` e `framer-motion` além de `motion`: avaliar consolidar depois, não na migração.
 - Branch `feat/drizzle-orm` local tem 1 commit não publicado: decidir se entra antes da troca.
 
-## 5. Em aberto
+## 5. Decidido
 
-- **Banco final:** Supabase (do MedLink, tem Storage para os PDFs de contrato) ou Neon (do Venancor,
-  não tem storage de arquivos). Recomendação: **Supabase**, migrando `leads` do Neon.
+- **Banco final: Supabase, começando do zero** (decisão do dono, 2026-10-03). Nada é migrado do Neon:
+  a fase V6 sai do plano; a tabela `leads` nasce vazia no módulo novo. O Neon do Venancor pode ser
+  desligado depois do go-live.
