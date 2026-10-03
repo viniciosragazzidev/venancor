@@ -30,3 +30,4 @@ npm-debug.log*
 
 # cache do npm criado pelo sandbox do Codex
 .npm-cache/
+.storage/
