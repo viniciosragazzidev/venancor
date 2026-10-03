@@ -46,13 +46,16 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="email">E-mail</Label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="email" className="font-normal text-muted-foreground">
+          E-mail
+        </Label>
         <Input
           id="email"
           type="email"
           placeholder="voce@empresa.com"
           autoComplete="email"
+          className="h-12 rounded-full border-border px-5 text-base md:text-sm"
           aria-invalid={Boolean(errors.email) || undefined}
           aria-describedby={errors.email ? "email-error" : undefined}
           {...register("email")}
@@ -64,15 +67,17 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="password">Senha</Label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="password" className="font-normal text-muted-foreground">
+          Senha
+        </Label>
         <div className="relative">
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
             placeholder="Sua senha"
             autoComplete="current-password"
-            className="pr-9"
+            className="h-12 rounded-full border-border px-5 pr-11 text-base md:text-sm"
             aria-invalid={Boolean(errors.password) || undefined}
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
@@ -81,7 +86,7 @@ export function LoginForm() {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="absolute top-0.5 right-1 text-muted-foreground"
+            className="absolute top-1 right-1.5 text-muted-foreground"
             onClick={() => setShowPassword((value) => !value)}
             aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
             aria-pressed={showPassword}
@@ -121,7 +126,11 @@ export function LoginForm() {
         ) : null}
       </div>
 
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className="mt-1 h-12 w-full rounded-full text-base"
+      >
         {isSubmitting ? <LoaderCircleIcon aria-hidden className="animate-spin" /> : null}
         {isSubmitting ? "Entrando…" : "Entrar"}
       </Button>

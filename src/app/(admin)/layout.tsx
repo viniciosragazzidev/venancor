@@ -9,7 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-muted/40">
       <div className="flex">
         <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r bg-sidebar lg:flex">
           <div className="flex h-14 shrink-0 items-center border-b px-4">
