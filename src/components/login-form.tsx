@@ -36,7 +36,14 @@ export function LoginForm() {
   async function onSubmit(values: LoginValues) {
     const { error } = await authClient.signIn.email(values);
     if (error) {
-      toast.error("Não foi possível entrar. Confira e-mail e senha.");
+      const credenciaisInvalidas =
+        error.code === "INVALID_EMAIL_OR_PASSWORD" || error.status === 401;
+      toast.error(
+        credenciaisInvalidas
+          ? "E-mail ou senha incorretos."
+          : `Não foi possível entrar (${error.code ?? error.status ?? "erro desconhecido"}). Tente de novo.`,
+      );
+      if (!credenciaisInvalidas) console.error("Falha no login:", error);
       return;
     }
     const callback = new URLSearchParams(window.location.search).get("callbackUrl");
