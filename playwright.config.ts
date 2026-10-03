@@ -27,7 +27,7 @@ export default defineConfig({
     // Em CI nunca reusa: um dev server já rodando pode ter provedores reais
     // (Asaas/Meta), e as variáveis do webServer não valem para servidor reusado.
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 180_000,
     // O servidor do E2E precisa confiar na origem localhost (Better Auth valida o
     // Origin contra BETTER_AUTH_URL). Se o .env apontar para outro domínio,
     // estas variáveis vencem (variáveis de ambiente não são sobrescritas pelo .env).

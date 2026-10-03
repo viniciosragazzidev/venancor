@@ -91,7 +91,7 @@ test("fluxo feliz: criar ordem → assinar com OTP → pagar (fake) → paga no 
     await cliente.locator("#assinatura-cpf").fill(cpfSeed);
     await assinarCanvas(cliente, cliente.locator('canvas[aria-label*="assinatura"]'));
     await cliente.getByRole("button", { name: /Enviar c.digo por WhatsApp/ }).click();
-    await expect(cliente.locator("#assinatura-otp")).toBeVisible({ timeout: 30_000 });
+    await expect(cliente.locator("#assinatura-otp")).toBeVisible({ timeout: 60_000 });
 
     const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
     let codigo: string | undefined;
@@ -108,7 +108,8 @@ test("fluxo feliz: criar ordem → assinar com OTP → pagar (fake) → paga no 
 
     await cliente.locator("#assinatura-otp").fill(codigo);
     await cliente.getByRole("button", { name: "Validar" }).click();
-    await expect(cliente.getByText("Contrato assinado!")).toBeVisible({ timeout: 30_000 });
+    // Dev server compila pdf-lib/storage no primeiro uso: geração de PDFs é lenta.
+    await expect(cliente.getByText("Contrato assinado!")).toBeVisible({ timeout: 60_000 });
     await cliente.getByRole("button", { name: "Ir para o pagamento" }).click();
 
     // 5) Pagamento fake: gera o Pix e simula a confirmação (botão de dev)
