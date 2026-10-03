@@ -24,7 +24,9 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
-    reuseExistingServer: true,
+    // Em CI nunca reusa: um dev server já rodando pode ter provedores reais
+    // (Asaas/Meta), e as variáveis do webServer não valem para servidor reusado.
+    reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     // O servidor do E2E precisa confiar na origem localhost (Better Auth valida o
     // Origin contra BETTER_AUTH_URL). Se o .env apontar para outro domínio,
