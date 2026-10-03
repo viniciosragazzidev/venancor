@@ -22,9 +22,9 @@ export class MetaWhatsAppProvider implements MessagingProvider {
   async enviarTemplate(input: EnviarTemplateInput): Promise<EnvioResultado> {
     const token = process.env.META_ACCESS_TOKEN;
     const phoneId = process.env.META_PHONE_NUMBER_ID;
-    if (!token || !phoneId) throw new Error("Credenciais Meta não configuradas");
     let resultado: EnvioResultado;
     try {
+      if (!token || !phoneId) throw new Error("Credenciais Meta não configuradas");
       const campos = CAMPOS[input.template];
       const valores = campos.map((campo) => {
         const valor = input.variaveis[campo];
@@ -53,33 +53,31 @@ export class MetaWhatsAppProvider implements MessagingProvider {
       const data = (await response.json()) as { messages?: { id: string }[] };
       if (!data.messages?.[0]?.id) throw new Error("Meta não retornou ID da mensagem");
       resultado = { providerMessageId: data.messages[0].id, status: "enviada" };
-      await db
-        .insert(mensagens)
-        .values({
-          ordemId: input.ordemId,
-          canal: "whatsapp",
-          template: input.template,
-          para: input.para,
-          providerMessageId: resultado.providerMessageId,
-          status: "enviada",
-          enviadaEm: new Date(),
-        });
-      return resultado;
     } catch (error) {
-      await db
-        .insert(mensagens)
-        .values({
-          ordemId: input.ordemId,
-          canal: "whatsapp",
-          template: input.template,
-          para: input.para,
-          status: "falhou",
-          erro: error instanceof Error ? error.message : "Falha Meta",
-        });
+      await db.insert(mensagens).values({
+        ordemId: input.ordemId,
+        canal: "whatsapp",
+        template: input.template,
+        para: input.para,
+        status: "falhou",
+        erro: error instanceof Error ? error.message : "Falha Meta",
+      });
       const fallback = await this.emailFallback(input);
       if (fallback) return fallback;
       throw error;
     }
+    await db
+      .insert(mensagens)
+      .values({
+        ordemId: input.ordemId,
+        canal: "whatsapp",
+        template: input.template,
+        para: input.para,
+        providerMessageId: resultado.providerMessageId,
+        status: "enviada",
+        enviadaEm: new Date(),
+      });
+    return resultado;
   }
 
   private async emailFallback(input: EnviarTemplateInput): Promise<EnvioResultado | null> {
@@ -112,17 +110,15 @@ export class MetaWhatsAppProvider implements MessagingProvider {
     if (!response.ok) return null;
     const data = (await response.json()) as { id?: string };
     if (!data.id) return null;
-    await db
-      .insert(mensagens)
-      .values({
-        ordemId: input.ordemId,
-        canal: "email",
-        template: input.template,
-        para: row.email,
-        status: "enviada",
-        providerMessageId: data.id,
-        enviadaEm: new Date(),
-      });
+    await db.insert(mensagens).values({
+      ordemId: input.ordemId,
+      canal: "email",
+      template: input.template,
+      para: row.email,
+      status: "enviada",
+      providerMessageId: data.id,
+      enviadaEm: new Date(),
+    });
     return { providerMessageId: data.id, status: "enviada" };
   }
 

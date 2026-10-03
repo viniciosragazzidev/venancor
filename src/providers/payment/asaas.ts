@@ -128,7 +128,7 @@ export class AsaasProvider implements PaymentProvider {
   async cancelarCobranca(id: string): Promise<void> {
     await this.request<unknown>(`/payments/${encodeURIComponent(id)}`, { method: "DELETE" });
   }
-  validarWebhook(headers: Headers, _rawBody: string): boolean {
+  validarWebhook(headers: Headers): boolean {
     return validarWebhookAsaas(headers);
   }
   parseWebhook(rawBody: string): EventoPagamento {

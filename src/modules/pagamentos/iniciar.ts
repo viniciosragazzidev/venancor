@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assinaturas, auditoria, clientes, ordens, pagamentos } from "@/db/schema";
 import { resolverToken } from "@/modules/ordens/cliente";
@@ -108,6 +108,18 @@ export async function iniciarPagamento(
         .limit(1);
       if (!atual) throw new Error("Ordem não encontrada");
       assertPodeIniciarPagamento(atual.status, Boolean(assinaturaAtual));
+      const [duplicado] = await tx
+        .select({ id: pagamentos.id })
+        .from(pagamentos)
+        .where(
+          and(
+            eq(pagamentos.ordemId, ordem.id),
+            eq(pagamentos.metodo, metodo),
+            eq(pagamentos.status, "pendente"),
+          ),
+        )
+        .limit(1);
+      if (duplicado) throw new Error("Já existe cobrança pendente para esta forma de pagamento");
       const [novo] = await tx
         .insert(pagamentos)
         .values({
@@ -132,15 +144,13 @@ export async function iniciarPagamento(
           .update(ordens)
           .set({ status: "aguardando_pagamento", atualizadoEm: new Date() })
           .where(eq(ordens.id, ordem.id));
-      await tx
-        .insert(auditoria)
-        .values({
-          entidade: "ordens",
-          entidadeId: ordem.id,
-          acao: "criar_pagamento",
-          ator: "cliente",
-          metadados: { pagamentoId: novo.id, metodo },
-        });
+      await tx.insert(auditoria).values({
+        entidade: "ordens",
+        entidadeId: ordem.id,
+        acao: "criar_pagamento",
+        ator: "cliente",
+        metadados: { pagamentoId: novo.id, metodo },
+      });
       return novo;
     });
     return toCliente(pagamento);
