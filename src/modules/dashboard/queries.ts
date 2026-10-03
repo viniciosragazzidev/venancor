@@ -2,6 +2,7 @@ import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { clientes, ordens, pagamentos, planos } from "@/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
+import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
 
 export interface DashboardResumo {
   periodo: { inicio: string; fim: string };
@@ -21,6 +22,7 @@ export interface DashboardResumo {
 
 export async function carregarDashboard(agora = new Date()): Promise<DashboardResumo> {
   await requireAdmin();
+  await sincronizarPendentesAsaas();
   const inicio = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), 1));
   const fim = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth() + 1, 1));
   const [[contagem], [receita], [estornos], [orfaos], recentes] = await Promise.all([

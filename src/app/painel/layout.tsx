@@ -1,15 +1,14 @@
 import { AdminHeader } from "@/components/admin/admin-header";
+import { FaixaAmbienteTeste } from "@/components/ambiente-teste";
 import { Brand } from "@/components/admin/brand";
 import { SidebarNav } from "@/components/admin/sidebar-nav";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/require-admin";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login");
+  await requireAdmin();
   return (
     <div className="min-h-svh bg-muted/40">
+      <FaixaAmbienteTeste />
       <div className="flex">
         <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r bg-sidebar lg:flex">
           <div className="flex h-14 shrink-0 items-center border-b px-4">

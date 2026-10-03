@@ -6,6 +6,7 @@ import { ChevronLeftIcon, ShareIcon, ShieldCheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Brand } from "@/components/admin/brand";
+import { FaixaAmbienteTeste } from "@/components/ambiente-teste";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -58,7 +59,9 @@ export type Consentimentos = { contrato: boolean; lgpd: boolean };
 
 export type AcoesFluxo = {
   onAceitarConsentimentos: () => Promise<void>;
-  onEnviarOtp: (telefone: string) => Promise<{ ok: true } | { erro: OtpErro }>;
+  onEnviarOtp: (
+    telefone: string,
+  ) => Promise<{ ok: true; codigoTeste?: string } | { erro: OtpErro }>;
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onConcluirAssinatura: (dados: {
     nome: string;
@@ -73,7 +76,15 @@ export type AcoesFluxo = {
   onCompartilharLink: () => Promise<void>;
 };
 
-export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes: AcoesFluxo }) {
+export function FluxoCliente({
+  ordem,
+  acoes,
+  otpAutomatico = false,
+}: {
+  ordem: DadosOrdemCliente;
+  acoes: AcoesFluxo;
+  otpAutomatico?: boolean;
+}) {
   const jaAssinada = ["assinada", "aguardando_pagamento", "paga"].includes(ordem.status);
   const [etapa, setEtapa] = useState<Etapa>(jaAssinada ? "pagamento" : "resumo");
   const [assinaturaConcluida, setAssinaturaConcluida] = useState(jaAssinada);
@@ -149,14 +160,16 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
       case "assinatura":
         return (
           <TelaAssinatura
+            otpAutomatico={otpAutomatico}
             cliente={ordem.cliente}
             consentimentos={consentimentos}
             onEnviarOtp={acoes.onEnviarOtp}
             onValidarOtp={acoes.onValidarOtp}
-            onConcluirAssinatura={async (dados) => {
+            onConcluirAssinatura={async (dados, automatico) => {
               await acoes.onConcluirAssinatura(dados);
               setAssinaturaConcluida(true);
-              setSucessoAssinatura(true);
+              if (automatico) setEtapa("pagamento");
+              else setSucessoAssinatura(true);
             }}
           />
         );
@@ -176,6 +189,7 @@ export function FluxoCliente({ ordem, acoes }: { ordem: DadosOrdemCliente; acoes
 
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
+      <FaixaAmbienteTeste />
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-6">
         <header className="flex items-center justify-between py-4">
           {indiceEtapa(etapa) > 0 && !emSucesso ? (

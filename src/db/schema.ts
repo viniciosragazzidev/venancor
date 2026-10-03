@@ -164,6 +164,27 @@ export const clientes = pgTable("clientes", {
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
 }).enableRLS();
+export const leads = pgTable(
+  "leads",
+  {
+    id: id(),
+    nome: text("nome").notNull(),
+    whatsapp: text("whatsapp").notNull(),
+    perfil: text("perfil").default("Adesão").notNull(),
+    idades: text("idades"),
+    status: text("status").default("Aguardando").notNull(),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    clienteId: uuid("cliente_id").references(() => clientes.id),
+    ordemId: uuid("ordem_id")
+      .unique()
+      .references(() => ordens.id),
+    criadoEm: criadoEm(),
+    atualizadoEm: atualizadoEm(),
+  },
+  (t) => [index("leads_status_idx").on(t.status, t.criadoEm)],
+).enableRLS();
 export const dependentes = pgTable("dependentes", {
   id: id(),
   clienteId: uuid("cliente_id")

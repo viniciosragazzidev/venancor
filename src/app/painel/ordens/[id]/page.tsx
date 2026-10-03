@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { DownloadIcon } from "lucide-react";
 
 import { PageHeader } from "@/components/admin/page-header";
+import { PollingAsaas } from "@/components/admin/polling-asaas";
 import { formatarCentavos } from "@/components/admin/format";
 import {
   classesStatusOrdem,
@@ -77,6 +78,12 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
 
   return (
     <div className="flex flex-col gap-6">
+      <PollingAsaas
+        ativo={
+          (process.env.PAYMENT_PROVIDER ?? "fake") === "asaas" &&
+          process.env.ASAAS_ENV === "sandbox"
+        }
+      />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title={`Ordem de ${cliente?.nome ?? "cliente"}`}

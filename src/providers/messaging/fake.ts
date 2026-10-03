@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { fakePermitido } from "@/lib/modo-teste";
 import type {
   EnviarTemplateInput,
   EnvioResultado,
@@ -36,7 +37,7 @@ export class FakeMessagingProvider implements MessagingProvider {
   }
 
   validarWebhook(_headers: Headers, rawBody: string): boolean {
-    if (process.env.NODE_ENV === "production") return false;
+    if (!fakePermitido()) return false;
     try {
       return JSON.parse(rawBody).provider === "fake";
     } catch {

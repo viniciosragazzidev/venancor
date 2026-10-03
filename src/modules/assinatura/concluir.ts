@@ -4,6 +4,7 @@ import { assinaturas, auditoria, consentimentos, ordemBeneficiarios, ordens } fr
 import { resolverToken } from "@/modules/ordens/cliente";
 import { getSignatureProvider } from "@/providers/signature";
 import { getStorageAdapter } from "@/providers/storage";
+import { fakePermitido } from "@/lib/modo-teste";
 import { otpValidado } from "./otp";
 import { concluirAssinaturaSchema, type ConcluirAssinaturaInput } from "./schema";
 
@@ -65,6 +66,7 @@ export async function concluirAssinatura(
     userAgent: contexto.userAgent,
     geo: dados.geo,
     contratoHtmlOuTexto: ordem.dados.contrato_corpo,
+    modoTeste: fakePermitido() && (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
   });
   const storage = getStorageAdapter();
   const prefixo = `ordens/${ordem.dados.id}/${crypto.randomUUID()}`;
@@ -104,7 +106,10 @@ export async function concluirAssinatura(
         entidadeId: ordem.dados.id,
         acao: "assinar",
         ator: "cliente",
-        metadados: { hashSha256: assinada.hashSha256 },
+        metadados: {
+          hashSha256: assinada.hashSha256,
+          modoTeste: fakePermitido() && (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
+        },
       });
     });
   } catch (error) {

@@ -3,8 +3,11 @@ import { SupabaseStorage } from "./supabase";
 import type { StorageAdapter } from "./types";
 
 let local: LocalStorage | undefined;
+export const storageDriver = () =>
+  process.env.STORAGE_DRIVER ?? (process.env.NODE_ENV === "production" ? "supabase" : "local");
+
 export function getStorageAdapter(): StorageAdapter {
-  const selected = process.env.STORAGE_DRIVER ?? "local";
+  const selected = storageDriver();
   if (selected === "local") {
     if (process.env.NODE_ENV === "production")
       throw new Error("Storage local indisponível em produção");

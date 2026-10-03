@@ -10,13 +10,24 @@ import {
   obterContratoAssinadoCliente,
 } from "@/modules/ordens/cliente-status-actions";
 import { iniciarPagamento } from "@/modules/pagamentos/actions";
+import { fakePermitido } from "@/lib/modo-teste";
 import { FluxoCliente, type AcoesFluxo } from "./fluxo-cliente";
 import type { DadosOrdemCliente, OtpErro } from "./types";
 
 const mensagemErro = (error: unknown) =>
   error instanceof Error ? error.message : "Tente novamente.";
 
-export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCliente }) {
+export function FluxoReal({
+  token,
+  ordem,
+  simulacaoDisponivel,
+  otpAutomatico,
+}: {
+  token: string;
+  ordem: DadosOrdemCliente;
+  simulacaoDisponivel: boolean;
+  otpAutomatico: boolean;
+}) {
   const [status, setStatus] = useState(ordem.status);
 
   useEffect(() => {
@@ -37,8 +48,11 @@ export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCl
     try {
       const url = await obterContratoAssinadoCliente(token);
       if (url === "/api/cliente/documento") {
-        const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }) });
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
         if (!response.ok) throw new Error("Contrato assinado indisponível");
         const objeto = URL.createObjectURL(await response.blob());
         const link = document.createElement("a");
@@ -59,8 +73,8 @@ export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCl
     },
     onEnviarOtp: async () => {
       try {
-        await solicitarOtp(token);
-        return { ok: true };
+        const resultado = await solicitarOtp(token);
+        return { ok: true, ...resultado };
       } catch (error) {
         toast.error(mensagemErro(error));
         return { erro: "falha" as OtpErro };
@@ -91,16 +105,17 @@ export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCl
       if (url) window.open(url, "_blank", "noopener,noreferrer");
       else toast.error("Boleto indisponível. Gere a cobrança novamente.");
     },
-    ...(process.env.NODE_ENV !== "production"
+    ...(fakePermitido() && simulacaoDisponivel
       ? {
           onSimularPagamento: async (pagamentoId: string) => {
             const response = await fetch("/api/dev/simular-pagamento", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ pagamentoId }),
+              body: JSON.stringify({ pagamentoId, token }),
             });
             if (!response.ok) throw new Error("Não foi possível simular o pagamento.");
-            setStatus("paga");
+            const resultado = (await response.json()) as { status: string };
+            if (resultado.status === "paga") setStatus("paga");
           },
         }
       : {}),
@@ -109,5 +124,5 @@ export function FluxoReal({ token, ordem }: { token: string; ordem: DadosOrdemCl
       toast.success("Link da proposta copiado.");
     },
   };
-  return <FluxoCliente ordem={{ ...ordem, status }} acoes={acoes} />;
+  return <FluxoCliente ordem={{ ...ordem, status }} acoes={acoes} otpAutomatico={otpAutomatico} />;
 }

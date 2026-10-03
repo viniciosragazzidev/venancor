@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { formatarCpfMascarado, formatarTelefone } from "./format";
+import { executarOtpAutomatico } from "./otp-automatico";
 import type { OtpErro } from "./types";
 
 const mensagensErroOtp: Record<OtpErro, string> = {
@@ -30,21 +31,28 @@ type Consentimentos = { contrato: boolean; lgpd: boolean };
 
 export function TelaAssinatura({
   cliente,
+  otpAutomatico = false,
   consentimentos,
   onEnviarOtp,
   onValidarOtp,
   onConcluirAssinatura,
 }: {
   cliente: { nome: string; cpf: string; whatsapp: string };
+  otpAutomatico?: boolean;
   consentimentos: Consentimentos;
-  onEnviarOtp: (telefone: string) => Promise<{ ok: true } | { erro: OtpErro }>;
+  onEnviarOtp: (
+    telefone: string,
+  ) => Promise<{ ok: true; codigoTeste?: string } | { erro: OtpErro }>;
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
-  onConcluirAssinatura: (dados: {
-    nome: string;
-    cpf: string;
-    imagemDataUrl: string;
-    consentimentos: Consentimentos;
-  }) => Promise<void>;
+  onConcluirAssinatura: (
+    dados: {
+      nome: string;
+      cpf: string;
+      imagemDataUrl: string;
+      consentimentos: Consentimentos;
+    },
+    automatico?: boolean,
+  ) => Promise<void>;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
@@ -53,6 +61,7 @@ export function TelaAssinatura({
   const [cpf, setCpf] = useState("");
   const [temTrazo, setTemTrazo] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [codigoTeste, setCodigoTeste] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
   const [erroOtp, setErroOtp] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -110,10 +119,27 @@ export function TelaAssinatura({
     setErroOtp(null);
     try {
       const resultado = await onEnviarOtp(cliente.whatsapp);
-      if ("ok" in resultado) setCodigoEnviado(true);
-      else setErroOtp(mensagensErroOtp[resultado.erro]);
-    } catch {
-      setErroOtp(mensagensErroOtp.falha);
+      if ("ok" in resultado) {
+        const codigoRecebido = resultado.codigoTeste;
+        setCodigoEnviado(true);
+        if (codigoRecebido) setCodigo(codigoRecebido);
+        setCodigoTeste(codigoRecebido ?? null);
+        const automatico = await executarOtpAutomatico(codigoRecebido, onValidarOtp, () =>
+          onConcluirAssinatura(
+            {
+              nome: nome.trim(),
+              cpf,
+              imagemDataUrl: padRef.current?.toDataURL("image/png") ?? "",
+              consentimentos,
+            },
+            true,
+          ),
+        );
+        if (automatico.automatico && !automatico.erro) return;
+        if (automatico.automatico && automatico.erro) setErroOtp(mensagensErroOtp[automatico.erro]);
+      } else setErroOtp(mensagensErroOtp[resultado.erro]);
+    } catch (error) {
+      setErroOtp(error instanceof Error ? error.message : mensagensErroOtp.falha);
     } finally {
       setEnviando(false);
     }
@@ -225,11 +251,17 @@ export function TelaAssinatura({
                 ) : (
                   <MessageCircleIcon aria-hidden strokeWidth={1.5} />
                 )}
-                Enviar código por WhatsApp
+                {otpAutomatico ? "Assinar e continuar" : "Enviar código por WhatsApp"}
               </Button>
               <p className="text-center text-xs text-pretty text-muted-foreground">
-                Enviaremos um código de 6 dígitos para o WhatsApp{" "}
-                {formatarTelefone(cliente.whatsapp)}.
+                {otpAutomatico ? (
+                  "Modo teste: o código será gerado e validado automaticamente."
+                ) : (
+                  <>
+                    Enviaremos um código de 6 dígitos para o WhatsApp{" "}
+                    {formatarTelefone(cliente.whatsapp)}.
+                  </>
+                )}
               </p>
             </div>
           ) : (
@@ -242,6 +274,14 @@ export function TelaAssinatura({
               <Label htmlFor="assinatura-otp" className="font-normal text-muted-foreground">
                 Código de verificação (6 dígitos)
               </Label>
+              {codigoTeste ? (
+                <p
+                  className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                  role="status"
+                >
+                  Modo teste: seu código é {codigoTeste}
+                </p>
+              ) : null}
               <div className="flex items-center gap-2.5">
                 <Input
                   id="assinatura-otp"

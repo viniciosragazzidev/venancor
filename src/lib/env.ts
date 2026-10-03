@@ -11,7 +11,9 @@ const schema = z.object({
   PAYMENT_PROVIDER: z.enum(["fake", "asaas"]).default("fake"),
   MESSAGING_PROVIDER: z.enum(["fake", "meta"]).default("fake"),
   SIGNATURE_PROVIDER: z.literal("inhouse").default("inhouse"),
-  STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
+  STORAGE_DRIVER: z
+    .enum(["local", "supabase"])
+    .default(process.env.NODE_ENV === "production" ? "supabase" : "local"),
   ASAAS_API_KEY: z.string().optional(),
   ASAAS_ENV: z.enum(["sandbox", "production"]).default("sandbox"),
   ASAAS_WEBHOOK_TOKEN: z.string().optional(),
@@ -24,6 +26,8 @@ const schema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.email().optional(),
+  WEBHOOK_SECRET_TOKEN: z.string().optional(),
+  NEXT_PUBLIC_MODO_TESTE: z.enum(["true", "false"]).default("false"),
 });
 
 export type ServerEnv = z.infer<typeof schema>;

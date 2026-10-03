@@ -32,7 +32,8 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 - [ ] Projeto de produção criado (separado do projeto de desenvolvimento)
 - [ ] Migrations e seed rodados no banco de produção
 - [ ] Connection string configurada em `DATABASE_URL`
-- [ ] Bucket **privado** do Storage criado (contratos, assinaturas e evidências) com acesso apenas por URLs assinadas
+- [ ] Bucket **privado** `documentos` criado, sem policy pública de leitura ou listagem; contratos e evidências acessíveis apenas por URLs assinadas
+- [ ] `DATABASE_URL` usa a role dona do banco somente no servidor; `SUPABASE_SERVICE_ROLE_KEY` fica somente no servidor e nunca em variável `NEXT_PUBLIC_`
 - [ ] RLS ativado em todas as tabelas, sem policies públicas (a anon key não lê nada — override #1 da SPEC: o acesso passa sempre pelo servidor)
 
 ## 5. Autenticação do admin (Better Auth)
@@ -54,6 +55,7 @@ O que o gestor precisa configurar antes de ativar a produção, conforme a SPEC 
 
 - [ ] Projeto deployado na Vercel, conectado ao repositório
 - [ ] Todas as variáveis de `.env.example` preenchidas no ambiente de produção da Vercel
+- [ ] `NEXT_PUBLIC_MODO_TESTE=false` no ambiente real, com provedores reais e `STORAGE_DRIVER=supabase`
 - [ ] Todos os segredos apenas em variáveis de ambiente (nunca no código)
 - [ ] Variável `ASAAS_ENV=production` ligada só depois dos itens acima (sai do sandbox)
 

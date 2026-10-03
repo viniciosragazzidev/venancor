@@ -122,6 +122,9 @@ export class InHouseSignatureProvider implements SignatureProvider {
         `User-Agent: ${dados.userAgent}`,
         `Telefone do código: ${dados.telefoneOtp}`,
         `Código validado em: ${dataBr(dados.otpValidadoEm)}`,
+        ...(dados.modoTeste
+          ? ["Modo teste: OTP enviado por mensageria fake e validado no servidor"]
+          : []),
         dados.geo
           ? `Geolocalização consentida: ${dados.geo.lat}, ${dados.geo.lng}; precisão ${dados.geo.precisao ?? "não informada"}`
           : "Geolocalização: não compartilhada",

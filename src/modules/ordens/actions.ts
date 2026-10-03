@@ -20,6 +20,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
 import { getPaymentProvider } from "@/providers/payment";
+import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
 import { transicionar } from "./state-machine";
 
@@ -164,6 +165,7 @@ export async function criarOrdem(input: CriarOrdemInput) {
 
 export async function listarOrdens() {
   await requireAdmin();
+  await sincronizarPendentesAsaas();
   return db.select().from(ordens);
 }
 

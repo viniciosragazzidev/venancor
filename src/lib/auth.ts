@@ -10,6 +10,11 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: { enabled: true, disableSignUp: true },
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    customRules: { "/sign-in/email": { window: 60, max: 5 } },
+  },
   advanced: { database: { joins: true } },
   plugins: [nextCookies()],
 });

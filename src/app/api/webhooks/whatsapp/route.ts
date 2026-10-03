@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/client";
 import { mensagens } from "@/db/schema";
 import { MetaWhatsAppProvider } from "@/providers/messaging/meta";
+import { log } from "@/lib/log";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -43,7 +44,10 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ resultado: "ok" });
   } catch (error) {
-    console.error("Falha no webhook WhatsApp", error);
+    log.error(
+      "Falha no webhook WhatsApp",
+      error instanceof Error ? error.name : "erro_desconhecido",
+    );
     return NextResponse.json({ erro: "Falha ao processar webhook" }, { status: 500 });
   }
 }

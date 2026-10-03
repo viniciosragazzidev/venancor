@@ -1,7 +1,9 @@
+import { createHmac } from "node:crypto";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditoria, clientes, ordens, otpCodigos } from "@/db/schema";
 import { getMessagingProvider } from "@/providers/messaging";
+import { codigoOtpDeTeste } from "@/lib/modo-teste";
 import { gerarCodigoOtp, hashOtp, verificarOtpHash } from "./otp-crypto";
 
 export type ResultadoOtp =
@@ -13,7 +15,7 @@ const segredoOtp = () => {
   return segredo;
 };
 
-export async function enviarOtp(ordemId: string): Promise<void> {
+export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoTeste?: string }> {
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
   if (!ordem || ordem.status !== "visualizada" || ordem.expiraEm.getTime() < Date.now())
     throw new Error("Ordem indisponível para OTP");
@@ -25,8 +27,26 @@ export async function enviarOtp(ordemId: string): Promise<void> {
   if (!cliente) throw new Error("Cliente não encontrado");
   const codigo = gerarCodigoOtp();
   const codigoHash = hashOtp(codigo, segredoOtp());
+  const ipHash =
+    ip && ip !== "desconhecido"
+      ? createHmac("sha256", segredoOtp()).update(ip).digest("hex")
+      : null;
   await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${ordemId}))`);
+    if (ipHash) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${ipHash}))`);
+      const [porIp] = await tx
+        .select({ total: sql<number>`count(*)::int` })
+        .from(auditoria)
+        .where(
+          and(
+            eq(auditoria.acao, "enviar_otp"),
+            gte(auditoria.criadoEm, new Date(Date.now() - 60 * 60_000)),
+            sql`${auditoria.metadados}->>'ipHash' = ${ipHash}`,
+          ),
+        );
+      if ((porIp?.total ?? 0) >= 12) throw new Error("Limite de envios de OTP por rede atingido");
+    }
     const ultimos = await tx
       .select()
       .from(otpCodigos)
@@ -42,17 +62,21 @@ export async function enviarOtp(ordemId: string): Promise<void> {
       agora - ultimos[0].enviadoEm.getTime() < 15 * 60_000
     )
       throw new Error("Limite de envios de OTP atingido");
-    await tx
-      .insert(otpCodigos)
-      .values({
-        ordemId,
-        telefone: cliente.whatsapp,
-        codigoHash,
-        expiraEm: new Date(agora + 5 * 60_000),
-      });
+    await tx.insert(otpCodigos).values({
+      ordemId,
+      telefone: cliente.whatsapp,
+      codigoHash,
+      expiraEm: new Date(agora + 5 * 60_000),
+    });
     await tx
       .insert(auditoria)
-      .values({ entidade: "ordens", entidadeId: ordemId, acao: "enviar_otp", ator: "cliente" });
+      .values({
+        entidade: "ordens",
+        entidadeId: ordemId,
+        acao: "enviar_otp",
+        ator: "cliente",
+        metadados: ipHash ? { ipHash } : {},
+      });
   });
   await getMessagingProvider().enviarTemplate({
     para: cliente.whatsapp,
@@ -60,6 +84,8 @@ export async function enviarOtp(ordemId: string): Promise<void> {
     variaveis: { codigo },
     ordemId,
   });
+  const codigoTeste = codigoOtpDeTeste(codigo, process.env.MESSAGING_PROVIDER ?? "fake");
+  return codigoTeste ? { codigoTeste } : {};
 }
 
 export async function validarOtp(ordemId: string, codigo: string): Promise<ResultadoOtp> {

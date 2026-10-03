@@ -10,6 +10,7 @@ export interface DadosAssinatura {
   geo?: { lat: number; lng: number; precisao?: number };
   contratoHtmlOuTexto: string;
   anexoPdf?: Uint8Array;
+  modoTeste?: boolean;
 }
 export interface AssinaturaConcluida {
   providerRef?: string;

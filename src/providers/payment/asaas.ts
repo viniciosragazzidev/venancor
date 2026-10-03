@@ -1,5 +1,6 @@
 import type { Cobranca, CriarCobrancaInput, EventoPagamento, PaymentProvider } from "./types";
 import { parseWebhookAsaas, validarWebhookAsaas } from "./asaas-webhook";
+import { fakePermitido } from "@/lib/modo-teste";
 
 type AsaasPayment = {
   id: string;
@@ -123,6 +124,15 @@ export class AsaasProvider implements PaymentProvider {
       checkoutUrl: p.invoiceUrl,
       boletoUrl: p.bankSlipUrl,
     };
+  }
+
+  async confirmarPagamentoSandbox(id: string): Promise<Cobranca> {
+    if (process.env.ASAAS_ENV !== "sandbox" || !fakePermitido())
+      throw new Error("Simulação Asaas disponível apenas no sandbox em modo de teste");
+    await this.request<AsaasPayment>(`/sandbox/payment/${encodeURIComponent(id)}/confirm`, {
+      method: "POST",
+    });
+    return this.consultarCobranca(id);
   }
 
   async cancelarCobranca(id: string): Promise<void> {

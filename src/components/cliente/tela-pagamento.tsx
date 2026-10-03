@@ -314,7 +314,7 @@ export function TelaPagamento({
             }
           }}
         >
-          {simulando ? "Simulando…" : "Simular pagamento (dev)"}
+          {simulando ? "Simulando…" : "Simular pagamento"}
         </Button>
       ) : null}
     </div>
