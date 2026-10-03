@@ -56,3 +56,32 @@ export function formatarDataHora(data: Date | string): string {
     dataJs,
   );
 }
+
+export function rotuloEventoOrdem(acao: string, metadados: Record<string, unknown>): string {
+  switch (acao) {
+    case "criar":
+      return "Ordem criada";
+    case "transicionar": {
+      const de = typeof metadados.de === "string" ? rotuloStatusOrdem(metadados.de) : null;
+      const para = typeof metadados.para === "string" ? rotuloStatusOrdem(metadados.para) : null;
+      if (de && para) return `${de} → ${para}`;
+      return para ? `Status: ${para}` : "Status alterado";
+    }
+    case "regenerar_link":
+      return "Link regenerado";
+    case "atualizar":
+      return "Ordem atualizada";
+    default:
+      return acao
+        .split(/[_-]/)
+        .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+        .join(" ");
+  }
+}
+
+export function rotuloAtor(ator: string): string {
+  if (ator.startsWith("admin:")) return "Admin";
+  if (ator.startsWith("cliente:")) return "Cliente";
+  if (ator.startsWith("sistema")) return "Sistema";
+  return ator;
+}

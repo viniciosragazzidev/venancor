@@ -6,6 +6,8 @@ import { formatarCentavos } from "@/components/admin/format";
 import {
   classesStatusOrdem,
   formatarDataHora,
+  rotuloAtor,
+  rotuloEventoOrdem,
   rotuloMetodoPagamento,
   rotuloStatusOrdem,
   rotuloValorCobrado,
@@ -14,7 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { listarClientes } from "@/modules/clientes/actions";
 import { listarOrdens } from "@/modules/ordens/actions";
+import { listarEventosOrdem } from "@/modules/ordens/queries";
 import { listarPlanos } from "@/modules/planos/actions";
+
+import { OrdemAcoes } from "./ordem-acoes";
 
 export const metadata: Metadata = {
   title: "Ordem",
@@ -61,6 +66,7 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
   ]);
   const ordem = ordens.find((item) => item.id === id);
   if (!ordem) notFound();
+  const eventos = await listarEventosOrdem(ordem.id);
 
   const cliente = clientes.find((item) => item.id === ordem.clienteId);
   const plano = planos.find((item) => item.id === ordem.planoId);
@@ -76,6 +82,8 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
           {rotuloStatusOrdem(ordem.status)}
         </Badge>
       </div>
+
+      <OrdemAcoes ordemId={ordem.id} status={ordem.status} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Carta titulo="Valores">
@@ -107,22 +115,26 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
         </Carta>
 
         <Carta titulo="Linha do tempo">
-          <dl className="flex flex-col gap-2.5">
-            <Linha rotulo="Criada" valor={formatarDataHora(ordem.criadoEm)} />
-            {ordem.enviadaEm ? (
-              <Linha rotulo="Enviada" valor={formatarDataHora(ordem.enviadaEm)} />
-            ) : null}
-            {ordem.visualizadaEm ? (
-              <Linha rotulo="Visualizada" valor={formatarDataHora(ordem.visualizadaEm)} />
-            ) : null}
-            {ordem.assinadaEm ? (
-              <Linha rotulo="Assinada" valor={formatarDataHora(ordem.assinadaEm)} />
-            ) : null}
-            {ordem.pagaEm ? <Linha rotulo="Paga" valor={formatarDataHora(ordem.pagaEm)} /> : null}
-            {ordem.canceladaEm ? (
-              <Linha rotulo="Cancelada" valor={formatarDataHora(ordem.canceladaEm)} />
-            ) : null}
-          </dl>
+          {eventos.length === 0 ? (
+            <p className="text-sm text-pretty text-muted-foreground">Nenhum evento registrado.</p>
+          ) : (
+            <ol className="relative flex flex-col gap-4 border-l pl-5">
+              {eventos.map((evento) => (
+                <li key={evento.id} className="relative">
+                  <span
+                    aria-hidden
+                    className="absolute top-1.5 -left-[26px] size-2.5 rounded-full bg-primary ring-4 ring-background"
+                  />
+                  <p className="text-sm font-medium text-pretty">
+                    {rotuloEventoOrdem(evento.acao, evento.metadados)}
+                  </p>
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {formatarDataHora(evento.criadoEm)} · {rotuloAtor(evento.ator)}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
         </Carta>
 
         <Carta titulo="Beneficiários">
