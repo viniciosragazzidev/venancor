@@ -10,7 +10,10 @@ export function Logo({ className }: { className?: string }) {
       width={150}
       height={45}
       priority
-      className={cn("h-auto w-[150px]", className)}
+      className={cn(
+        "h-auto w-[150px] dark:rounded-xl dark:bg-white dark:px-2 dark:py-1",
+        className,
+      )}
     />
   );
 }
