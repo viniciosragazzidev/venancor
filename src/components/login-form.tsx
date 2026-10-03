@@ -40,7 +40,7 @@ export function LoginForm() {
       return;
     }
     const callback = new URLSearchParams(window.location.search).get("callbackUrl");
-    router.push(callback?.startsWith("/") && !callback.startsWith("//") ? callback : "/");
+    router.push(callback?.startsWith("/") && !callback.startsWith("//") ? callback : "/painel");
     router.refresh();
   }
 

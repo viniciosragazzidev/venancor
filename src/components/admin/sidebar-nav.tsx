@@ -21,17 +21,17 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboardIcon },
-  { href: "/ordens", label: "Ordens", icon: ClipboardListIcon },
-  { href: "/clientes", label: "Clientes", icon: UsersIcon },
-  { href: "/planos", label: "Planos", icon: HeartPulseIcon },
-  { href: "/operadoras", label: "Operadoras", icon: Building2Icon },
-  { href: "/modelos-contrato", label: "Modelos de contrato", icon: FileTextIcon },
+  { href: "/painel", label: "Dashboard", icon: LayoutDashboardIcon },
+  { href: "/painel/ordens", label: "Ordens", icon: ClipboardListIcon },
+  { href: "/painel/clientes", label: "Clientes", icon: UsersIcon },
+  { href: "/painel/planos", label: "Planos", icon: HeartPulseIcon },
+  { href: "/painel/operadoras", label: "Operadoras", icon: Building2Icon },
+  { href: "/painel/modelos-contrato", label: "Modelos de contrato", icon: FileTextIcon },
 ];
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
+  if (href === "/painel") {
+    return pathname === "/painel";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
