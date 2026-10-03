@@ -33,7 +33,21 @@ export class AsaasProvider implements PaymentProvider {
       },
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error(`Asaas respondeu HTTP ${response.status}`);
+    if (!response.ok) {
+      // O Asaas devolve { errors: [{ code, description }] }: mensagem sem dados pessoais, útil para diagnosticar.
+      let detalhe = "";
+      try {
+        const erro = (await response.json()) as {
+          errors?: { code?: string; description?: string }[];
+        };
+        detalhe = (erro.errors ?? [])
+          .map((e) => [e.code, e.description].filter(Boolean).join(": "))
+          .join("; ");
+      } catch {
+        // corpo vazio ou não-JSON
+      }
+      throw new Error(`Asaas respondeu HTTP ${response.status}${detalhe ? ` (${detalhe})` : ""}`);
+    }
     const body = await response.text();
     return (body ? JSON.parse(body) : undefined) as T;
   }
@@ -64,7 +78,6 @@ export class AsaasProvider implements PaymentProvider {
         name: input.cliente.nome,
         cpfCnpj: cpf,
         email: input.cliente.email,
-        mobilePhone: input.cliente.whatsapp?.replace(/\D/g, ""),
         notificationDisabled: true,
       }),
     });
