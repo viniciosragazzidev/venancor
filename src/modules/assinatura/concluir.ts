@@ -6,6 +6,7 @@ import { getSignatureProvider } from "@/providers/signature";
 import { getStorageAdapter } from "@/providers/storage";
 import { fakePermitido } from "@/lib/modo-teste";
 import { otpValidado } from "./otp";
+import { assinaturaExigeOtp, obterOtpParaAssinatura } from "./otp-policy";
 import { concluirAssinaturaSchema, type ConcluirAssinaturaInput } from "./schema";
 
 export async function concluirAssinatura(
@@ -31,8 +32,7 @@ export async function concluirAssinatura(
     dados.cpf !== titular.cpf
   )
     throw new Error("Nome ou CPF não conferem com o titular");
-  const otp = await otpValidado(ordem.dados.id);
-  if (!otp) throw new Error("Código de confirmação não validado");
+  const otp = await obterOtpParaAssinatura(() => otpValidado(ordem.dados.id));
   const aceites = await db
     .select({ tipo: consentimentos.tipo })
     .from(consentimentos)
@@ -59,14 +59,17 @@ export async function concluirAssinatura(
     ordemId: ordem.dados.id,
     nome: dados.nome,
     cpf: dados.cpf,
-    telefoneOtp: otp.telefone,
-    otpValidadoEm: otp.validadoEm,
+    telefoneOtp: otp?.telefone,
+    otpValidadoEm: otp?.validadoEm,
     imagemPng: imagem,
     ip: contexto.ip,
     userAgent: contexto.userAgent,
     geo: dados.geo,
     contratoHtmlOuTexto: ordem.dados.contrato_corpo,
-    modoTeste: fakePermitido() && (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
+    modoTeste:
+      assinaturaExigeOtp() &&
+      fakePermitido() &&
+      (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
   });
   const storage = getStorageAdapter();
   const prefixo = `ordens/${ordem.dados.id}/${crypto.randomUUID()}`;
@@ -96,8 +99,8 @@ export async function concluirAssinatura(
         ip: contexto.ip,
         userAgent: contexto.userAgent,
         geo: dados.geo,
-        telefoneOtp: otp.telefone,
-        otpValidadoEm: otp.validadoEm,
+        telefoneOtp: otp?.telefone ?? null,
+        otpValidadoEm: otp?.validadoEm ?? null,
         assinadoEm: assinada.assinadoEm,
         provider: getSignatureProvider().nome,
       });
@@ -108,7 +111,11 @@ export async function concluirAssinatura(
         ator: "cliente",
         metadados: {
           hashSha256: assinada.hashSha256,
-          modoTeste: fakePermitido() && (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
+          verificacaoOtp: assinaturaExigeOtp() ? "validada" : "nao_utilizada",
+          modoTeste:
+            assinaturaExigeOtp() &&
+            fakePermitido() &&
+            (process.env.MESSAGING_PROVIDER ?? "fake") === "fake",
         },
       });
     });

@@ -2,8 +2,8 @@ export interface DadosAssinatura {
   ordemId: string;
   nome: string;
   cpf: string;
-  telefoneOtp: string;
-  otpValidadoEm: Date;
+  telefoneOtp?: string;
+  otpValidadoEm?: Date;
   imagemPng: Uint8Array;
   ip: string;
   userAgent: string;

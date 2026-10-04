@@ -62,6 +62,17 @@ function linhasNaPagina(doc: PDFDocument, fonte: PDFFont, texto: string, tamanho
   return { pagina, y };
 }
 
+export function linhasVerificacaoOtp(dados: DadosAssinatura): string[] {
+  if (!dados.telefoneOtp || !dados.otpValidadoEm) return ["Verificação por código: não utilizada"];
+  return [
+    `Telefone do código: ${dados.telefoneOtp}`,
+    `Código validado em: ${dataBr(dados.otpValidadoEm)}`,
+    ...(dados.modoTeste
+      ? ["Modo teste: OTP enviado por mensageria fake e validado no servidor"]
+      : []),
+  ];
+}
+
 export class InHouseSignatureProvider implements SignatureProvider {
   readonly nome = "inhouse";
 
@@ -120,11 +131,7 @@ export class InHouseSignatureProvider implements SignatureProvider {
         `Data e hora: ${dataBr(assinadoEm)} (America/Sao_Paulo)`,
         `IP: ${dados.ip}`,
         `User-Agent: ${dados.userAgent}`,
-        `Telefone do código: ${dados.telefoneOtp}`,
-        `Código validado em: ${dataBr(dados.otpValidadoEm)}`,
-        ...(dados.modoTeste
-          ? ["Modo teste: OTP enviado por mensageria fake e validado no servidor"]
-          : []),
+        ...linhasVerificacaoOtp(dados),
         dados.geo
           ? `Geolocalização consentida: ${dados.geo.lat}, ${dados.geo.lng}; precisão ${dados.geo.precisao ?? "não informada"}`
           : "Geolocalização: não compartilhada",

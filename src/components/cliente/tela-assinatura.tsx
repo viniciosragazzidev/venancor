@@ -31,6 +31,7 @@ type Consentimentos = { contrato: boolean; lgpd: boolean };
 
 export function TelaAssinatura({
   cliente,
+  exigeOtp = false,
   otpAutomatico = false,
   consentimentos,
   onEnviarOtp,
@@ -38,6 +39,7 @@ export function TelaAssinatura({
   onConcluirAssinatura,
 }: {
   cliente: { nome: string; cpf: string; whatsapp: string };
+  exigeOtp?: boolean;
   otpAutomatico?: boolean;
   consentimentos: Consentimentos;
   onEnviarOtp: (
@@ -70,7 +72,7 @@ export function TelaAssinatura({
   const nomeOk = nome.trim().length >= 3;
   const cpfOk = cpf.length === 11;
   const cpfTocado = cpf.length > 0;
-  const podePedirCodigo = nomeOk && cpfOk && temTrazo;
+  const podeAssinar = nomeOk && cpfOk && temTrazo;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -161,6 +163,26 @@ export function TelaAssinatura({
     }
   }
 
+  async function concluirDireto() {
+    setValidando(true);
+    setErroOtp(null);
+    try {
+      await onConcluirAssinatura(
+        {
+          nome: nome.trim(),
+          cpf,
+          imagemDataUrl: padRef.current?.toDataURL("image/png") ?? "",
+          consentimentos,
+        },
+        true,
+      );
+    } catch (error) {
+      setErroOtp(error instanceof Error ? error.message : mensagensErroOtp.falha);
+    } finally {
+      setValidando(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Card className="rounded-3xl">
@@ -237,14 +259,35 @@ export function TelaAssinatura({
             </div>
           </div>
 
-          {!codigoEnviado ? (
+          {!exigeOtp ? (
+            <div className="flex flex-col items-center gap-2.5">
+              <Button
+                size="lg"
+                className="h-12 w-full rounded-full px-6 text-base"
+                onClick={concluirDireto}
+                disabled={!podeAssinar || validando}
+              >
+                {validando ? (
+                  <LoaderCircleIcon aria-hidden className="animate-spin" strokeWidth={1.5} />
+                ) : (
+                  <CheckIcon aria-hidden strokeWidth={1.5} />
+                )}
+                Assinar e continuar ao pagamento
+              </Button>
+              {erroOtp ? (
+                <p className="text-xs text-destructive" role="alert">
+                  {erroOtp}
+                </p>
+              ) : null}
+            </div>
+          ) : !codigoEnviado ? (
             <div className="flex flex-col items-center gap-2.5">
               <Button
                 variant="outline"
                 size="lg"
                 className="h-12 w-full rounded-full px-6 text-base"
                 onClick={pedirCodigo}
-                disabled={!podePedirCodigo || enviando}
+                disabled={!podeAssinar || enviando}
               >
                 {enviando ? (
                   <LoaderCircleIcon aria-hidden className="animate-spin" strokeWidth={1.5} />

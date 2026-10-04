@@ -28,6 +28,7 @@ const schema = z.object({
   RESEND_FROM_EMAIL: z.email().optional(),
   WEBHOOK_SECRET_TOKEN: z.string().optional(),
   NEXT_PUBLIC_MODO_TESTE: z.enum(["true", "false"]).default("false"),
+  ASSINATURA_EXIGE_OTP: z.enum(["true", "false"]).default("false"),
 });
 
 export type ServerEnv = z.infer<typeof schema>;

@@ -22,11 +22,13 @@ export function FluxoReal({
   ordem,
   simulacaoDisponivel,
   otpAutomatico,
+  exigeOtp,
 }: {
   token: string;
   ordem: DadosOrdemCliente;
   simulacaoDisponivel: boolean;
   otpAutomatico: boolean;
+  exigeOtp: boolean;
 }) {
   const [status, setStatus] = useState(ordem.status);
 
@@ -124,5 +126,12 @@ export function FluxoReal({
       toast.success("Link da proposta copiado.");
     },
   };
-  return <FluxoCliente ordem={{ ...ordem, status }} acoes={acoes} otpAutomatico={otpAutomatico} />;
+  return (
+    <FluxoCliente
+      ordem={{ ...ordem, status }}
+      acoes={acoes}
+      otpAutomatico={otpAutomatico}
+      exigeOtp={exigeOtp}
+    />
+  );
 }

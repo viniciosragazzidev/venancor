@@ -7,6 +7,7 @@ import { FluxoReal } from "@/components/cliente/fluxo-real";
 import { TelaStatus } from "@/components/cliente/tela-sucesso";
 import { resolverToken } from "@/modules/ordens/cliente";
 import { fakePermitido } from "@/lib/modo-teste";
+import { assinaturaExigeOtp } from "@/modules/assinatura/otp-policy";
 
 export const metadata: Metadata = {
   title: "Sua proposta",
@@ -40,6 +41,7 @@ export default async function PaginaProposta({ params }: { params: Promise<{ tok
       ordem={estado.dados}
       simulacaoDisponivel={simulacaoDisponivel}
       otpAutomatico={otpAutomatico}
+      exigeOtp={assinaturaExigeOtp()}
     />
   );
 }

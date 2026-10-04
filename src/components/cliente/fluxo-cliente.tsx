@@ -80,10 +80,12 @@ export function FluxoCliente({
   ordem,
   acoes,
   otpAutomatico = false,
+  exigeOtp = false,
 }: {
   ordem: DadosOrdemCliente;
   acoes: AcoesFluxo;
   otpAutomatico?: boolean;
+  exigeOtp?: boolean;
 }) {
   const jaAssinada = ["assinada", "aguardando_pagamento", "paga"].includes(ordem.status);
   const [etapa, setEtapa] = useState<Etapa>(jaAssinada ? "pagamento" : "resumo");
@@ -160,6 +162,7 @@ export function FluxoCliente({
       case "assinatura":
         return (
           <TelaAssinatura
+            exigeOtp={exigeOtp}
             otpAutomatico={otpAutomatico}
             cliente={ordem.cliente}
             consentimentos={consentimentos}
@@ -266,7 +269,11 @@ export function FluxoCliente({
               <h1 className="text-2xl leading-tight font-medium tracking-tight text-balance">
                 {etapaAtual.titulo}
               </h1>
-              <p className="text-sm text-pretty text-muted-foreground">{etapaAtual.subtitulo}</p>
+              <p className="text-sm text-pretty text-muted-foreground">
+                {etapa === "assinatura" && !exigeOtp
+                  ? "Confirme seus dados e assine para continuar ao pagamento."
+                  : etapaAtual.subtitulo}
+              </p>
             </div>
           </>
         ) : null}
