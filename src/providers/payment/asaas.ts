@@ -22,17 +22,29 @@ export class AsaasProvider implements PaymentProvider {
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const token = process.env.ASAAS_API_KEY;
     if (!token) throw new Error("ASAAS_API_KEY não configurada");
-    const response = await fetch(`${this.base}${path}`, {
-      ...init,
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "MedLink/1.0",
-        access_token: token,
-        ...init.headers,
-      },
-      signal: AbortSignal.timeout(15000),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.base}${path}`, {
+        ...init,
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "MedLink/1.0",
+          access_token: token,
+          ...init.headers,
+        },
+        // O sandbox chega a levar mais de 15s para gerar o QR Code Pix.
+        signal: AbortSignal.timeout(40000),
+      });
+    } catch (error) {
+      // TimeoutError/AbortError são DOMException (message só leitura): converte para Error comum.
+      const nome = error instanceof Error ? error.name : "";
+      throw new Error(
+        nome === "TimeoutError" || nome === "AbortError"
+          ? "Asaas não respondeu a tempo. Tente de novo."
+          : "Falha de rede ao falar com o Asaas.",
+      );
+    }
     if (!response.ok) {
       // O Asaas devolve { errors: [{ code, description }] }: mensagem sem dados pessoais, útil para diagnosticar.
       let detalhe = "";
@@ -109,11 +121,18 @@ export class AsaasProvider implements PaymentProvider {
     };
     try {
       if (input.metodo === "pix") {
-        const qr = await this.request<{ payload: string; encodedImage: string }>(
-          `/payments/${payment.id}/pixQrCode`,
-        );
-        result.pixPayload = qr.payload;
-        result.pixQrBase64 = qr.encodedImage;
+        // A página do Asaas (invoiceUrl) também mostra o Pix: vira o caminho de reserva se o
+        // endpoint de QR falhar (o sandbox responde 400 "erro desconhecido" em algumas contas).
+        result.checkoutUrl = payment.invoiceUrl;
+        try {
+          const qr = await this.request<{ payload: string; encodedImage: string }>(
+            `/payments/${payment.id}/pixQrCode`,
+          );
+          result.pixPayload = qr.payload;
+          result.pixQrBase64 = qr.encodedImage;
+        } catch (error) {
+          if (!payment.invoiceUrl) throw error;
+        }
       } else if (input.metodo === "boleto") {
         result.boletoUrl = payment.bankSlipUrl ?? payment.invoiceUrl;
         const line = await this.request<{ identificationField: string }>(
@@ -140,10 +159,11 @@ export class AsaasProvider implements PaymentProvider {
   }
 
   async confirmarPagamentoSandbox(id: string): Promise<Cobranca> {
-    if (process.env.ASAAS_ENV !== "sandbox" || !fakePermitido())
+    if (process.env.ASAAS_ENV === "production" || !fakePermitido())
       throw new Error("Simulação Asaas disponível apenas no sandbox em modo de teste");
     await this.request<AsaasPayment>(`/sandbox/payment/${encodeURIComponent(id)}/confirm`, {
       method: "POST",
+      body: "{}", // sem corpo JSON o sandbox responde 400 "erro desconhecido"
     });
     return this.consultarCobranca(id);
   }

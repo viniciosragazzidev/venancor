@@ -6,7 +6,8 @@ const csp = [
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // React em dev usa eval() para depuração; em produção o eval continua bloqueado.
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
@@ -21,8 +22,10 @@ const protectedHeaders = [
 
 const nextConfig: NextConfig = {
   async headers() {
-    return ["/c/:path*", "/painel/:path*", "/api/cliente/:path*", "/api/storage"]
-      .map((source) => ({ source, headers: protectedHeaders }));
+    return ["/c/:path*", "/painel/:path*", "/api/cliente/:path*", "/api/storage"].map((source) => ({
+      source,
+      headers: protectedHeaders,
+    }));
   },
 };
 

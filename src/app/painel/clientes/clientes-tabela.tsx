@@ -408,8 +408,8 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       </Card>
 
       <Dialog open={formAberto} onOpenChange={setFormAberto}>
-        <DialogContent className="gap-0 rounded-3xl">
-          <DialogHeader>
+        <DialogContent variant="form">
+          <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
             <DialogTitle>{editando ? "Editar cliente" : "Novo cliente"}</DialogTitle>
             <DialogDescription>
               {editando
@@ -418,167 +418,171 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
             </DialogDescription>
           </DialogHeader>
           <form
-            className="flex max-h-[75vh] flex-col gap-5 overflow-y-auto pt-4 pr-1"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={handleSubmit(submeter)}
             noValidate
           >
-            <div className="flex flex-col gap-4">
-              <p className="text-sm font-medium">Dados pessoais</p>
-              <Campo label="Nome completo" htmlFor="cliente-nome" error={errors.nome?.message}>
-                <Input
-                  id="cliente-nome"
-                  className={inputPill}
-                  placeholder="Nome do titular"
-                  autoComplete="name"
-                  {...register("nome")}
-                />
-              </Campo>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Campo label="CPF" htmlFor="cliente-cpf" error={errors.cpf?.message}>
+            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+              <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Dados pessoais</p>
+                <Campo label="Nome completo" htmlFor="cliente-nome" error={errors.nome?.message}>
                   <Input
-                    id="cliente-cpf"
-                    className={`${inputPill} tabular-nums`}
-                    placeholder="000.000.000-00"
-                    inputMode="numeric"
-                    {...register("cpf", {
-                      onChange: (evento) => {
-                        evento.target.value = mascaraCPF(evento.target.value);
-                      },
-                    })}
-                  />
-                </Campo>
-                <Campo
-                  label="Data de nascimento"
-                  htmlFor="cliente-nascimento"
-                  error={errors.nascimento?.message}
-                >
-                  <Input
-                    id="cliente-nascimento"
-                    type="date"
-                    className={`${inputPill} tabular-nums`}
-                    max={hoje}
-                    {...register("nascimento")}
-                  />
-                </Campo>
-                <Campo label="E-mail" htmlFor="cliente-email" error={errors.email?.message}>
-                  <Input
-                    id="cliente-email"
-                    type="email"
+                    id="cliente-nome"
                     className={inputPill}
-                    placeholder="email@exemplo.com"
-                    autoComplete="email"
-                    {...register("email")}
+                    placeholder="Nome do titular"
+                    autoComplete="name"
+                    {...register("nome")}
                   />
                 </Campo>
-                <Campo
-                  label="WhatsApp"
-                  htmlFor="cliente-whatsapp"
-                  error={null}
-                  hint="Com DDD, ex.: (11) 99999-9999"
-                >
-                  <Input
-                    id="cliente-whatsapp"
-                    className={`${inputPill} tabular-nums`}
-                    placeholder="(11) 99999-9999"
-                    inputMode="tel"
-                    value={whatsappTexto}
-                    onChange={(evento) => setWhatsappTexto(mascaraTelefone(evento.target.value))}
-                  />
-                </Campo>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              <p className="text-sm font-medium">Endereço</p>
-              <Campo
-                label="CEP"
-                htmlFor="cliente-cep"
-                error={errors.cep?.message}
-                hint="Digite o CEP para preencher o endereço automaticamente."
-              >
-                <div className="relative">
-                  <Input
-                    id="cliente-cep"
-                    className={`${inputPill} pr-12 tabular-nums`}
-                    placeholder="00000-000"
-                    inputMode="numeric"
-                    {...cepCampo}
-                    onBlur={(evento) => {
-                      cepCampo.onBlur(evento);
-                      void consultarCep();
-                    }}
-                  />
-                  {buscandoCep ? (
-                    <LoaderCircleIcon
-                      aria-hidden
-                      strokeWidth={1.5}
-                      className="absolute top-1/2 right-5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo label="CPF" htmlFor="cliente-cpf" error={errors.cpf?.message}>
+                    <Input
+                      id="cliente-cpf"
+                      className={`${inputPill} tabular-nums`}
+                      placeholder="000.000.000-00"
+                      inputMode="numeric"
+                      {...register("cpf", {
+                        onChange: (evento) => {
+                          evento.target.value = mascaraCPF(evento.target.value);
+                        },
+                      })}
                     />
-                  ) : null}
+                  </Campo>
+                  <Campo
+                    label="Data de nascimento"
+                    htmlFor="cliente-nascimento"
+                    error={errors.nascimento?.message}
+                  >
+                    <Input
+                      id="cliente-nascimento"
+                      type="date"
+                      className={`${inputPill} tabular-nums`}
+                      max={hoje}
+                      {...register("nascimento")}
+                    />
+                  </Campo>
+                  <Campo label="E-mail" htmlFor="cliente-email" error={errors.email?.message}>
+                    <Input
+                      id="cliente-email"
+                      type="email"
+                      className={inputPill}
+                      placeholder="email@exemplo.com"
+                      autoComplete="email"
+                      {...register("email")}
+                    />
+                  </Campo>
+                  <Campo
+                    label="WhatsApp"
+                    htmlFor="cliente-whatsapp"
+                    error={null}
+                    hint="Com DDD, ex.: (11) 99999-9999"
+                  >
+                    <Input
+                      id="cliente-whatsapp"
+                      className={`${inputPill} tabular-nums`}
+                      placeholder="(11) 99999-9999"
+                      inputMode="tel"
+                      value={whatsappTexto}
+                      onChange={(evento) => setWhatsappTexto(mascaraTelefone(evento.target.value))}
+                    />
+                  </Campo>
                 </div>
-              </Campo>
-              <Campo
-                label="Logradouro"
-                htmlFor="cliente-logradouro"
-                error={errors.logradouro?.message}
-              >
-                <Input
-                  id="cliente-logradouro"
-                  className={inputPill}
-                  placeholder="Rua, avenida..."
-                  autoComplete="street-address"
-                  {...register("logradouro")}
-                />
-              </Campo>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Campo label="Número" htmlFor="cliente-numero" error={errors.numero?.message}>
-                  <Input
-                    id="cliente-numero"
-                    className={inputPill}
-                    placeholder="123"
-                    {...register("numero")}
-                  />
-                </Campo>
-                <Campo
-                  label="Complemento"
-                  htmlFor="cliente-complemento"
-                  error={errors.complemento?.message}
-                >
-                  <Input
-                    id="cliente-complemento"
-                    className={inputPill}
-                    placeholder="Apto, bloco..."
-                    {...register("complemento")}
-                  />
-                </Campo>
-                <Campo label="Bairro" htmlFor="cliente-bairro" error={errors.bairro?.message}>
-                  <Input id="cliente-bairro" className={inputPill} {...register("bairro")} />
-                </Campo>
-                <Campo label="Cidade" htmlFor="cliente-cidade" error={errors.cidade?.message}>
-                  <Input id="cliente-cidade" className={inputPill} {...register("cidade")} />
-                </Campo>
-                <Campo
-                  label="UF"
-                  htmlFor="cliente-uf"
-                  error={errors.uf?.message}
-                  className="sm:max-w-32"
-                >
-                  <Input
-                    id="cliente-uf"
-                    className={`${inputPill} uppercase`}
-                    maxLength={2}
-                    placeholder="SP"
-                    {...register("uf", {
-                      onChange: (evento) => {
-                        evento.target.value = evento.target.value.toUpperCase();
-                      },
-                    })}
-                  />
-                </Campo>
-              </div>
+              </section>
+
+              <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Endereço</p>
+                <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                  <Campo
+                    label="CEP"
+                    htmlFor="cliente-cep"
+                    error={errors.cep?.message}
+                    hint="Digite o CEP para preencher o endereço automaticamente."
+                  >
+                    <div className="relative">
+                      <Input
+                        id="cliente-cep"
+                        className={`${inputPill} pr-12 tabular-nums`}
+                        placeholder="00000-000"
+                        inputMode="numeric"
+                        {...cepCampo}
+                        onBlur={(evento) => {
+                          cepCampo.onBlur(evento);
+                          void consultarCep();
+                        }}
+                      />
+                      {buscandoCep ? (
+                        <LoaderCircleIcon
+                          aria-hidden
+                          strokeWidth={1.5}
+                          className="absolute top-1/2 right-5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                        />
+                      ) : null}
+                    </div>
+                  </Campo>
+                  <Campo
+                    label="Logradouro"
+                    htmlFor="cliente-logradouro"
+                    error={errors.logradouro?.message}
+                  >
+                    <Input
+                      id="cliente-logradouro"
+                      className={inputPill}
+                      placeholder="Rua, avenida..."
+                      autoComplete="street-address"
+                      {...register("logradouro")}
+                    />
+                  </Campo>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo label="Número" htmlFor="cliente-numero" error={errors.numero?.message}>
+                    <Input
+                      id="cliente-numero"
+                      className={inputPill}
+                      placeholder="123"
+                      {...register("numero")}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Complemento"
+                    htmlFor="cliente-complemento"
+                    error={errors.complemento?.message}
+                  >
+                    <Input
+                      id="cliente-complemento"
+                      className={inputPill}
+                      placeholder="Apto, bloco..."
+                      {...register("complemento")}
+                    />
+                  </Campo>
+                  <Campo label="Bairro" htmlFor="cliente-bairro" error={errors.bairro?.message}>
+                    <Input id="cliente-bairro" className={inputPill} {...register("bairro")} />
+                  </Campo>
+                  <Campo label="Cidade" htmlFor="cliente-cidade" error={errors.cidade?.message}>
+                    <Input id="cliente-cidade" className={inputPill} {...register("cidade")} />
+                  </Campo>
+                  <Campo
+                    label="UF"
+                    htmlFor="cliente-uf"
+                    error={errors.uf?.message}
+                    className="sm:max-w-32"
+                  >
+                    <Input
+                      id="cliente-uf"
+                      className={`${inputPill} uppercase`}
+                      maxLength={2}
+                      placeholder="SP"
+                      {...register("uf", {
+                        onChange: (evento) => {
+                          evento.target.value = evento.target.value.toUpperCase();
+                        },
+                      })}
+                    />
+                  </Campo>
+                </div>
+              </section>
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
               <Button
                 type="button"
                 variant="outline"
@@ -605,8 +609,8 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
           if (!aberto) setClienteSel(null);
         }}
       >
-        <SheetContent className="data-[side=right]:sm:max-w-md">
-          <SheetHeader>
+        <SheetContent variant="form">
+          <SheetHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
             <SheetTitle>
               {vista === "lista"
                 ? `Dependentes de ${clienteSel?.nome ?? ""}`
@@ -622,7 +626,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
           </SheetHeader>
 
           {vista === "lista" ? (
-            <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
               {depsCarregando ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">Carregando...</p>
               ) : dependentes.length === 0 ? (
@@ -670,7 +674,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
           ) : (
             <form
               id="form-dependente"
-              className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2"
+              className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8"
               onSubmit={depForm.handleSubmit(submeterDependente)}
               noValidate
             >
@@ -682,64 +686,71 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
                 <ArrowLeftIcon aria-hidden strokeWidth={1.5} className="size-4" />
                 Voltar
               </button>
-              <Campo label="Nome" htmlFor="dep-nome" error={depForm.formState.errors.nome?.message}>
-                <Input
-                  id="dep-nome"
-                  className={inputPill}
-                  placeholder="Nome do dependente"
-                  {...depForm.register("nome")}
-                />
-              </Campo>
-              <Campo label="CPF" htmlFor="dep-cpf" error={depForm.formState.errors.cpf?.message}>
-                <Input
-                  id="dep-cpf"
-                  className={`${inputPill} tabular-nums`}
-                  placeholder="000.000.000-00"
-                  inputMode="numeric"
-                  {...depForm.register("cpf", {
-                    onChange: (evento) => {
-                      evento.target.value = mascaraCPF(evento.target.value);
-                    },
-                  })}
-                />
-              </Campo>
-              <Campo
-                label="Data de nascimento"
-                htmlFor="dep-nascimento"
-                error={depForm.formState.errors.nascimento?.message}
-              >
-                <Input
-                  id="dep-nascimento"
-                  type="date"
-                  className={`${inputPill} tabular-nums`}
-                  max={hoje}
-                  {...depForm.register("nascimento")}
-                />
-              </Campo>
-              <Campo label="Parentesco" error={depForm.formState.errors.parentesco?.message}>
-                <Controller
-                  control={depForm.control}
-                  name="parentesco"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dependenteSchema.shape.parentesco.options.map((opcao) => (
-                          <SelectItem key={opcao} value={opcao}>
-                            {rotulo(opcao)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Campo
+                  label="Nome"
+                  htmlFor="dep-nome"
+                  error={depForm.formState.errors.nome?.message}
+                  className="sm:col-span-2"
+                >
+                  <Input
+                    id="dep-nome"
+                    className={inputPill}
+                    placeholder="Nome do dependente"
+                    {...depForm.register("nome")}
+                  />
+                </Campo>
+                <Campo label="CPF" htmlFor="dep-cpf" error={depForm.formState.errors.cpf?.message}>
+                  <Input
+                    id="dep-cpf"
+                    className={`${inputPill} tabular-nums`}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                    {...depForm.register("cpf", {
+                      onChange: (evento) => {
+                        evento.target.value = mascaraCPF(evento.target.value);
+                      },
+                    })}
+                  />
+                </Campo>
+                <Campo
+                  label="Data de nascimento"
+                  htmlFor="dep-nascimento"
+                  error={depForm.formState.errors.nascimento?.message}
+                >
+                  <Input
+                    id="dep-nascimento"
+                    type="date"
+                    className={`${inputPill} tabular-nums`}
+                    max={hoje}
+                    {...depForm.register("nascimento")}
+                  />
+                </Campo>
+                <Campo label="Parentesco" error={depForm.formState.errors.parentesco?.message}>
+                  <Controller
+                    control={depForm.control}
+                    name="parentesco"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {dependenteSchema.shape.parentesco.options.map((opcao) => (
+                            <SelectItem key={opcao} value={opcao}>
+                              {rotulo(opcao)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Campo>
+              </div>
             </form>
           )}
 
-          <SheetFooter>
+          <SheetFooter className="shrink-0 border-t px-6 py-4 sm:px-8">
             {vista === "lista" ? (
               <Button
                 className="h-12 w-full rounded-full px-6"

@@ -74,7 +74,7 @@ export default async function DashboardPage({
       <PollingAsaas
         ativo={
           (process.env.PAYMENT_PROVIDER ?? "fake") === "asaas" &&
-          process.env.ASAAS_ENV === "sandbox"
+          process.env.ASAAS_ENV !== "production"
         }
       />
       <div className="flex flex-col gap-4">

@@ -81,7 +81,7 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
       <PollingAsaas
         ativo={
           (process.env.PAYMENT_PROVIDER ?? "fake") === "asaas" &&
-          process.env.ASAAS_ENV === "sandbox"
+          process.env.ASAAS_ENV !== "production"
         }
       />
       <div className="flex flex-wrap items-start justify-between gap-3">

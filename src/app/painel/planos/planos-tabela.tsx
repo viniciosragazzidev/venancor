@@ -293,8 +293,8 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
       </Card>
 
       <Dialog open={formAberto} onOpenChange={setFormAberto}>
-        <DialogContent className="gap-0 rounded-3xl">
-          <DialogHeader>
+        <DialogContent variant="form" className="sm:max-w-4xl">
+          <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
             <DialogTitle>{editando ? "Editar plano" : "Novo plano"}</DialogTitle>
             <DialogDescription>
               {editando
@@ -303,234 +303,248 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
             </DialogDescription>
           </DialogHeader>
           <form
-            className="flex max-h-[75vh] flex-col gap-4 overflow-y-auto pt-4 pr-1"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={handleSubmit(submeter)}
             noValidate
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo
-                label="Operadora"
-                htmlFor="plano-operadora"
-                error={errors.operadoraId?.message}
-              >
-                <Controller
-                  control={control}
-                  name="operadoraId"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger
-                        id="plano-operadora"
-                        className={`${inputPill} w-full justify-between`}
-                      >
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {operadoras
-                          .filter((operadora) => operadora.ativa || operadora.id === field.value)
-                          .map((operadora) => (
-                            <SelectItem key={operadora.id} value={operadora.id}>
-                              {operadora.nome}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-              <Campo label="Nome do plano" htmlFor="plano-nome" error={errors.nome?.message}>
-                <Input
-                  id="plano-nome"
-                  className={inputPill}
-                  placeholder="Ex.: Enfermaria"
-                  {...register("nome")}
-                />
-              </Campo>
-              <Campo label="Código" htmlFor="plano-codigo" error={errors.codigo?.message}>
-                <Input
-                  id="plano-codigo"
-                  className={inputPill}
-                  placeholder="Ex.: PL-001"
-                  {...register("codigo")}
-                />
-              </Campo>
-              <Campo
-                label="Taxa de adesão"
-                htmlFor="plano-adesao"
-                hint="Em reais. Use 0 se não houver."
-              >
-                <Input
-                  id="plano-adesao"
-                  className={`${inputPill} tabular-nums`}
-                  inputMode="decimal"
-                  placeholder="R$ 0,00"
-                  value={taxaTexto}
-                  onChange={(evento) => setTaxaTexto(evento.target.value)}
-                />
-              </Campo>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo label="Segmentação" error={errors.segmentacao?.message}>
-                <Controller
-                  control={control}
-                  name="segmentacao"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planoSchema.shape.segmentacao.options.map((opcao) => (
-                          <SelectItem key={opcao} value={opcao}>
-                            {rotulo(opcao)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-              <Campo label="Acomodação" error={errors.acomodacao?.message}>
-                <Controller
-                  control={control}
-                  name="acomodacao"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planoSchema.shape.acomodacao.options.map((opcao) => (
-                          <SelectItem key={opcao} value={opcao}>
-                            {rotulo(opcao)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-              <Campo label="Abrangência" error={errors.abrangencia?.message}>
-                <Controller
-                  control={control}
-                  name="abrangencia"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planoSchema.shape.abrangencia.options.map((opcao) => (
-                          <SelectItem key={opcao} value={opcao}>
-                            {rotulo(opcao)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-              <Campo label="Tipo de contratação" error={errors.tipoContratacao?.message}>
-                <Controller
-                  control={control}
-                  name="tipoContratacao"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {planoSchema.shape.tipoContratacao.options.map((opcao) => (
-                          <SelectItem key={opcao} value={opcao}>
-                            {rotulo(opcao)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-            </div>
-
-            <Campo label="Carências" htmlFor="plano-carencias" error={errors.carencias?.message}>
-              <Textarea
-                id="plano-carencias"
-                className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
-                placeholder="Ex.: 24 horas para urgência e emergência; 180 dias para parto..."
-                {...register("carencias")}
-              />
-            </Campo>
-            <Campo label="Coberturas" htmlFor="plano-coberturas" error={errors.coberturas?.message}>
-              <Textarea
-                id="plano-coberturas"
-                className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
-                placeholder="Procedimentos e benefícios cobertos pelo plano..."
-                {...register("coberturas")}
-              />
-            </Campo>
-            <Campo
-              label="Rede credenciada"
-              htmlFor="plano-rede"
-              error={errors.redeCredenciada?.message}
-            >
-              <Textarea
-                id="plano-rede"
-                className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
-                placeholder="Como consultar a rede de prestadores..."
-                {...register("redeCredenciada")}
-              />
-            </Campo>
-
-            <label className="flex cursor-pointer items-center gap-3 rounded-3xl border bg-muted/40 px-5 py-4 text-sm">
-              <Controller
-                control={control}
-                name="coparticipacao"
-                render={({ field }) => (
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={(valor) => field.onChange(valor === true)}
-                  />
-                )}
-              />
-              <span>
-                <span className="font-medium">Coparticipação</span>
-                <span className="block text-xs text-muted-foreground">
-                  O cliente paga um valor por atendimento, além da mensalidade.
-                </span>
-              </span>
-            </label>
-
-            <div className="rounded-3xl border bg-muted/40 p-4">
-              <p className="text-sm font-medium">Mensalidade por faixa etária</p>
-              <p className="text-xs text-muted-foreground">
-                Informe o valor das 10 faixas ANS em reais.
-              </p>
-              <div className="mt-3 grid gap-2">
-                {faixasEtarias.map((faixa, indice) => (
-                  <div key={faixa} className="flex items-center gap-3">
-                    <span className="w-16 shrink-0 text-sm text-muted-foreground tabular-nums">
-                      {faixa}
-                    </span>
+            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+              <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Dados do plano</p>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo
+                    label="Operadora"
+                    htmlFor="plano-operadora"
+                    error={errors.operadoraId?.message}
+                  >
+                    <Controller
+                      control={control}
+                      name="operadoraId"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger
+                            id="plano-operadora"
+                            className={`${inputPill} w-full justify-between`}
+                          >
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {operadoras
+                              .filter(
+                                (operadora) => operadora.ativa || operadora.id === field.value,
+                              )
+                              .map((operadora) => (
+                                <SelectItem key={operadora.id} value={operadora.id}>
+                                  {operadora.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                  <Campo label="Nome do plano" htmlFor="plano-nome" error={errors.nome?.message}>
                     <Input
-                      aria-label={`Valor da faixa ${faixa}`}
-                      className="h-11 flex-1 rounded-full px-4 tabular-nums"
+                      id="plano-nome"
+                      className={inputPill}
+                      placeholder="Ex.: Enfermaria"
+                      {...register("nome")}
+                    />
+                  </Campo>
+                  <Campo label="Código" htmlFor="plano-codigo" error={errors.codigo?.message}>
+                    <Input
+                      id="plano-codigo"
+                      className={inputPill}
+                      placeholder="Ex.: PL-001"
+                      {...register("codigo")}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Taxa de adesão"
+                    htmlFor="plano-adesao"
+                    hint="Em reais. Use 0 se não houver."
+                  >
+                    <Input
+                      id="plano-adesao"
+                      className={`${inputPill} tabular-nums`}
                       inputMode="decimal"
                       placeholder="R$ 0,00"
-                      value={precosTexto[indice]}
-                      onChange={(evento) =>
-                        setPrecosTexto((atual) =>
-                          atual.map((valor, posicao) =>
-                            posicao === indice ? evento.target.value : valor,
-                          ),
-                        )
-                      }
+                      value={taxaTexto}
+                      onChange={(evento) => setTaxaTexto(evento.target.value)}
                     />
-                  </div>
-                ))}
-              </div>
+                  </Campo>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo label="Segmentação" error={errors.segmentacao?.message}>
+                    <Controller
+                      control={control}
+                      name="segmentacao"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {planoSchema.shape.segmentacao.options.map((opcao) => (
+                              <SelectItem key={opcao} value={opcao}>
+                                {rotulo(opcao)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                  <Campo label="Acomodação" error={errors.acomodacao?.message}>
+                    <Controller
+                      control={control}
+                      name="acomodacao"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {planoSchema.shape.acomodacao.options.map((opcao) => (
+                              <SelectItem key={opcao} value={opcao}>
+                                {rotulo(opcao)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                  <Campo label="Abrangência" error={errors.abrangencia?.message}>
+                    <Controller
+                      control={control}
+                      name="abrangencia"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {planoSchema.shape.abrangencia.options.map((opcao) => (
+                              <SelectItem key={opcao} value={opcao}>
+                                {rotulo(opcao)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                  <Campo label="Tipo de contratação" error={errors.tipoContratacao?.message}>
+                    <Controller
+                      control={control}
+                      name="tipoContratacao"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {planoSchema.shape.tipoContratacao.options.map((opcao) => (
+                              <SelectItem key={opcao} value={opcao}>
+                                {rotulo(opcao)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                </div>
+
+                <Campo
+                  label="Carências"
+                  htmlFor="plano-carencias"
+                  error={errors.carencias?.message}
+                >
+                  <Textarea
+                    id="plano-carencias"
+                    className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
+                    placeholder="Ex.: 24 horas para urgência e emergência; 180 dias para parto..."
+                    {...register("carencias")}
+                  />
+                </Campo>
+                <Campo
+                  label="Coberturas"
+                  htmlFor="plano-coberturas"
+                  error={errors.coberturas?.message}
+                >
+                  <Textarea
+                    id="plano-coberturas"
+                    className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
+                    placeholder="Procedimentos e benefícios cobertos pelo plano..."
+                    {...register("coberturas")}
+                  />
+                </Campo>
+                <Campo
+                  label="Rede credenciada"
+                  htmlFor="plano-rede"
+                  error={errors.redeCredenciada?.message}
+                >
+                  <Textarea
+                    id="plano-rede"
+                    className="min-h-20 rounded-3xl px-5 py-3.5 text-sm"
+                    placeholder="Como consultar a rede de prestadores..."
+                    {...register("redeCredenciada")}
+                  />
+                </Campo>
+
+                <label className="flex cursor-pointer items-center gap-3 rounded-3xl border bg-muted/40 px-5 py-4 text-sm">
+                  <Controller
+                    control={control}
+                    name="coparticipacao"
+                    render={({ field }) => (
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(valor) => field.onChange(valor === true)}
+                      />
+                    )}
+                  />
+                  <span>
+                    <span className="font-medium">Coparticipação</span>
+                    <span className="block text-xs text-muted-foreground">
+                      O cliente paga um valor por atendimento, além da mensalidade.
+                    </span>
+                  </span>
+                </label>
+              </section>
+              <section className="rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Mensalidade por faixa etária</p>
+                <p className="text-xs text-muted-foreground">
+                  Informe o valor das 10 faixas ANS em reais.
+                </p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  {faixasEtarias.map((faixa, indice) => (
+                    <div key={faixa} className="flex items-center gap-3">
+                      <span className="w-16 shrink-0 text-sm text-muted-foreground tabular-nums">
+                        {faixa}
+                      </span>
+                      <Input
+                        aria-label={`Valor da faixa ${faixa}`}
+                        className="h-11 flex-1 rounded-full px-4 tabular-nums"
+                        inputMode="decimal"
+                        placeholder="R$ 0,00"
+                        value={precosTexto[indice]}
+                        onChange={(evento) =>
+                          setPrecosTexto((atual) =>
+                            atual.map((valor, posicao) =>
+                              posicao === indice ? evento.target.value : valor,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
               <Button
                 type="button"
                 variant="outline"

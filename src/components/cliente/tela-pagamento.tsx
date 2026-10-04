@@ -128,6 +128,22 @@ export function TelaPagamento({
                     unoptimized
                     className="size-40 rounded-2xl outline outline-1 outline-black/10 dark:outline-white/10"
                   />
+                ) : cobrancas.pix.checkout_url ? (
+                  // QR indisponível no provedor: a página do Asaas também exibe o Pix.
+                  <Button
+                    size="lg"
+                    className="h-12 rounded-full px-6 text-base"
+                    render={
+                      <a
+                        href={cobrancas.pix.checkout_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      />
+                    }
+                  >
+                    <QrCodeIcon aria-hidden strokeWidth={1.5} />
+                    Pagar Pix na página segura
+                  </Button>
                 ) : (
                   <div className="grid size-40 place-items-center rounded-2xl border-2 border-dashed border-border text-muted-foreground">
                     <span className="flex flex-col items-center gap-1.5">

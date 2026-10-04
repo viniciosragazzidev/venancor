@@ -178,8 +178,8 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
       </Card>
 
       <Dialog open={formAberto} onOpenChange={setFormAberto}>
-        <DialogContent className="gap-0 rounded-3xl">
-          <DialogHeader>
+        <DialogContent variant="form">
+          <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
             <DialogTitle>{editando ? "Editar operadora" : "Nova operadora"}</DialogTitle>
             <DialogDescription>
               {editando
@@ -187,37 +187,52 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
                 : "Cadastre a operadora com CNPJ e registro ANS."}
             </DialogDescription>
           </DialogHeader>
-          <form className="flex flex-col gap-4 pt-4" onSubmit={handleSubmit(submeter)} noValidate>
-            <Campo label="Nome" htmlFor="operadora-nome" error={errors.nome?.message}>
-              <Input
-                id="operadora-nome"
-                className={inputPill}
-                placeholder="Ex.: Amil"
-                {...register("nome")}
-              />
-            </Campo>
-            <Campo label="CNPJ" htmlFor="operadora-cnpj" error={errors.cnpj?.message}>
-              <Input
-                id="operadora-cnpj"
-                className={`${inputPill} tabular-nums`}
-                placeholder="00.000.000/0000-00"
-                inputMode="numeric"
-                {...register("cnpj", {
-                  onChange: (evento) => {
-                    evento.target.value = mascaraCNPJ(evento.target.value);
-                  },
-                })}
-              />
-            </Campo>
-            <Campo label="Registro ANS" htmlFor="operadora-ans" error={errors.registroAns?.message}>
-              <Input
-                id="operadora-ans"
-                className={`${inputPill} tabular-nums`}
-                placeholder="Ex.: 000000"
-                {...register("registroAns")}
-              />
-            </Campo>
-            <DialogFooter className="pt-2">
+          <form
+            className="flex min-h-0 flex-1 flex-col"
+            onSubmit={handleSubmit(submeter)}
+            noValidate
+          >
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+              <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Dados cadastrais</p>
+                <Campo label="Nome" htmlFor="operadora-nome" error={errors.nome?.message}>
+                  <Input
+                    id="operadora-nome"
+                    className={inputPill}
+                    placeholder="Ex.: Amil"
+                    {...register("nome")}
+                  />
+                </Campo>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo label="CNPJ" htmlFor="operadora-cnpj" error={errors.cnpj?.message}>
+                    <Input
+                      id="operadora-cnpj"
+                      className={`${inputPill} tabular-nums`}
+                      placeholder="00.000.000/0000-00"
+                      inputMode="numeric"
+                      {...register("cnpj", {
+                        onChange: (evento) => {
+                          evento.target.value = mascaraCNPJ(evento.target.value);
+                        },
+                      })}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Registro ANS"
+                    htmlFor="operadora-ans"
+                    error={errors.registroAns?.message}
+                  >
+                    <Input
+                      id="operadora-ans"
+                      className={`${inputPill} tabular-nums`}
+                      placeholder="Ex.: 000000"
+                      {...register("registroAns")}
+                    />
+                  </Campo>
+                </div>
+              </section>
+            </div>
+            <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
               <Button
                 type="button"
                 variant="outline"

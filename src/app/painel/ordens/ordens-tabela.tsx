@@ -311,7 +311,10 @@ export function OrdensTabela({
           if (!aberto) setVista("form");
         }}
       >
-        <DialogContent className="gap-0 rounded-3xl">
+        <DialogContent
+          variant={vista === "form" ? "form" : "default"}
+          className={vista === "form" ? "sm:max-w-4xl" : undefined}
+        >
           {vista === "sucesso" ? (
             <>
               <DialogHeader>
@@ -365,47 +368,136 @@ export function OrdensTabela({
             </>
           ) : (
             <>
-              <DialogHeader>
+              <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
                 <DialogTitle>Nova ordem</DialogTitle>
                 <DialogDescription>
                   Escolha o cliente, o plano e as condições da proposta.
                 </DialogDescription>
               </DialogHeader>
               <form
-                className="flex max-h-[75vh] flex-col gap-5 overflow-y-auto pt-4 pr-1"
+                className="flex min-h-0 flex-1 flex-col"
                 onSubmit={handleSubmit(submeter)}
                 noValidate
               >
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm font-medium">Proposta</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo
-                      label="Cliente"
-                      htmlFor="ordem-cliente"
-                      error={errors.clienteId?.message}
-                    >
+                <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+                  <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                    <p className="text-sm font-medium">Proposta</p>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Campo
+                        label="Cliente"
+                        htmlFor="ordem-cliente"
+                        error={errors.clienteId?.message}
+                      >
+                        <Controller
+                          control={control}
+                          name="clienteId"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={(valor) => {
+                                if (!valor) return;
+                                field.onChange(valor);
+                                void carregarDependentes(valor);
+                              }}
+                            >
+                              <SelectTrigger
+                                id="ordem-cliente"
+                                className={`${inputPill} w-full justify-between`}
+                              >
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {clientes.map((cliente) => (
+                                  <SelectItem key={cliente.id} value={cliente.id}>
+                                    {cliente.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </Campo>
+                      <Campo label="Plano" htmlFor="ordem-plano" error={errors.planoId?.message}>
+                        <Controller
+                          control={control}
+                          name="planoId"
+                          render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger
+                                id="ordem-plano"
+                                className={`${inputPill} w-full justify-between`}
+                              >
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {planos
+                                  .filter((plano) => plano.ativo || plano.id === field.value)
+                                  .map((plano) => (
+                                    <SelectItem key={plano.id} value={plano.id}>
+                                      {plano.nome}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </Campo>
+                    </div>
+
+                    <div className="rounded-3xl border bg-muted/40 p-4">
+                      <p className="text-sm font-medium">Beneficiários</p>
+                      <p className="text-xs text-muted-foreground">
+                        O titular entra automaticamente. Marque os dependentes que vão na proposta.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2">
+                        {carregandoDeps ? (
+                          <p className="py-2 text-sm text-muted-foreground">Carregando...</p>
+                        ) : deps.length === 0 ? (
+                          <p className="py-2 text-sm text-muted-foreground">
+                            Este cliente não tem dependentes cadastrados.
+                          </p>
+                        ) : (
+                          deps.map((dependente) => (
+                            <label
+                              key={dependente.id}
+                              className="flex cursor-pointer items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm"
+                            >
+                              <Checkbox
+                                checked={depsIds.includes(dependente.id)}
+                                onCheckedChange={(valor) =>
+                                  setDepsIds((atual) =>
+                                    valor === true
+                                      ? [...atual, dependente.id]
+                                      : atual.filter((id) => id !== dependente.id),
+                                  )
+                                }
+                              />
+                              <span className="font-medium">{dependente.nome}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {dependente.nascimento.split("-").reverse().join("/")}
+                              </span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                    <p className="text-sm font-medium">Valores</p>
+                    <Campo label="O que será cobrado" error={errors.valorCobradoTipo?.message}>
                       <Controller
                         control={control}
-                        name="clienteId"
+                        name="valorCobradoTipo"
                         render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={(valor) => {
-                              if (!valor) return;
-                              field.onChange(valor);
-                              void carregarDependentes(valor);
-                            }}
-                          >
-                            <SelectTrigger
-                              id="ordem-cliente"
-                              className={`${inputPill} w-full justify-between`}
-                            >
-                              <SelectValue placeholder="Selecione" />
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {clientes.map((cliente) => (
-                                <SelectItem key={cliente.id} value={cliente.id}>
-                                  {cliente.nome}
+                              {TIPOS_VALOR.map((tipo) => (
+                                <SelectItem key={tipo.valor} value={tipo.valor}>
+                                  {tipo.rotulo}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -413,191 +505,104 @@ export function OrdensTabela({
                         )}
                       />
                     </Campo>
-                    <Campo label="Plano" htmlFor="ordem-plano" error={errors.planoId?.message}>
-                      <Controller
-                        control={control}
-                        name="planoId"
-                        render={({ field }) => (
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <SelectTrigger
-                              id="ordem-plano"
-                              className={`${inputPill} w-full justify-between`}
-                            >
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {planos
-                                .filter((plano) => plano.ativo || plano.id === field.value)
-                                .map((plano) => (
-                                  <SelectItem key={plano.id} value={plano.id}>
-                                    {plano.nome}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </Campo>
-                  </div>
-
-                  <div className="rounded-3xl border bg-muted/40 p-4">
-                    <p className="text-sm font-medium">Beneficiários</p>
-                    <p className="text-xs text-muted-foreground">
-                      O titular entra automaticamente. Marque os dependentes que vão na proposta.
-                    </p>
-                    <div className="mt-3 flex flex-col gap-2">
-                      {carregandoDeps ? (
-                        <p className="py-2 text-sm text-muted-foreground">Carregando...</p>
-                      ) : deps.length === 0 ? (
-                        <p className="py-2 text-sm text-muted-foreground">
-                          Este cliente não tem dependentes cadastrados.
-                        </p>
-                      ) : (
-                        deps.map((dependente) => (
-                          <label
-                            key={dependente.id}
-                            className="flex cursor-pointer items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm"
-                          >
-                            <Checkbox
-                              checked={depsIds.includes(dependente.id)}
-                              onCheckedChange={(valor) =>
-                                setDepsIds((atual) =>
-                                  valor === true
-                                    ? [...atual, dependente.id]
-                                    : atual.filter((id) => id !== dependente.id),
-                                )
-                              }
-                            />
-                            <span className="font-medium">{dependente.nome}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {dependente.nascimento.split("-").reverse().join("/")}
-                            </span>
-                          </label>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm font-medium">Valores</p>
-                  <Campo label="O que será cobrado" error={errors.valorCobradoTipo?.message}>
-                    <Controller
-                      control={control}
-                      name="valorCobradoTipo"
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TIPOS_VALOR.map((tipo) => (
-                              <SelectItem key={tipo.valor} value={tipo.valor}>
-                                {tipo.rotulo}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </Campo>
-                  {tipoValor === "personalizado" ? (
-                    <Campo label="Valor personalizado" htmlFor="ordem-personalizado">
-                      <Input
-                        id="ordem-personalizado"
-                        className={`${inputPill} tabular-nums`}
-                        inputMode="decimal"
-                        placeholder="R$ 0,00"
-                        value={personalizadoTexto}
-                        onChange={(evento) => setPersonalizadoTexto(evento.target.value)}
-                      />
-                    </Campo>
-                  ) : null}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo label="Desconto" htmlFor="ordem-desconto" hint="Em reais.">
-                      <Input
-                        id="ordem-desconto"
-                        className={`${inputPill} tabular-nums`}
-                        inputMode="decimal"
-                        placeholder="R$ 0,00"
-                        value={descontoTexto}
-                        onChange={(evento) => setDescontoTexto(evento.target.value)}
-                      />
-                    </Campo>
-                    <Campo
-                      label="Observação do desconto"
-                      htmlFor="ordem-desconto-obs"
-                      error={errors.descontoObs?.message}
-                    >
-                      <Input
-                        id="ordem-desconto-obs"
-                        className={inputPill}
-                        placeholder="Ex.: campanha de retorno"
-                        {...register("descontoObs")}
-                      />
-                    </Campo>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <p className="text-sm font-medium">Condições de pagamento</p>
-                  <div className="flex flex-wrap gap-2">
-                    {FORMAS.map((forma) => (
-                      <label
-                        key={forma}
-                        className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-colors ${
-                          formas.includes(forma)
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "bg-card"
-                        }`}
-                      >
-                        <Checkbox
-                          checked={formas.includes(forma)}
-                          onCheckedChange={(valor) =>
-                            setFormas((atual) =>
-                              valor === true
-                                ? [...atual, forma]
-                                : atual.filter((item) => item !== forma),
-                            )
-                          }
+                    {tipoValor === "personalizado" ? (
+                      <Campo label="Valor personalizado" htmlFor="ordem-personalizado">
+                        <Input
+                          id="ordem-personalizado"
+                          className={`${inputPill} tabular-nums`}
+                          inputMode="decimal"
+                          placeholder="R$ 0,00"
+                          value={personalizadoTexto}
+                          onChange={(evento) => setPersonalizadoTexto(evento.target.value)}
                         />
-                        {forma === "pix" ? "Pix" : forma === "boleto" ? "Boleto" : "Cartão"}
-                      </label>
-                    ))}
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Campo
-                      label="Máximo de parcelas"
-                      htmlFor="ordem-parcelas"
-                      error={errors.maxParcelas?.message}
-                    >
-                      <Input
-                        id="ordem-parcelas"
-                        type="number"
-                        min={1}
-                        max={12}
-                        className={`${inputPill} tabular-nums`}
-                        {...register("maxParcelas", { valueAsNumber: true })}
-                      />
-                    </Campo>
-                    <Campo
-                      label="Validade do link (dias)"
-                      htmlFor="ordem-validade"
-                      error={errors.validadeDias?.message}
-                    >
-                      <Input
-                        id="ordem-validade"
-                        type="number"
-                        min={1}
-                        max={30}
-                        className={`${inputPill} tabular-nums`}
-                        {...register("validadeDias", { valueAsNumber: true })}
-                      />
-                    </Campo>
-                  </div>
+                      </Campo>
+                    ) : null}
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Campo label="Desconto" htmlFor="ordem-desconto" hint="Em reais.">
+                        <Input
+                          id="ordem-desconto"
+                          className={`${inputPill} tabular-nums`}
+                          inputMode="decimal"
+                          placeholder="R$ 0,00"
+                          value={descontoTexto}
+                          onChange={(evento) => setDescontoTexto(evento.target.value)}
+                        />
+                      </Campo>
+                      <Campo
+                        label="Observação do desconto"
+                        htmlFor="ordem-desconto-obs"
+                        error={errors.descontoObs?.message}
+                      >
+                        <Input
+                          id="ordem-desconto-obs"
+                          className={inputPill}
+                          placeholder="Ex.: campanha de retorno"
+                          {...register("descontoObs")}
+                        />
+                      </Campo>
+                    </div>
+                  </section>
+
+                  <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                    <p className="text-sm font-medium">Condições de pagamento</p>
+                    <div className="flex flex-wrap gap-2">
+                      {FORMAS.map((forma) => (
+                        <label
+                          key={forma}
+                          className={`flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2.5 text-sm transition-colors ${
+                            formas.includes(forma)
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "bg-card"
+                          }`}
+                        >
+                          <Checkbox
+                            checked={formas.includes(forma)}
+                            onCheckedChange={(valor) =>
+                              setFormas((atual) =>
+                                valor === true
+                                  ? [...atual, forma]
+                                  : atual.filter((item) => item !== forma),
+                              )
+                            }
+                          />
+                          {forma === "pix" ? "Pix" : forma === "boleto" ? "Boleto" : "Cartão"}
+                        </label>
+                      ))}
+                    </div>
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Campo
+                        label="Máximo de parcelas"
+                        htmlFor="ordem-parcelas"
+                        error={errors.maxParcelas?.message}
+                      >
+                        <Input
+                          id="ordem-parcelas"
+                          type="number"
+                          min={1}
+                          max={12}
+                          className={`${inputPill} tabular-nums`}
+                          {...register("maxParcelas", { valueAsNumber: true })}
+                        />
+                      </Campo>
+                      <Campo
+                        label="Validade do link (dias)"
+                        htmlFor="ordem-validade"
+                        error={errors.validadeDias?.message}
+                      >
+                        <Input
+                          id="ordem-validade"
+                          type="number"
+                          min={1}
+                          max={30}
+                          className={`${inputPill} tabular-nums`}
+                          {...register("validadeDias", { valueAsNumber: true })}
+                        />
+                      </Campo>
+                    </div>
+                  </section>
                 </div>
 
-                <DialogFooter className="pt-2">
+                <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
                   <Button
                     type="button"
                     variant="outline"

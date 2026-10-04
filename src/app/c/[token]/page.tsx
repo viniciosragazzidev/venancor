@@ -33,7 +33,7 @@ export default async function PaginaProposta({ params }: { params: Promise<{ tok
   if (!("dados" in estado)) notFound();
   const provider = process.env.PAYMENT_PROVIDER ?? "fake";
   const simulacaoDisponivel =
-    provider === "fake" || (provider === "asaas" && process.env.ASAAS_ENV === "sandbox");
+    provider === "fake" || (provider === "asaas" && process.env.ASAAS_ENV !== "production");
   const otpAutomatico = fakePermitido() && (process.env.MESSAGING_PROVIDER ?? "fake") === "fake";
   return (
     <FluxoReal

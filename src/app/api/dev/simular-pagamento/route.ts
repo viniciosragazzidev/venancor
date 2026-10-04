@@ -12,7 +12,7 @@ import { sincronizarPagamentoAsaas } from "@/modules/pagamentos/sincronizar-asaa
 export async function POST(request: Request) {
   if (!fakePermitido()) return new Response(null, { status: 404 });
   const provider = process.env.PAYMENT_PROVIDER ?? "fake";
-  if (provider !== "fake" && !(provider === "asaas" && process.env.ASAAS_ENV === "sandbox"))
+  if (provider !== "fake" && !(provider === "asaas" && process.env.ASAAS_ENV !== "production"))
     return new Response(null, { status: 404 });
   const input: unknown = await request.json().catch(() => null);
   if (

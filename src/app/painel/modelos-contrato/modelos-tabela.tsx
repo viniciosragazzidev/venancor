@@ -220,92 +220,102 @@ export function ModelosTabela({ modelos, planos }: { modelos: Modelo[]; planos: 
       </Card>
 
       <Dialog open={formAberto} onOpenChange={setFormAberto}>
-        <DialogContent className="gap-0 rounded-3xl">
-          <DialogHeader>
+        <DialogContent variant="form">
+          <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
             <DialogTitle>{editando ? "Editar modelo" : "Novo modelo"}</DialogTitle>
             <DialogDescription>
               As variáveis {"{{...}}"} são substituídas pelos dados da proposta.
             </DialogDescription>
           </DialogHeader>
           <form
-            className="flex max-h-[75vh] flex-col gap-4 overflow-y-auto pt-4 pr-1"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={handleSubmit(submeter)}
             noValidate
           >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo label="Nome" htmlFor="modelo-nome" error={errors.nome?.message}>
-                <Input
-                  id="modelo-nome"
-                  className={inputPill}
-                  placeholder="Ex.: Contrato padrão"
-                  {...register("nome")}
-                />
-              </Campo>
-              <Campo
-                label="Plano"
-                hint="Genérico vale para qualquer plano."
-                error={errors.planoId?.message}
-              >
-                <Controller
-                  control={control}
-                  name="planoId"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? GENÉRICO}
-                      onValueChange={(valor) => field.onChange(valor === GENÉRICO ? null : valor)}
-                    >
-                      <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={GENÉRICO}>Genérico</SelectItem>
-                        {planos
-                          .filter((plano) => plano.ativo)
-                          .map((plano) => (
-                            <SelectItem key={plano.id} value={plano.id}>
-                              {plano.nome}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Campo>
-            </div>
-
-            <Campo label="Corpo do contrato" htmlFor="modelo-corpo" error={errors.corpo?.message}>
-              <Textarea
-                id="modelo-corpo"
-                {...corpoCampo}
-                ref={(el) => {
-                  corpoEl.current = el;
-                  corpoCampo.ref(el);
-                }}
-                className="min-h-56 rounded-3xl px-5 py-4 font-mono text-sm"
-                placeholder="Contrato de adesão ao plano {{plano.nome}}..."
-              />
-            </Campo>
-
-            <div className="rounded-3xl border bg-muted/40 p-4">
-              <p className="text-sm font-medium">Variáveis disponíveis</p>
-              <p className="text-xs text-muted-foreground">
-                Clique para inserir no cursor do texto.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {VARIAVEIS.map((variavel) => (
-                  <button
-                    key={variavel}
-                    type="button"
-                    className="rounded-full border bg-card px-3 py-1.5 font-mono text-xs transition-colors hover:border-primary hover:text-primary"
-                    onClick={() => inserirVariavel(variavel)}
+            <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+              <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Dados do modelo</p>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Campo label="Nome" htmlFor="modelo-nome" error={errors.nome?.message}>
+                    <Input
+                      id="modelo-nome"
+                      className={inputPill}
+                      placeholder="Ex.: Contrato padrão"
+                      {...register("nome")}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Plano"
+                    hint="Genérico vale para qualquer plano."
+                    error={errors.planoId?.message}
                   >
-                    {variavel}
-                  </button>
-                ))}
-              </div>
+                    <Controller
+                      control={control}
+                      name="planoId"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? GENÉRICO}
+                          onValueChange={(valor) =>
+                            field.onChange(valor === GENÉRICO ? null : valor)
+                          }
+                        >
+                          <SelectTrigger className={`${inputPill} w-full justify-between`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={GENÉRICO}>Genérico</SelectItem>
+                            {planos
+                              .filter((plano) => plano.ativo)
+                              .map((plano) => (
+                                <SelectItem key={plano.id} value={plano.id}>
+                                  {plano.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
+                </div>
+
+                <Campo
+                  label="Corpo do contrato"
+                  htmlFor="modelo-corpo"
+                  error={errors.corpo?.message}
+                >
+                  <Textarea
+                    id="modelo-corpo"
+                    {...corpoCampo}
+                    ref={(el) => {
+                      corpoEl.current = el;
+                      corpoCampo.ref(el);
+                    }}
+                    className="min-h-56 rounded-3xl px-5 py-4 font-mono text-sm"
+                    placeholder="Contrato de adesão ao plano {{plano.nome}}..."
+                  />
+                </Campo>
+              </section>
+              <section className="rounded-3xl bg-muted/40 p-5 sm:p-6">
+                <p className="text-sm font-medium">Variáveis disponíveis</p>
+                <p className="text-xs text-muted-foreground">
+                  Clique para inserir no cursor do texto.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {VARIAVEIS.map((variavel) => (
+                    <button
+                      key={variavel}
+                      type="button"
+                      className="rounded-full border bg-card px-3 py-1.5 font-mono text-xs transition-colors hover:border-primary hover:text-primary"
+                      onClick={() => inserirVariavel(variavel)}
+                    >
+                      {variavel}
+                    </button>
+                  ))}
+                </div>
+              </section>
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
               <Button
                 type="button"
                 variant="outline"

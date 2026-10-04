@@ -23,7 +23,7 @@ export default async function OrdensPage() {
       <PollingAsaas
         ativo={
           (process.env.PAYMENT_PROVIDER ?? "fake") === "asaas" &&
-          process.env.ASAAS_ENV === "sandbox"
+          process.env.ASAAS_ENV !== "production"
         }
       />
       <PageHeader
