@@ -1,0 +1,381 @@
+"use client";
+
+import React, { useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  CustomerSupportIcon,
+  Video01Icon,
+  Search01Icon,
+  LicenseIcon,
+  ArrowRight01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { motion } from "framer-motion";
+import { AutoHeight } from "@/components/site/animate-ui/primitives/effects/auto-height";
+export default function SectionCotacao() {
+  const [nome, setNome] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [tipo, setTipo] = useState("pme");
+  const [isFocused, setIsFocused] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value.replace(/\D/g, "");
+    let formatted = "";
+    if (input.length > 0) {
+      formatted = `(${input.slice(0, 2)}`;
+      if (input.length > 2) {
+        formatted += `) ${input.slice(2, 7)}`;
+      }
+      if (input.length > 7) {
+        formatted += `-${input.slice(7, 11)}`;
+      }
+    }
+    setWhatsapp(formatted);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nome && whatsapp.length >= 14) {
+      setIsSubmitted(true);
+
+      const perfilMap: Record<string, string> = {
+        pme: "PME (Empresa)",
+        individual: "Individual",
+        familiar: "Familiar",
+      };
+
+      try {
+        const apiHost = process.env.NEXT_PUBLIC_CRM_API_URL || window.location.origin;
+        const token = process.env.NEXT_PUBLIC_CRM_TOKEN || "afed418c-1e4b-4172-b472-5b69e9171f98";
+        await fetch(`${apiHost}/api/webhooks/leads?token=${token}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            nome,
+            whatsapp,
+            perfil: perfilMap[tipo] || "Simulador",
+            idades: "Landing Page",
+            origin_domain:
+              typeof window !== "undefined" ? window.location.hostname : "venancor.com.br",
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to register lead via API:", err);
+      }
+
+      setTimeout(() => {
+        window.open(
+          `https://wa.me/5521964469750?text=${encodeURIComponent(`Olá! Quero simular um plano de saúde Tipo: ${tipo.toUpperCase()}. Nome: ${nome}.`)}`,
+          "_blank",
+        );
+      }, 800);
+    }
+  };
+
+  return (
+    <motion.section
+      id="cotacao"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+      className="relative w-full rounded-t-4xl bg-[#3b2dff] text-white pt-10 pb-8 md:pt-14 md:pb-12 mt-24 md:mt-32 font-sans"
+    >
+      {/* Ambient Background Circles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border-[32px] border-white" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] rounded-full border-[32px] border-white" />
+      </div>
+
+      <div className="w-full max-w-[1280px] mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* COLUNA ESQUERDA: Economia via CNPJ & Aproveite seu Plano Antigo */}
+          <div className="lg:col-span-4 flex flex-col gap-10 md:gap-12 text-left">
+            {/* Bloco 1 */}
+            <div className="flex items-start gap-4 group">
+              <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
+                <HugeiconsIcon icon={LicenseIcon} className="size-6" />
+              </div>
+              <div className="space-y-2">
+                <div className="overflow-hidden py-0.5">
+                  <motion.h3
+                    initial={{ y: "100%" }}
+                    whileInView={{ y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 150, damping: 20 }}
+                    className="text-lg md:text-xl font-bold tracking-tight text-white select-text"
+                  >
+                    Economia via CNPJ
+                  </motion.h3>
+                </div>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text"
+                >
+                  Tem MEI ou empresa ativa? Garanta até 35% de redução no valor das mensalidades
+                  automaticamente em relação ao plano físico tradicional.
+                </motion.p>
+              </div>
+            </div>
+
+            {/* Bloco 2 */}
+            <div className="flex items-start gap-4 group">
+              <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
+                <HugeiconsIcon icon={CustomerSupportIcon} className="size-6" />
+              </div>
+              <div className="space-y-2">
+                <div className="overflow-hidden py-0.5">
+                  <motion.h3
+                    initial={{ y: "100%" }}
+                    whileInView={{ y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 150, damping: 20 }}
+                    className="text-lg md:text-xl font-bold tracking-tight text-white select-text"
+                  >
+                    Aproveite seu Plano Antigo
+                  </motion.h3>
+                </div>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text"
+                >
+                  Nossa equipe avalia o tempo de permanência no seu convênio atual para reduzir ou
+                  zerar os prazos de espera na nova operadora.
+                </motion.p>
+              </div>
+            </div>
+          </div>
+
+          {/* COLUNA CENTRAL: Celular saindo para fora (Overflow) com Formulário */}
+          <div className="lg:col-span-4 flex justify-center relative mt-6 lg:-mt-56 mb-8 lg:mb-12 z-20">
+            {/* Smartphone Mockup */}
+            <div className="relative w-[315px] sm:w-[340px] aspect-[9/16.5] bg-white rounded-[3.25rem] p-3 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.35)] border-[3px] border-slate-100 flex flex-col justify-start select-none">
+              {/* Notch do Celular */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-5 w-28 bg-slate-100 rounded-b-2xl z-30 flex items-center justify-center">
+                <div className="size-1.5 rounded-full bg-slate-400 mr-2" />
+                <div className="w-8 h-0.5 bg-slate-300 rounded-full" />
+              </div>
+
+              {/* Conteúdo da Tela do Celular — AutoHeight anima a transição */}
+              <div className="w-full bg-slate-50 rounded-[2.5rem] overflow-hidden">
+                <AutoHeight
+                  deps={[isSubmitted]}
+                  transition={{ type: "spring", stiffness: 260, damping: 28, bounce: 0 }}
+                  className="w-full"
+                >
+                  <div className="p-5 sm:p-6 pt-8 flex flex-col gap-4">
+                    {isSubmitted ? (
+                      <div className="flex flex-col items-center justify-center text-center gap-4 py-8">
+                        <div className="size-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-sm">
+                          <HugeiconsIcon icon={Tick02Icon} className="size-8" />
+                        </div>
+                        <div>
+                          <h4 className="text-slate-900 font-extrabold text-lg">
+                            Simulação Enviada!
+                          </h4>
+                          <p className="text-slate-500 text-xs mt-1">
+                            Conectando ao WhatsApp do consultor...
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Cabeçalho do App */}
+                        <div className="text-left">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-[#3b2dff]">
+                            SIMULADOR VENACOR
+                          </span>
+                          <h4 className="text-xl font-black tracking-tight text-slate-900 mt-0.5">
+                            Cotação Inteligente
+                          </h4>
+                          <p className="text-[10px] text-slate-400 font-medium mt-1">
+                            Preencha abaixo e receba o estudo comparativo de preços no WhatsApp em
+                            poucos minutos.
+                          </p>
+                        </div>
+
+                        {/* Elemento de Progresso entre Título e Campos */}
+                        <div className="w-full flex items-center justify-between gap-2 select-none">
+                          <div className="flex-1 flex items-center gap-1.5 py-1 px-2.5 rounded-md bg-[#3b2dff]/5 border border-[#3b2dff]/10 text-[#3b2dff]">
+                            <span className="size-1.5 rounded-full bg-[#3b2dff] animate-pulse" />
+                            <span className="text-[9px] font-extrabold uppercase tracking-wider">
+                              Identificação
+                            </span>
+                          </div>
+                          <div className="w-12 h-1 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="w-1/2 h-full bg-[#3b2dff] rounded-full" />
+                          </div>
+                        </div>
+
+                        {/* Formulário */}
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                          {/* Nome */}
+                          <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                              Nome Completo
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={nome}
+                              onChange={(e) => setNome(e.target.value)}
+                              placeholder="Ex: Carlos Silva"
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 dark:bg-white dark:text-slate-900 focus:border-[#3b2dff] focus:ring-4 focus:ring-[#3b2dff]/5 outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400 transition-all duration-200 shadow-2xs"
+                            />
+                          </div>
+
+                          {/* WhatsApp */}
+                          <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                              WhatsApp
+                            </label>
+                            <input
+                              type="tel"
+                              required
+                              value={whatsapp}
+                              onChange={handlePhoneChange}
+                              onFocus={() => setIsFocused(true)}
+                              onBlur={() => setIsFocused(false)}
+                              placeholder="(21) 99999-9999"
+                              className={`w-full px-3.5 py-2.5 rounded-xl border outline-none text-xs font-semibold placeholder:font-normal placeholder:text-slate-400 transition-all duration-200 shadow-2xs bg-white text-slate-900 dark:bg-white dark:text-slate-900 ${isFocused ? "border-[#3b2dff] ring-4 ring-[#3b2dff]/5" : "border-slate-200"}`}
+                            />
+                          </div>
+
+                          {/* Tipo de Plano */}
+                          <div className="space-y-1 text-left">
+                            <label className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
+                              Tipo de Plano
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={tipo}
+                                onChange={(e) => setTipo(e.target.value)}
+                                className="w-full pl-3.5 pr-8 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 dark:bg-white dark:text-slate-900 outline-none text-xs font-semibold appearance-none cursor-pointer transition-all duration-200 shadow-2xs focus:border-[#3b2dff] focus:ring-4 focus:ring-[#3b2dff]/5"
+                              >
+                                <option value="pme">Empresa (PME / CNPJ)</option>
+                                <option value="individual">Individual (CPF)</option>
+                                <option value="familiar">Familiar (CPF)</option>
+                              </select>
+                              <div className="absolute inset-y-0 right-3.5 flex items-center pointer-events-none text-slate-400">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="m6 9 6 6 6-6" />
+                                </svg>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* CTA Button */}
+                          <button
+                            type="submit"
+                            disabled={!nome || whatsapp.length < 14}
+                            className="w-full py-3 mt-1.5 rounded-xl bg-[#3b2dff] hover:bg-[#2d20e0] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs shadow-sm hover:shadow-md hover:shadow-[#3b2dff]/10 hover:scale-[1.01] transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <span>Simular Agora</span>
+                            <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+                          </button>
+                        </form>
+
+                        {/* Status Bar / Safe Badge */}
+                        <div className="text-center pt-2 select-none border-t border-slate-100 flex items-center justify-center gap-1">
+                          <span className="relative flex size-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500"></span>
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400">
+                            Consultores online
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </AutoHeight>
+              </div>
+            </div>
+          </div>
+
+          {/* COLUNA DIREITA: Todas as Marcas Clínicas & Praticidade Digital */}
+          <div className="lg:col-span-4 flex flex-col gap-10 md:gap-12 text-left">
+            {/* Bloco 3 */}
+            <div className="flex items-start gap-4 group">
+              <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
+                <HugeiconsIcon icon={Search01Icon} className="size-6" />
+              </div>
+              <div className="space-y-2">
+                <div className="overflow-hidden py-0.5">
+                  <motion.h3
+                    initial={{ y: "100%" }}
+                    whileInView={{ y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 150, damping: 20 }}
+                    className="text-lg md:text-xl font-bold tracking-tight text-white select-text"
+                  >
+                    Todas as Marcas Clínicas
+                  </motion.h3>
+                </div>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text"
+                >
+                  Cote Amil, Bradesco, SulAmérica, Unimed e operadoras regionais de uma só vez com
+                  total independência e sem taxas ocultas.
+                </motion.p>
+              </div>
+            </div>
+
+            {/* Bloco 4 */}
+            <div className="flex items-start gap-4 group">
+              <div className="size-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0 shadow-md group-hover:bg-white group-hover:text-[#3b2dff] transition-all duration-300">
+                <HugeiconsIcon icon={Video01Icon} className="size-6" />
+              </div>
+              <div className="space-y-2">
+                <div className="overflow-hidden py-0.5">
+                  <motion.h3
+                    initial={{ y: "100%" }}
+                    whileInView={{ y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 150, damping: 20 }}
+                    className="text-lg md:text-xl font-bold tracking-tight text-white select-text"
+                  >
+                    Praticidade Digital
+                  </motion.h3>
+                </div>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="text-white/80 text-sm md:text-base font-light leading-relaxed max-w-sm select-text"
+                >
+                  Esqueça a burocracia ou ligações chatas. Você recebe as tabelas comerciais
+                  vigentes organizadas diretamente no seu WhatsApp de forma rápida.
+                </motion.p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+}
