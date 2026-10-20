@@ -51,7 +51,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listarDependentes, type listarClientes } from "@/modules/clientes/actions";
-import { criarOrdem, type listarOrdens } from "@/modules/ordens/actions";
+import { criarOrdemNoPainel, type listarOrdens } from "@/modules/ordens/actions";
 import { criarOrdemSchema, type CriarOrdemInput } from "@/modules/ordens/schemas";
 import { type listarPlanos } from "@/modules/planos/actions";
 
@@ -201,9 +201,13 @@ export function OrdensTabela({
     };
     setEnviando(true);
     try {
-      const { ordem, link } = await criarOrdem(payload);
-      setOrdemCriadaId(ordem.id);
-      setLinkCriado(link);
+      const resultado = await criarOrdemNoPainel(payload);
+      if (!resultado.ok) {
+        toast.error(resultado.erro);
+        return;
+      }
+      setOrdemCriadaId(resultado.ordemId);
+      setLinkCriado(resultado.link);
       setVista("sucesso");
       router.refresh();
     } catch (erro) {

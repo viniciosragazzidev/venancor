@@ -94,7 +94,10 @@ export async function criarOrdem(input: CriarOrdemInput) {
         .from(contratoModelos)
         .where(and(isNull(contratoModelos.planoId), eq(contratoModelos.ativo, true)))
         .limit(1);
-  if (!generico) throw new Error("Modelo de contrato não encontrado");
+  if (!generico)
+    throw new Error(
+      "Nenhum modelo de contrato ativo para este plano. Cadastre um em Modelos de contrato (pode ser geral, sem plano).",
+    );
   if (generico.planoId && generico.planoId !== plano.id)
     throw new Error("Modelo de contrato não pertence ao plano");
   const { token, hash } = gerarToken();
@@ -161,6 +164,25 @@ export async function criarOrdem(input: CriarOrdemInput) {
     return nova;
   });
   return { ordem, link };
+}
+
+/**
+ * The panel's "Criar ordem". In production Next hides the message of an error thrown by a server
+ * action (the screen showed "Minified React error #441"), so the reason comes back as data.
+ */
+export async function criarOrdemNoPainel(
+  input: CriarOrdemInput,
+): Promise<{ ok: true; ordemId: string; link: string } | { ok: false; erro: string }> {
+  try {
+    const { ordem, link } = await criarOrdem(input);
+    return { ok: true, ordemId: ordem.id, link };
+  } catch (erro) {
+    console.error("[ordens] criar falhou", erro);
+    return {
+      ok: false,
+      erro: erro instanceof Error ? erro.message : "Não foi possível criar a ordem.",
+    };
+  }
 }
 
 export async function listarOrdens() {
