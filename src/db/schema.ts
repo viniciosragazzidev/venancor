@@ -237,6 +237,28 @@ export const ordens = pgTable(
     check("ordens_max_parcelas_ck", sql`${t.maxParcelas} between 1 and 12`),
   ],
 ).enableRLS();
+export const ordemModelos = pgTable("ordem_modelos", {
+  id: id(),
+  nome: text("nome").notNull(),
+  planoId: uuid("plano_id").references(() => planos.id),
+  contratoModeloId: uuid("contrato_modelo_id").references(() => contratoModelos.id),
+  desconto: integer("desconto").default(0).notNull(),
+  descontoObs: text("desconto_obs"),
+  valorCobradoTipo: valorCobradoTipo("valor_cobrado_tipo")
+    .default("primeira_mensalidade_adesao")
+    .notNull(),
+  valorPersonalizado: integer("valor_personalizado"),
+  formasPagamento: metodoPagamento("formas_pagamento")
+    .array()
+    .default(["pix", "boleto", "cartao"])
+    .notNull(),
+  maxParcelas: integer("max_parcelas").default(1).notNull(),
+  validadeDias: integer("validade_dias").default(7).notNull(),
+  ativo: boolean("ativo").default(true).notNull(),
+  criadoPor: text("criado_por").references(() => user.id),
+  criadoEm: criadoEm(),
+  atualizadoEm: atualizadoEm(),
+}).enableRLS();
 export const ordemBeneficiarios = pgTable("ordem_beneficiarios", {
   id: id(),
   ordemId: uuid("ordem_id")

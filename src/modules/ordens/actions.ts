@@ -21,6 +21,7 @@ import { gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
 import { getPaymentProvider } from "@/providers/payment";
 import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
+import { ordemParaDuplicacao, type DuplicacaoOrdem } from "./formulario";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
 import { transicionar } from "./state-machine";
 
@@ -181,6 +182,42 @@ export async function criarOrdemNoPainel(
     return {
       ok: false,
       erro: erro instanceof Error ? erro.message : "Não foi possível criar a ordem.",
+    };
+  }
+}
+
+/**
+ * "Duplicar" in the orders list: the original order's conditions, client and dependents, to
+ * prefill the "Criar ordem" form. Creating still goes through criarOrdemNoPainel (new order and
+ * link); the original is not touched.
+ */
+export async function obterDuplicacaoOrdem(
+  ordemId: string,
+): Promise<
+  | { ok: true; valores: DuplicacaoOrdem; dependentes: (typeof dependentes.$inferSelect)[] }
+  | { ok: false; erro: string }
+> {
+  await requireAdmin();
+  try {
+    const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
+    if (!ordem) throw new Error("Ordem não encontrada");
+    const [beneficiarios, familiares] = await Promise.all([
+      db
+        .select({ titular: ordemBeneficiarios.titular, cpf: ordemBeneficiarios.cpf })
+        .from(ordemBeneficiarios)
+        .where(eq(ordemBeneficiarios.ordemId, ordem.id)),
+      db.select().from(dependentes).where(eq(dependentes.clienteId, ordem.clienteId)),
+    ]);
+    return {
+      ok: true,
+      valores: ordemParaDuplicacao(ordem, beneficiarios, familiares),
+      dependentes: familiares,
+    };
+  } catch (erro) {
+    console.error("[ordens] duplicar falhou", erro);
+    return {
+      ok: false,
+      erro: erro instanceof Error ? erro.message : "Não foi possível duplicar a ordem.",
     };
   }
 }

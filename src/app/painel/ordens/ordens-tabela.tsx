@@ -7,8 +7,11 @@ import {
   CheckIcon,
   ChevronRightIcon,
   CopyIcon,
+  CopyPlusIcon,
+  LayersIcon,
   LoaderCircleIcon,
   PlusIcon,
+  SaveIcon,
   SearchIcon,
 } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -51,14 +54,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listarDependentes, type listarClientes } from "@/modules/clientes/actions";
-import { criarOrdemNoPainel, type listarOrdens } from "@/modules/ordens/actions";
+import {
+  criarOrdemNoPainel,
+  obterDuplicacaoOrdem,
+  type listarOrdens,
+} from "@/modules/ordens/actions";
+import {
+  modeloParaCondicoes,
+  VALIDADE_PADRAO_DIAS,
+  type CondicoesOrdem,
+} from "@/modules/ordens/formulario";
+import { criarOrdemModelo } from "@/modules/ordens/modelos-actions";
 import { criarOrdemSchema, type CriarOrdemInput } from "@/modules/ordens/schemas";
 import { type listarPlanos } from "@/modules/planos/actions";
+
+import { GerenciarModelosDialog, SalvarModeloDialog, type OrdemModelo } from "./modelos-ordem";
 
 type Ordem = Awaited<ReturnType<typeof listarOrdens>>[number];
 type Cliente = Awaited<ReturnType<typeof listarClientes>>[number];
 type Plano = Awaited<ReturnType<typeof listarPlanos>>[number];
 type Dependente = Awaited<ReturnType<typeof listarDependentes>>[number];
+export interface ContratoOpcao {
+  id: string;
+  nome: string;
+  planoId: string | null;
+  ativo: boolean;
+}
+
+const SEM_MODELO = "nenhum";
+const CONTRATO_AUTO = "auto";
 
 const resolverSchema = criarOrdemSchema.omit({
   dependenteIds: true,
@@ -79,14 +103,23 @@ const TIPOS_VALOR = [
 
 const FORMAS = ["pix", "boleto", "cartao"] as const;
 
+/** Money input text from cents; zero stays empty so the placeholder shows. */
+function textoMoeda(centavos: number | null) {
+  return centavos ? formatarCentavos(centavos) : "";
+}
+
 export function OrdensTabela({
   ordens,
   clientes,
   planos,
+  modelos,
+  contratos,
 }: {
   ordens: Ordem[];
   clientes: Cliente[];
   planos: Plano[];
+  modelos: OrdemModelo[];
+  contratos: ContratoOpcao[];
 }) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
@@ -102,12 +135,20 @@ export function OrdensTabela({
   const [formas, setFormas] = useState<string[]>([...FORMAS]);
   const [descontoTexto, setDescontoTexto] = useState("");
   const [personalizadoTexto, setPersonalizadoTexto] = useState("");
+  const [modeloId, setModeloId] = useState(SEM_MODELO);
+  const [contratoId, setContratoId] = useState(CONTRATO_AUTO);
+  const [duplicandoId, setDuplicandoId] = useState<string | null>(null);
+  const [tituloForm, setTituloForm] = useState("Nova ordem");
+  const [salvarModeloAberto, setSalvarModeloAberto] = useState(false);
+  const [gerenciarAberto, setGerenciarAberto] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<FormValores>({
     resolver: zodResolver(resolverSchema),
@@ -122,6 +163,12 @@ export function OrdensTabela({
   });
 
   const tipoValor = useWatch({ control, name: "valorCobradoTipo" });
+  const planoSelecionado = useWatch({ control, name: "planoId" });
+
+  const contratoServe = (id: string, planoId: string) => {
+    const contrato = contratos.find((item) => item.id === id);
+    return !!contrato && (!contrato.planoId || contrato.planoId === planoId);
+  };
 
   const nomeCliente = (id: string) => clientes.find((cliente) => cliente.id === id)?.nome ?? "—";
   const nomePlano = (id: string) => planos.find((plano) => plano.id === id)?.nome ?? "—";
@@ -136,24 +183,131 @@ export function OrdensTabela({
     );
   });
 
-  function abrirNovo() {
+  /** Fills the non-client fields (plano, contrato, valores, pagamento, validade). */
+  function aplicarCondicoes(condicoes: CondicoesOrdem) {
+    const planoId = condicoes.planoId ?? getValues("planoId");
+    if (condicoes.planoId) setValue("planoId", condicoes.planoId, { shouldValidate: true });
+    setValue("valorCobradoTipo", condicoes.valorCobradoTipo);
+    setValue("descontoObs", condicoes.descontoObs);
+    setValue("maxParcelas", condicoes.maxParcelas);
+    setValue("validadeDias", condicoes.validadeDias);
+    setContratoId(
+      condicoes.contratoModeloId && contratoServe(condicoes.contratoModeloId, planoId)
+        ? condicoes.contratoModeloId
+        : CONTRATO_AUTO,
+    );
+    setFormas([...condicoes.formasPagamento]);
+    setDescontoTexto(textoMoeda(condicoes.desconto));
+    setPersonalizadoTexto(textoMoeda(condicoes.valorPersonalizado));
+  }
+
+  function abrirFormulario(
+    titulo: string,
+    clienteId: string,
+    condicoes: CondicoesOrdem,
+    dependentes: Dependente[] = [],
+    dependenteIds: string[] = [],
+  ) {
     reset({
-      clienteId: clientes[0]?.id ?? "",
-      planoId: planos.find((plano) => plano.ativo)?.id ?? "",
+      clienteId,
+      planoId: condicoes.planoId ?? planos.find((plano) => plano.ativo)?.id ?? "",
       valorCobradoTipo: "primeira_mensalidade_adesao",
       descontoObs: "",
       maxParcelas: 1,
-      validadeDias: 7,
+      validadeDias: VALIDADE_PADRAO_DIAS,
     });
-    setDeps([]);
-    setDepsIds([]);
-    setFormas([...FORMAS]);
-    setDescontoTexto("");
-    setPersonalizadoTexto("");
+    aplicarCondicoes(condicoes);
+    setDeps(dependentes);
+    setDepsIds(dependenteIds);
+    setModeloId(SEM_MODELO);
+    setTituloForm(titulo);
     setVista("form");
     setLinkCriado(null);
     setOrdemCriadaId(null);
     setFormAberto(true);
+  }
+
+  function abrirNovo() {
+    abrirFormulario("Nova ordem", clientes[0]?.id ?? "", {
+      planoId: planos.find((plano) => plano.ativo)?.id ?? null,
+      contratoModeloId: null,
+      desconto: 0,
+      descontoObs: "",
+      valorCobradoTipo: "primeira_mensalidade_adesao",
+      valorPersonalizado: null,
+      formasPagamento: [...FORMAS],
+      maxParcelas: 1,
+      validadeDias: VALIDADE_PADRAO_DIAS,
+    });
+  }
+
+  async function duplicar(ordem: Ordem) {
+    setDuplicandoId(ordem.id);
+    try {
+      const resultado = await obterDuplicacaoOrdem(ordem.id);
+      if (!resultado.ok) {
+        toast.error(resultado.erro);
+        return;
+      }
+      const { clienteId, dependenteIds, ...condicoes } = resultado.valores;
+      abrirFormulario("Duplicar ordem", clienteId, condicoes, resultado.dependentes, dependenteIds);
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível duplicar a ordem.");
+    } finally {
+      setDuplicandoId(null);
+    }
+  }
+
+  function escolherModelo(id: string) {
+    setModeloId(id);
+    const modelo = modelos.find((item) => item.id === id);
+    if (modelo) aplicarCondicoes(modeloParaCondicoes(modelo));
+  }
+
+  /** Desconto and valor personalizado from the text inputs, or the reason they are invalid. */
+  function lerValores(
+    tipo: FormValores["valorCobradoTipo"],
+  ): { desconto: number; valorPersonalizado?: number } | { erro: string } {
+    const desconto = parseMoeda(descontoTexto) ?? 0;
+    if (tipo !== "personalizado") return { desconto };
+    const centavos = parseMoeda(personalizadoTexto);
+    if (centavos === null) return { erro: "Informe o valor personalizado." };
+    return { desconto, valorPersonalizado: centavos };
+  }
+
+  async function salvarComoModelo(nome: string) {
+    const valores = getValues();
+    if (formas.length === 0) {
+      toast.error("Informe ao menos uma forma de pagamento.");
+      return false;
+    }
+    const lidos = lerValores(valores.valorCobradoTipo);
+    if ("erro" in lidos) {
+      toast.error(lidos.erro);
+      return false;
+    }
+    const maxParcelas = Number(valores.maxParcelas);
+    const validadeDias = Number(valores.validadeDias);
+    const resultado = await criarOrdemModelo({
+      nome,
+      planoId: valores.planoId || null,
+      contratoModeloId: contratoId === CONTRATO_AUTO ? null : contratoId,
+      desconto: lidos.desconto,
+      descontoObs: valores.descontoObs?.trim() || null,
+      valorCobradoTipo: valores.valorCobradoTipo,
+      valorPersonalizado: lidos.valorPersonalizado ?? null,
+      formasPagamento: [...formas] as CriarOrdemInput["formasPagamento"],
+      maxParcelas: Number.isInteger(maxParcelas) ? maxParcelas : 1,
+      validadeDias: Number.isInteger(validadeDias) ? validadeDias : VALIDADE_PADRAO_DIAS,
+    });
+    if (!resultado.ok) {
+      toast.error(resultado.erro);
+      return false;
+    }
+    toast.success("Modelo salvo.");
+    setModeloId(resultado.modelo.id);
+    router.refresh();
+    return true;
   }
 
   async function carregarDependentes(clienteId: string) {
@@ -177,20 +331,17 @@ export function OrdensTabela({
       toast.error("Informe ao menos uma forma de pagamento.");
       return;
     }
-    const desconto = parseMoeda(descontoTexto) ?? 0;
-    let valorPersonalizado: number | undefined;
-    if (valores.valorCobradoTipo === "personalizado") {
-      const centavos = parseMoeda(personalizadoTexto);
-      if (centavos === null) {
-        toast.error("Informe o valor personalizado.");
-        return;
-      }
-      valorPersonalizado = centavos;
+    const lidos = lerValores(valores.valorCobradoTipo);
+    if ("erro" in lidos) {
+      toast.error(lidos.erro);
+      return;
     }
+    const { desconto, valorPersonalizado } = lidos;
     const payload: CriarOrdemInput = {
       clienteId: valores.clienteId,
       planoId: valores.planoId,
       dependenteIds: depsIds,
+      contratoModeloId: contratoId === CONTRATO_AUTO ? undefined : contratoId,
       desconto,
       descontoObs: valores.descontoObs?.trim() || undefined,
       valorCobradoTipo: valores.valorCobradoTipo,
@@ -244,10 +395,20 @@ export function OrdensTabela({
             onChange={(evento) => setBusca(evento.target.value)}
           />
         </div>
-        <Button className="h-12 w-full rounded-full px-6 sm:w-auto" onClick={abrirNovo}>
-          <PlusIcon aria-hidden strokeWidth={1.5} />
-          Nova ordem
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            className="h-12 w-full rounded-full px-6 sm:w-auto"
+            onClick={() => setGerenciarAberto(true)}
+          >
+            <LayersIcon aria-hidden strokeWidth={1.5} />
+            Modelos
+          </Button>
+          <Button className="h-12 w-full rounded-full px-6 sm:w-auto" onClick={abrirNovo}>
+            <PlusIcon aria-hidden strokeWidth={1.5} />
+            Nova ordem
+          </Button>
+        </div>
       </div>
 
       <Card className="overflow-hidden rounded-3xl">
@@ -288,7 +449,25 @@ export function OrdensTabela({
                         {formatarDataHora(ordem.expiraEm)}
                       </TableCell>
                       <TableCell>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Duplicar ordem de ${nomeCliente(ordem.clienteId)}`}
+                            title="Duplicar"
+                            disabled={duplicandoId !== null}
+                            onClick={() => void duplicar(ordem)}
+                          >
+                            {duplicandoId === ordem.id ? (
+                              <LoaderCircleIcon
+                                aria-hidden
+                                className="animate-spin"
+                                strokeWidth={1.5}
+                              />
+                            ) : (
+                              <CopyPlusIcon aria-hidden strokeWidth={1.5} />
+                            )}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -373,9 +552,11 @@ export function OrdensTabela({
           ) : (
             <>
               <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
-                <DialogTitle>Nova ordem</DialogTitle>
+                <DialogTitle>{tituloForm}</DialogTitle>
                 <DialogDescription>
-                  Escolha o cliente, o plano e as condições da proposta.
+                  {tituloForm === "Duplicar ordem"
+                    ? "Mesmas condições da ordem original. Ajuste o que precisar: uma nova ordem e um novo link serão criados."
+                    : "Escolha o cliente, o plano e as condições da proposta."}
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -384,6 +565,42 @@ export function OrdensTabela({
                 noValidate
               >
                 <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-6 py-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:px-8">
+                  <Campo
+                    label="Modelo"
+                    htmlFor="ordem-modelo"
+                    hint={
+                      modelos.length === 0
+                        ? "Nenhum modelo salvo. Preencha a ordem e use Salvar como modelo."
+                        : "Preenche plano, contrato, valores e condições. Depois é só escolher o cliente."
+                    }
+                  >
+                    <Select
+                      value={modeloId}
+                      onValueChange={(valor) => {
+                        if (valor) escolherModelo(valor);
+                      }}
+                    >
+                      <SelectTrigger
+                        id="ordem-modelo"
+                        className={`${inputPill} w-full justify-between`}
+                      >
+                        <SelectValue>
+                          {(valor: string) =>
+                            modelos.find((modelo) => modelo.id === valor)?.nome ?? "Sem modelo"
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={SEM_MODELO}>Sem modelo</SelectItem>
+                        {modelos.map((modelo) => (
+                          <SelectItem key={modelo.id} value={modelo.id}>
+                            {modelo.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Campo>
+
                   <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
                     <p className="text-sm font-medium">Proposta</p>
                     <div className="grid gap-5 sm:grid-cols-2">
@@ -426,7 +643,18 @@ export function OrdensTabela({
                           control={control}
                           name="planoId"
                           render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
+                            <Select
+                              value={field.value}
+                              onValueChange={(valor) => {
+                                if (!valor) return;
+                                field.onChange(valor);
+                                if (
+                                  contratoId !== CONTRATO_AUTO &&
+                                  !contratoServe(contratoId, valor)
+                                )
+                                  setContratoId(CONTRATO_AUTO);
+                              }}
+                            >
                               <SelectTrigger
                                 id="ordem-plano"
                                 className={`${inputPill} w-full justify-between`}
@@ -445,6 +673,46 @@ export function OrdensTabela({
                             </Select>
                           )}
                         />
+                      </Campo>
+                      <Campo
+                        label="Contrato"
+                        htmlFor="ordem-contrato"
+                        className="sm:col-span-2"
+                        hint="Automático usa o modelo de contrato do plano (ou o geral)."
+                      >
+                        <Select
+                          value={contratoId}
+                          onValueChange={(valor) => {
+                            if (valor) setContratoId(valor);
+                          }}
+                        >
+                          <SelectTrigger
+                            id="ordem-contrato"
+                            className={`${inputPill} w-full justify-between`}
+                          >
+                            <SelectValue>
+                              {(valor: string) =>
+                                contratos.find((contrato) => contrato.id === valor)?.nome ??
+                                "Automático"
+                              }
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={CONTRATO_AUTO}>Automático</SelectItem>
+                            {contratos
+                              .filter(
+                                (contrato) =>
+                                  contrato.id === contratoId ||
+                                  (contrato.ativo &&
+                                    contratoServe(contrato.id, planoSelecionado ?? "")),
+                              )
+                              .map((contrato) => (
+                                <SelectItem key={contrato.id} value={contrato.id}>
+                                  {contrato.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </Campo>
                     </div>
 
@@ -609,6 +877,16 @@ export function OrdensTabela({
                 <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t bg-popover px-6 py-4 sm:px-8">
                   <Button
                     type="button"
+                    variant="ghost"
+                    className="h-12 rounded-full px-6 sm:mr-auto"
+                    disabled={enviando}
+                    onClick={() => setSalvarModeloAberto(true)}
+                  >
+                    <SaveIcon aria-hidden strokeWidth={1.5} />
+                    Salvar como modelo
+                  </Button>
+                  <Button
+                    type="button"
                     variant="outline"
                     className="h-12 rounded-full px-6"
                     disabled={enviando}
@@ -629,6 +907,18 @@ export function OrdensTabela({
           )}
         </DialogContent>
       </Dialog>
+
+      <SalvarModeloDialog
+        open={salvarModeloAberto}
+        onOpenChange={setSalvarModeloAberto}
+        onSalvar={salvarComoModelo}
+      />
+      <GerenciarModelosDialog
+        open={gerenciarAberto}
+        onOpenChange={setGerenciarAberto}
+        modelos={modelos}
+        planos={planos}
+      />
     </div>
   );
 }

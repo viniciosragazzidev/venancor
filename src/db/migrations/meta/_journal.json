@@ -29,6 +29,13 @@
       "when": 1791110137377,
       "tag": "0003_breezy_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792531512101,
+      "tag": "0004_funny_rattler",
+      "breakpoints": true
     }
   ]
 }

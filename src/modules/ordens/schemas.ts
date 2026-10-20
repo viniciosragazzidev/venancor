@@ -19,3 +19,17 @@ export const criarOrdemSchema = z.object({
 });
 export type CriarOrdemInput = z.input<typeof criarOrdemSchema>;
 export type CriarOrdemData = z.output<typeof criarOrdemSchema>;
+
+/** A saved preset of the "Criar ordem" form: everything except the client and dependents. */
+export const ordemModeloSchema = criarOrdemSchema
+  .omit({ clienteId: true, dependenteIds: true })
+  .extend({
+    nome: z.string().trim().min(1, "Informe o nome do modelo").max(120),
+    planoId: z.uuid().nullable().optional(),
+    contratoModeloId: z.uuid().nullable().optional(),
+    descontoObs: z.string().trim().nullable().optional(),
+    valorPersonalizado: z.int().nonnegative().nullable().optional(),
+  });
+export type OrdemModeloInput = z.input<typeof ordemModeloSchema>;
+export type OrdemModeloData = z.output<typeof ordemModeloSchema>;
+export const ordemModeloAtualizacaoSchema = ordemModeloSchema.partial();
