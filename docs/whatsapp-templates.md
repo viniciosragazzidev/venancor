@@ -103,22 +103,30 @@ Regras gerais de submissão:
 
 **Corpo:**
 
-> Olá {{1}}, sua proposta do plano {{2}} ainda aguarda sua assinatura e expira em {{3}}. Acesse para ver, assinar e pagar: {{4}}
+> Olá {{1}}, sua proposta do plano {{2}} ainda não foi concluída. O prazo vai até {{3}}. Acesse para continuar de onde parou: {{4}}
 
 **Exemplo (valores das variáveis):**
 
-> Olá Maria, sua proposta do plano Amil 400 E Nacional ainda aguarda sua assinatura e expira em 05/10/2026. Acesse para ver, assinar e pagar: https://app.seudominio.com.br/c/3f9a2c7e8b1d4f6a
+> Olá Maria, sua proposta do plano Amil 400 E Nacional ainda não foi concluída. O prazo vai até 05/10/2026. Acesse para continuar de onde parou: https://app.seudominio.com.br/c/3f9a2c7e8b1d4f6a
 
 **Mapeamento das variáveis:**
 
 - `{{1}}` → nome do cliente
 - `{{2}}` → nome do plano
-- `{{3}}` → data de expiração do link (dd/mm/aaaa)
+- `{{3}}` → prazo (dd/mm/aaaa): validade do link antes da assinatura; vencimento do Pix/boleto depois dela
 - `{{4}}` → link único da ordem (`/c/[token]`)
 
 **Botões:** nenhum.
 
-**Observação:** lembrete opcional, disparado manualmente pelo gestor no MVP, apenas para propostas ainda não assinadas.
+**Observação:** o texto é genérico porque o mesmo template serve para proposta sem assinatura e para assinatura sem pagamento. Se a versão antiga ("ainda aguarda sua assinatura") já tiver sido submetida, crie um template novo com este corpo.
+
+**Regras de disparo** (`src/modules/lembretes/regras.ts`):
+
+- Aberta (ou enviada) e não assinada: 24h depois da última etapa.
+- Assinada e não paga: 24h depois da assinatura.
+- Pix/boleto vencendo (ou link expirando) em até 24h: um lembrete.
+- No máximo 2 lembretes por ordem, nunca para ordem paga, cancelada ou expirada, nunca entre 20h e 8h (horário de Brasília). Cada lembrete leva um link novo (o anterior deixa de valer, como no "Reenviar proposta").
+- Automático pelo cron `/api/cron/lembretes` (flag `LEMBRETES_AUTOMATICOS=true`) ou manual pelo botão "Lembrar agora" no painel (sem a espera de 24h).
 
 ---
 
@@ -129,6 +137,6 @@ Regras gerais de submissão:
 | Ordem enviada por WhatsApp           | `proposta_enviada`     | Ação "Enviar por WhatsApp" no painel                   |
 | Cliente chegou à etapa de assinatura | `codigo_assinatura`    | Solicitação de OTP na página do cliente                |
 | Webhook confirma pagamento           | `pagamento_confirmado` | Evento `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED` do Asaas |
-| Proposta sem assinatura              | `lembrete_proposta`    | Disparo manual do gestor                               |
+| Proposta sem assinatura ou pagamento | `lembrete_proposta`    | Cron de lembretes ou botão "Lembrar agora" no painel   |
 
 Todo envio é registrado na tabela `mensagens`, com status de entrega atualizado pelo webhook da Meta. Se o WhatsApp falhar, o e-mail via Resend é o canal de reserva.

@@ -29,6 +29,8 @@ const schema = z.object({
   WEBHOOK_SECRET_TOKEN: z.string().optional(),
   NEXT_PUBLIC_MODO_TESTE: z.enum(["true", "false"]).default("false"),
   ASSINATURA_EXIGE_OTP: z.enum(["true", "false"]).default("false"),
+  CRON_SECRET: z.string().min(16).optional(),
+  LEMBRETES_AUTOMATICOS: z.enum(["true", "false"]).default("false"),
 });
 
 export type ServerEnv = z.infer<typeof schema>;

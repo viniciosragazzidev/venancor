@@ -71,6 +71,10 @@ export function rotuloEventoOrdem(acao: string, metadados: Record<string, unknow
       return "Link regenerado";
     case "atualizar":
       return "Ordem atualizada";
+    case "lembrete_enviado":
+      return metadados.origem === "automatico"
+        ? "Lembrete enviado (automático)"
+        : "Lembrete enviado";
     default:
       return acao
         .split(/[_-]/)

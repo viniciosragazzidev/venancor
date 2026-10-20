@@ -22,14 +22,9 @@ import { getMessagingProvider } from "@/providers/messaging";
 import { getPaymentProvider } from "@/providers/payment";
 import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
 import { ordemParaDuplicacao, type DuplicacaoOrdem } from "./formulario";
+import { urlCliente } from "./link";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
 import { transicionar } from "./state-machine";
-
-function urlCliente(token: string) {
-  const base = process.env.APP_URL ?? process.env.BETTER_AUTH_URL;
-  if (!base) throw new Error("APP_URL não configurada");
-  return new URL(`/c/${token}`, base).toString();
-}
 
 export async function criarOrdem(input: CriarOrdemInput) {
   const admin = await requireAdmin();

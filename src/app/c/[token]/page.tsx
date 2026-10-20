@@ -5,6 +5,7 @@ import { Brand } from "@/components/admin/brand";
 import { FaixaAmbienteTeste } from "@/components/ambiente-teste";
 import { FluxoReal } from "@/components/cliente/fluxo-real";
 import { TelaStatus } from "@/components/cliente/tela-sucesso";
+import { acessoContaComoAbertura } from "@/modules/ordens/acesso-cliente";
 import { resolverToken } from "@/modules/ordens/cliente";
 import { fakePermitido } from "@/lib/modo-teste";
 import { assinaturaExigeOtp } from "@/modules/assinatura/otp-policy";
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
 
 export default async function PaginaProposta({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const estado = await resolverToken(token);
+  const estado = await resolverToken(token, {
+    registrarAbertura: await acessoContaComoAbertura(),
+  });
   if (estado.tipo === "invalido") notFound();
   if (estado.tipo === "expirada" || estado.tipo === "cancelada")
     return (

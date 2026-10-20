@@ -2,22 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BanIcon, CopyIcon, LoaderCircleIcon, MessageCircleIcon } from "lucide-react";
+import { BanIcon, BellRingIcon, CopyIcon, LoaderCircleIcon, MessageCircleIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { LembrarAgoraDialog } from "@/components/admin/lembrar-agora";
 import { Button } from "@/components/ui/button";
 import { cancelarOrdem, copiarLinkOrdem, enviarOrdem } from "@/modules/ordens/actions";
 
 const STATUS_COM_LINK = ["rascunho", "enviada", "visualizada"];
 const STATUS_SEM_CANCELAMENTO = ["paga", "expirada", "cancelada"];
 
-export function OrdemAcoes({ ordemId, status }: { ordemId: string; status: string }) {
+export function OrdemAcoes({
+  ordemId,
+  status,
+  podeLembrar = false,
+}: {
+  ordemId: string;
+  status: string;
+  /** Status allows a reminder and the 2-reminder cap was not reached. */
+  podeLembrar?: boolean;
+}) {
   const router = useRouter();
   const [ocupado, setOcupado] = useState<"enviar" | "copiar" | null>(null);
   const [confirmaEnvio, setConfirmaEnvio] = useState(false);
   const [confirmaCopia, setConfirmaCopia] = useState(false);
   const [confirmaCancelamento, setConfirmaCancelamento] = useState(false);
+  const [lembrarAberto, setLembrarAberto] = useState(false);
 
   const podeLink = STATUS_COM_LINK.includes(status);
   const podeCancelar = !STATUS_SEM_CANCELAMENTO.includes(status);
@@ -90,6 +101,17 @@ export function OrdemAcoes({ ordemId, status }: { ordemId: string; status: strin
             Copiar link
           </Button>
         ) : null}
+        {podeLembrar ? (
+          <Button
+            variant="outline"
+            className="h-12 rounded-full px-6"
+            disabled={ocupado !== null}
+            onClick={() => setLembrarAberto(true)}
+          >
+            <BellRingIcon aria-hidden strokeWidth={1.5} />
+            Lembrar agora
+          </Button>
+        ) : null}
         {podeCancelar ? (
           <Button
             variant="destructive"
@@ -119,6 +141,11 @@ export function OrdemAcoes({ ordemId, status }: { ordemId: string; status: strin
         descricao="Um novo link será criado e copiado. O link anterior é invalidado imediatamente: se você já o compartilhou com o cliente, ele deixa de funcionar."
         confirmarTexto="Gerar e copiar"
         onConfirmar={copiar}
+      />
+
+      <LembrarAgoraDialog
+        ordemId={lembrarAberto ? ordemId : null}
+        onOpenChange={setLembrarAberto}
       />
 
       <ConfirmDialog

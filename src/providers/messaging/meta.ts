@@ -13,7 +13,7 @@ const CAMPOS: Record<EnviarTemplateInput["template"], string[]> = {
   proposta_enviada: ["nome", "plano", "link"],
   codigo_assinatura: ["codigo"],
   pagamento_confirmado: ["nome", "plano"],
-  lembrete_proposta: ["nome", "link"],
+  lembrete_proposta: ["nome", "plano", "prazo", "link"],
 };
 
 export class MetaWhatsAppProvider implements MessagingProvider {
@@ -66,17 +66,15 @@ export class MetaWhatsAppProvider implements MessagingProvider {
       if (fallback) return fallback;
       throw error;
     }
-    await db
-      .insert(mensagens)
-      .values({
-        ordemId: input.ordemId,
-        canal: "whatsapp",
-        template: input.template,
-        para: input.para,
-        providerMessageId: resultado.providerMessageId,
-        status: "enviada",
-        enviadaEm: new Date(),
-      });
+    await db.insert(mensagens).values({
+      ordemId: input.ordemId,
+      canal: "whatsapp",
+      template: input.template,
+      para: input.para,
+      providerMessageId: resultado.providerMessageId,
+      status: "enviada",
+      enviadaEm: new Date(),
+    });
     return resultado;
   }
 

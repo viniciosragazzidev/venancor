@@ -67,7 +67,14 @@ const brl = (centavos: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(centavos / 100);
 const mascararCpf = (cpf: string) => cpf.replace(/^(\d{3})\d{5}(\d{3})$/, "$1*****$2");
 
-export async function resolverToken(token: string): Promise<ResolucaoToken> {
+/**
+ * Resolves the client link. `registrarAbertura: false` shows the proposal without marking it as
+ * opened (admin preview, link-preview robots); any client action still records it.
+ */
+export async function resolverToken(
+  token: string,
+  { registrarAbertura = true }: { registrarAbertura?: boolean } = {},
+): Promise<ResolucaoToken> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return { tipo: "invalido" };
   const [ordem] = await db
     .select()
@@ -91,10 +98,11 @@ export async function resolverToken(token: string): Promise<ResolucaoToken> {
     await transicionar(ordem.id, "expirada", "sistema");
     return { tipo: "expirada" };
   }
-  if (ordem.status === "rascunho") {
+  if (registrarAbertura && ordem.status === "rascunho") {
     await transicionar(ordem.id, "enviada", "cliente");
     await transicionar(ordem.id, "visualizada", "cliente");
-  } else if (ordem.status === "enviada") await transicionar(ordem.id, "visualizada", "cliente");
+  } else if (registrarAbertura && ordem.status === "enviada")
+    await transicionar(ordem.id, "visualizada", "cliente");
   const [cliente] = await db
     .select()
     .from(clientes)

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  BellRingIcon,
   CheckIcon,
   ChevronRightIcon,
   CopyIcon,
@@ -14,12 +15,15 @@ import {
   SaveIcon,
   SearchIcon,
 } from "lucide-react";
+import { useQueryState } from "nuqs";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Campo, inputPill } from "@/components/admin/campo";
 import { formatarCentavos, parseMoeda } from "@/components/admin/format";
+import { FunilOrdem } from "@/components/admin/funil-ordem";
+import { LembrarAgoraDialog } from "@/components/admin/lembrar-agora";
 import {
   classesStatusOrdem,
   formatarDataHora,
@@ -54,6 +58,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { listarDependentes, type listarClientes } from "@/modules/clientes/actions";
+import { type ResumoLembretes } from "@/modules/lembretes/actions";
+import { lembreteDisponivel, MAX_LEMBRETES } from "@/modules/lembretes/regras";
 import {
   criarOrdemNoPainel,
   obterDuplicacaoOrdem,
@@ -64,6 +70,12 @@ import {
   VALIDADE_PADRAO_DIAS,
   type CondicoesOrdem,
 } from "@/modules/ordens/formulario";
+import {
+  contarPorFiltro,
+  FILTROS_ETAPA,
+  filtrarPorEtapa,
+  type FiltroEtapa,
+} from "@/modules/ordens/funil";
 import { criarOrdemModelo } from "@/modules/ordens/modelos-actions";
 import { criarOrdemSchema, type CriarOrdemInput } from "@/modules/ordens/schemas";
 import { type listarPlanos } from "@/modules/planos/actions";
@@ -114,15 +126,30 @@ export function OrdensTabela({
   planos,
   modelos,
   contratos,
+  lembretes,
+  agora,
 }: {
   ordens: Ordem[];
   clientes: Cliente[];
   planos: Plano[];
   modelos: OrdemModelo[];
   contratos: ContratoOpcao[];
+  /** Reminders sent per order id. */
+  lembretes: Record<string, ResumoLembretes>;
+  /** Server time of this render (refreshed with the list), for "aberto há 2 h". */
+  agora: number;
 }) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
+  const [etapaParam, setEtapaParam] = useQueryState("etapa", {
+    defaultValue: "todos",
+    scroll: false,
+  });
+  const etapa: FiltroEtapa = FILTROS_ETAPA.some((filtro) => filtro.valor === etapaParam)
+    ? (etapaParam as FiltroEtapa)
+    : "todos";
+  const contagem = contarPorFiltro(ordens, agora);
+  const [lembrarId, setLembrarId] = useState<string | null>(null);
   const [formAberto, setFormAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<"form" | "sucesso">("form");
@@ -173,7 +200,7 @@ export function OrdensTabela({
   const nomeCliente = (id: string) => clientes.find((cliente) => cliente.id === id)?.nome ?? "—";
   const nomePlano = (id: string) => planos.find((plano) => plano.id === id)?.nome ?? "—";
 
-  const filtradas = ordens.filter((ordem) => {
+  const filtradas = filtrarPorEtapa(ordens, etapa, agora).filter((ordem) => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return true;
     return (
@@ -411,21 +438,70 @@ export function OrdensTabela({
         </div>
       </div>
 
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div
+          role="group"
+          aria-label="Filtrar por etapa"
+          className="flex flex-wrap items-center gap-1 rounded-3xl border bg-muted/40 p-1 sm:rounded-full"
+        >
+          {FILTROS_ETAPA.map((filtro) => {
+            const ativo = etapa === filtro.valor;
+            return (
+              <button
+                key={filtro.valor}
+                type="button"
+                aria-pressed={ativo}
+                className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm transition-colors ${
+                  ativo
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => void setEtapaParam(filtro.valor === "todos" ? null : filtro.valor)}
+              >
+                {filtro.rotulo}
+                <span
+                  className={`rounded-full px-1.5 text-xs tabular-nums ${
+                    ativo ? "bg-primary/15" : "bg-muted"
+                  }`}
+                >
+                  {contagem[filtro.valor]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <p
+          className="flex items-center gap-2 text-xs text-muted-foreground"
+          title="A lista se atualiza sozinha a cada 30 segundos enquanto a página está aberta."
+        >
+          <span aria-hidden className="relative flex size-2">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60 motion-reduce:animate-none" />
+            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+          </span>
+          Ao vivo
+        </p>
+      </div>
+
       <Card className="overflow-hidden rounded-3xl">
         <CardContent className="p-0">
           {filtradas.length === 0 ? (
             <p className="px-6 py-10 text-center text-sm text-muted-foreground">
-              {ordens.length === 0 ? "Nenhuma ordem criada ainda." : "Nenhuma ordem encontrada."}
+              {ordens.length === 0
+                ? "Nenhuma ordem criada ainda."
+                : etapa !== "todos" && !busca.trim()
+                  ? "Nenhuma ordem nesta etapa."
+                  : "Nenhuma ordem encontrada."}
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[760px]">
+              <Table className="min-w-[1000px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Cobrado</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Progresso</TableHead>
                     <TableHead>Expira</TableHead>
                     <TableHead>
                       <span className="sr-only">Ações</span>
@@ -445,11 +521,33 @@ export function OrdensTabela({
                           {rotuloStatusOrdem(ordem.status)}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <FunilOrdem
+                          ordem={ordem}
+                          agora={agora}
+                          lembretes={lembretes[ordem.id]?.quantidade ?? 0}
+                        />
+                      </TableCell>
                       <TableCell className="tabular-nums">
                         {formatarDataHora(ordem.expiraEm)}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
+                          {lembreteDisponivel(
+                            ordem,
+                            lembretes[ordem.id]?.quantidade ?? 0,
+                            agora,
+                          ) ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Lembrar ${nomeCliente(ordem.clienteId)} agora`}
+                              title={`Lembrar agora (${lembretes[ordem.id]?.quantidade ?? 0} de ${MAX_LEMBRETES} lembretes enviados)`}
+                              onClick={() => setLembrarId(ordem.id)}
+                            >
+                              <BellRingIcon aria-hidden strokeWidth={1.5} />
+                            </Button>
+                          ) : null}
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -908,6 +1006,12 @@ export function OrdensTabela({
         </DialogContent>
       </Dialog>
 
+      <LembrarAgoraDialog
+        ordemId={lembrarId}
+        onOpenChange={(aberto) => {
+          if (!aberto) setLembrarId(null);
+        }}
+      />
       <SalvarModeloDialog
         open={salvarModeloAberto}
         onOpenChange={setSalvarModeloAberto}

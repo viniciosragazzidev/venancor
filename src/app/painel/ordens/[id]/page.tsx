@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { listarClientes } from "@/modules/clientes/actions";
+import { LEMBRETE_ACAO, lembreteDisponivel } from "@/modules/lembretes/regras";
 import { listarOrdens } from "@/modules/ordens/actions";
 import { listarEventosOrdem, obterDownloadsOrdem } from "@/modules/ordens/queries";
 import { listarPlanos } from "@/modules/planos/actions";
@@ -59,6 +60,10 @@ function Carta({ titulo, children }: { titulo: string; children: React.ReactNode
   );
 }
 
+function instanteAtual() {
+  return Date.now();
+}
+
 export default async function OrdemDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [ordens, clientes, planos] = await Promise.all([
@@ -73,6 +78,8 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
     obterDownloadsOrdem(ordem.id),
   ]);
 
+  const lembretesEnviados = eventos.filter((evento) => evento.acao === LEMBRETE_ACAO).length;
+  const podeLembrar = lembreteDisponivel(ordem, lembretesEnviados, instanteAtual());
   const cliente = clientes.find((item) => item.id === ordem.clienteId);
   const plano = planos.find((item) => item.id === ordem.planoId);
 
@@ -94,7 +101,7 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
         </Badge>
       </div>
 
-      <OrdemAcoes ordemId={ordem.id} status={ordem.status} />
+      <OrdemAcoes ordemId={ordem.id} status={ordem.status} podeLembrar={podeLembrar} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Carta titulo="Valores">

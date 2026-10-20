@@ -4,11 +4,15 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assinaturas } from "@/db/schema";
 import { getStorageAdapter, storageDriver } from "@/providers/storage";
+import { acessoContaComoAbertura } from "./acesso-cliente";
 import { resolverToken } from "./cliente";
 import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
 
 export async function consultarStatusCliente(token: string) {
-  const estado = await resolverToken(token);
+  // Polled by the client page: an admin preview left open must not count as the client opening.
+  const estado = await resolverToken(token, {
+    registrarAbertura: await acessoContaComoAbertura(),
+  });
   if (estado.tipo === "ativa" && estado.dados.status === "aguardando_pagamento") {
     await sincronizarPendentesAsaas(estado.dados.id);
     const atualizado = await resolverToken(token);
