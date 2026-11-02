@@ -7,10 +7,18 @@ import { ZodError } from "zod";
  */
 export type ResultadoAcao<T> = { ok: true; valor: T } | { ok: false; erro: string };
 
-/** Business errors (plain Error) keep their message; database, network and validation do not. */
+/** An error whose message is written for the client and safe to show on the link page. */
+export class ErroNegocio extends Error {
+  readonly negocio = true;
+}
+
+/**
+ * Only messages marked as business errors reach the client. Everything else (database, payment
+ * provider, configuration, network, bugs) becomes a generic message and stays in the server log.
+ */
 export function mensagemParaCliente(erro: unknown): string {
+  if (erro instanceof ErroNegocio) return erro.message;
   if (erro instanceof ZodError) return "Confira os dados informados e tente novamente.";
-  if (erro instanceof Error && !("code" in erro) && erro.message) return erro.message;
   return "Não foi possível concluir agora. Tente novamente em instantes.";
 }
 

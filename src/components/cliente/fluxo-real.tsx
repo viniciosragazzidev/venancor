@@ -76,7 +76,7 @@ export function FluxoReal({
     },
     onEnviarOtp: async () => {
       try {
-        const resultado = await solicitarOtp(token);
+        const resultado = valorOuErro(await solicitarOtp(token));
         return { ok: true, ...resultado };
       } catch (error) {
         toast.error(mensagemErro(error));
@@ -85,7 +85,7 @@ export function FluxoReal({
     },
     onValidarOtp: async (codigo) => {
       try {
-        const resultado = await confirmarOtp(token, codigo);
+        const resultado = valorOuErro(await confirmarOtp(token, codigo));
         return "ok" in resultado ? { ok: true } : resultado;
       } catch (error) {
         toast.error(mensagemErro(error));

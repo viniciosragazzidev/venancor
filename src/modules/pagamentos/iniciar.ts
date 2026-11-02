@@ -4,6 +4,7 @@ import { assinaturas, auditoria, clientes, ordens, pagamentos } from "@/db/schem
 import { resolverToken } from "@/modules/ordens/cliente";
 import { getPaymentProvider, type Metodo } from "@/providers/payment";
 import { assertPodeIniciarPagamento, criarCobrancaSeAssinada } from "./guard";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
 export interface PagamentoIniciado {
   id: string;
@@ -37,7 +38,8 @@ export async function iniciarPagamento(
   parcelas = 1,
 ): Promise<PagamentoIniciado> {
   const resolucao = await resolverToken(token);
-  if (resolucao.tipo !== "ativa") throw new Error("Link indisponível para pagamento");
+  if (resolucao.tipo !== "ativa")
+    throw new ErroNegocio("Este link não está mais disponível para pagamento.");
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, resolucao.dados.id)).limit(1);
   const [assinatura] = await db
     .select({ id: assinaturas.id })
@@ -46,14 +48,15 @@ export async function iniciarPagamento(
     .limit(1);
   if (!ordem) throw new Error("Ordem não encontrada");
   assertPodeIniciarPagamento(ordem.status, Boolean(assinatura));
-  if (!ordem.formasPagamento.includes(metodo)) throw new Error("Forma de pagamento indisponível");
+  if (!ordem.formasPagamento.includes(metodo))
+    throw new ErroNegocio("Forma de pagamento indisponível");
   if (
     !Number.isInteger(parcelas) ||
     parcelas < 1 ||
     parcelas > ordem.maxParcelas ||
     (metodo !== "cartao" && parcelas !== 1)
   )
-    throw new Error("Parcelamento inválido");
+    throw new ErroNegocio("Parcelamento inválido");
   const [existente] = await db
     .select()
     .from(pagamentos)
@@ -119,7 +122,8 @@ export async function iniciarPagamento(
           ),
         )
         .limit(1);
-      if (duplicado) throw new Error("Já existe cobrança pendente para esta forma de pagamento");
+      if (duplicado)
+        throw new ErroNegocio("Já existe cobrança pendente para esta forma de pagamento");
       const [novo] = await tx
         .insert(pagamentos)
         .values({

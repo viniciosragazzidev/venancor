@@ -8,6 +8,7 @@ import { fakePermitido } from "@/lib/modo-teste";
 import { otpValidado } from "./otp";
 import { assinaturaExigeOtp, obterOtpParaAssinatura } from "./otp-policy";
 import { concluirAssinaturaSchema, type ConcluirAssinaturaInput } from "./schema";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
 /** Compares names ignoring case, accents and repeated spaces ("José  da Silva" = "jose da silva"). */
 export function normalizarNome(nome: string) {
@@ -26,7 +27,7 @@ export async function concluirAssinatura(
 ) {
   const ordem = await resolverToken(token);
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
-    throw new Error("Ordem indisponível para assinatura");
+    throw new ErroNegocio("Esta proposta não está mais disponível para assinatura.");
   const dados = concluirAssinaturaSchema.parse(input);
   const [titular] = await db
     .select({ cpf: ordemBeneficiarios.cpf, nome: ordemBeneficiarios.nome })
@@ -37,9 +38,13 @@ export async function concluirAssinatura(
     .limit(1);
   if (!titular) throw new Error("Titular ausente do snapshot");
   if (normalizarNome(dados.nome) !== normalizarNome(titular.nome))
-    throw new Error("O nome não confere com o do titular da proposta. Confira e tente novamente.");
+    throw new ErroNegocio(
+      "O nome não confere com o do titular da proposta. Confira e tente novamente.",
+    );
   if (dados.cpf !== titular.cpf)
-    throw new Error("O CPF digitado não confere com o do titular da proposta. Confira os números.");
+    throw new ErroNegocio(
+      "O CPF digitado não confere com o do titular da proposta. Confira os números.",
+    );
   const otp = await obterOtpParaAssinatura(() => otpValidado(ordem.dados.id));
   const aceites = await db
     .select({ tipo: consentimentos.tipo })
@@ -54,7 +59,7 @@ export async function concluirAssinatura(
     !aceites.some((item) => item.tipo === "contrato") ||
     !aceites.some((item) => item.tipo === "lgpd")
   )
-    throw new Error("Consentimentos de contrato e LGPD são obrigatórios");
+    throw new ErroNegocio("Volte ao contrato e marque os dois aceites antes de assinar.");
   const imagem = Uint8Array.from(
     Buffer.from(dados.imagemBase64.replace(/^data:image\/png;base64,/, ""), "base64"),
   );
@@ -62,7 +67,7 @@ export async function concluirAssinatura(
     imagem.byteLength > 2_000_000 ||
     Buffer.from(imagem.slice(0, 8)).toString("hex") !== "89504e470d0a1a0a"
   )
-    throw new Error("Assinatura PNG inválida ou muito grande");
+    throw new ErroNegocio("Não conseguimos ler sua assinatura. Limpe e assine de novo.");
   const assinada = await getSignatureProvider().assinar({
     ordemId: ordem.dados.id,
     nome: dados.nome,
@@ -95,7 +100,7 @@ export async function concluirAssinatura(
         .set({ status: "assinada", assinadaEm: assinada.assinadoEm, atualizadoEm: new Date() })
         .where(and(eq(ordens.id, ordem.dados.id), eq(ordens.status, "visualizada")))
         .returning({ id: ordens.id });
-      if (!alterada) throw new Error("Ordem já assinada ou alterada");
+      if (!alterada) throw new ErroNegocio("Esta proposta já foi assinada.");
       await tx.insert(assinaturas).values({
         ordemId: ordem.dados.id,
         imagemPath,

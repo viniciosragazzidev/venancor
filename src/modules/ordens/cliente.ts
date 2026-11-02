@@ -6,6 +6,7 @@ import { clientes, ordemBeneficiarios, ordemSnapshotPlano, ordens } from "@/db/s
 import { hashToken } from "@/lib/tokens";
 import { renderizarContrato, type VariavelContrato } from "@/modules/contratos/render";
 import { transicionar, type OrdemStatus } from "./state-machine";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
 const snapshotSchema = z.object({
   operadora: z.object({ nome: z.string(), registroAns: z.string() }),
@@ -223,7 +224,7 @@ export async function registrarConsentimento(
 ) {
   const resolucao = await resolverToken(token);
   if (resolucao.tipo !== "ativa" || !["enviada", "visualizada"].includes(resolucao.dados.status))
-    throw new Error("Ordem indisponível para consentimento");
+    throw new ErroNegocio("Esta proposta não está mais disponível para aceite.");
   const { consentimentos } = await import("@/db/schema");
   const versaoTexto =
     tipo === "contrato"

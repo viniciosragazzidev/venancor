@@ -100,7 +100,7 @@ export function estruturarContrato(texto: string): ContratoEstruturado {
       continue;
     }
 
-    if (emCaixaAlta(linha) && linha.length >= 6 && !linha.includes(":")) {
+    if (emCaixaAlta(linha) && linha.length >= 6 && linha.length <= 90 && !linha.includes(":")) {
       if (!contrato.secoes.length) contrato.titulo.push(capitalizar(linha));
       else abrirSecao(null, capitalizar(linha), capitalizar(linha));
       continue;

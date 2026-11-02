@@ -5,6 +5,7 @@ import { auditoria, clientes, ordens, otpCodigos } from "@/db/schema";
 import { getMessagingProvider } from "@/providers/messaging";
 import { codigoOtpDeTeste } from "@/lib/modo-teste";
 import { gerarCodigoOtp, hashOtp, verificarOtpHash } from "./otp-crypto";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
 export type ResultadoOtp =
   { ok: true; validadoEm: Date } | { erro: "expirado" | "invalido" | "bloqueado" };
@@ -18,7 +19,7 @@ const segredoOtp = () => {
 export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoTeste?: string }> {
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
   if (!ordem || ordem.status !== "visualizada" || ordem.expiraEm.getTime() < Date.now())
-    throw new Error("Ordem indisponível para OTP");
+    throw new ErroNegocio("Ordem indisponível para OTP");
   const [cliente] = await db
     .select()
     .from(clientes)
@@ -45,7 +46,8 @@ export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoT
             sql`${auditoria.metadados}->>'ipHash' = ${ipHash}`,
           ),
         );
-      if ((porIp?.total ?? 0) >= 12) throw new Error("Limite de envios de OTP por rede atingido");
+      if ((porIp?.total ?? 0) >= 12)
+        throw new ErroNegocio("Muitos códigos pedidos desta rede. Tente mais tarde.");
     }
     const ultimos = await tx
       .select()
@@ -55,13 +57,13 @@ export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoT
       .limit(3);
     const agora = Date.now();
     if (ultimos[0]?.tentativas >= 5 && agora - ultimos[0].atualizadoEm.getTime() < 15 * 60_000)
-      throw new Error("OTP bloqueado por 15 minutos");
+      throw new ErroNegocio("Código bloqueado por 15 minutos após várias tentativas.");
     if (
       ultimos.length === 3 &&
       ultimos[0].enviadoEm.getTime() - ultimos[2].enviadoEm.getTime() < 10 * 60_000 &&
       agora - ultimos[0].enviadoEm.getTime() < 15 * 60_000
     )
-      throw new Error("Limite de envios de OTP atingido");
+      throw new ErroNegocio("Limite de envios do código atingido. Tente mais tarde.");
     await tx.insert(otpCodigos).values({
       ordemId,
       telefone: cliente.whatsapp,
