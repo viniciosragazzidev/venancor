@@ -65,6 +65,16 @@ describe("contrato estruturado", () => {
     expect(simples.secoes[0].blocos).toHaveLength(2);
   });
 
+  it("linha longa em caixa alta é parágrafo, não título", () => {
+    const longa =
+      "O BENEFICIÁRIO DECLARA QUE LEU E ENTENDEU TODAS AS CONDIÇÕES DESTE CONTRATO E QUE ESTÁ DE ACORDO COM ELAS";
+    const r = estruturarContrato(`1. DADOS
+Campo: valor
+${longa}`);
+    expect(r.secoes).toHaveLength(1);
+    expect(r.secoes[0].blocos.at(-1)).toEqual({ tipo: "paragrafo", texto: longa });
+  });
+
   it("mantém siglas ao capitalizar", () => {
     expect(capitalizar("DADOS DO TITULAR / CONTRATANTE")).toBe("Dados do titular / contratante");
     expect(capitalizar("TRATAMENTO CONFORME A LGPD")).toBe("Tratamento conforme a LGPD");

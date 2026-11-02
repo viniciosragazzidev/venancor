@@ -1,7 +1,8 @@
 import type { CriarCobrancaInput, PaymentProvider } from "@/providers/payment";
 import type { OrdemStatus } from "@/modules/ordens/state-machine";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
-export class PagamentoSemAssinaturaError extends Error {
+export class PagamentoSemAssinaturaError extends ErroNegocio {
   constructor() {
     super("Assine o contrato antes de pagar");
     this.name = "PagamentoSemAssinaturaError";

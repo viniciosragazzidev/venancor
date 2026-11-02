@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
+import { PagamentoSemAssinaturaError } from "@/modules/pagamentos/guard";
+import { obterOtpParaAssinatura } from "@/modules/assinatura/otp-policy";
 import { ErroNegocio, executarAcao, mensagemParaCliente, valorOuErro } from "./resultado-acao";
 
 describe("resultado de ação do link do cliente", () => {
@@ -34,5 +36,23 @@ describe("resultado de ação do link do cliente", () => {
 
   it("devolve o valor quando dá certo", async () => {
     expect(valorOuErro(await executarAcao("teste", async () => 42))).toBe(42);
+  });
+});
+
+describe("erros de negócio do fluxo chegam ao cliente", () => {
+  it("pagamento sem assinatura", () => {
+    expect(mensagemParaCliente(new PagamentoSemAssinaturaError())).toBe(
+      "Assine o contrato antes de pagar",
+    );
+  });
+
+  it("código de confirmação não validado", async () => {
+    process.env.ASSINATURA_EXIGE_OTP = "true";
+    const r = await executarAcao("otp", () => obterOtpParaAssinatura(async () => null));
+    delete process.env.ASSINATURA_EXIGE_OTP;
+    expect(r).toEqual({
+      ok: false,
+      erro: "Código de confirmação não validado. Peça um novo código.",
+    });
   });
 });
