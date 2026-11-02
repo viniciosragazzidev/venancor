@@ -16,13 +16,16 @@ export const criarOrdemSchema = z.object({
     .default(["pix", "boleto", "cartao"]),
   maxParcelas: z.int().min(1).max(12).default(1),
   validadeDias: z.int().min(1).max(30).default(7),
+  /** Start of coverage; empty means immediate (from the payment). */
+  vigenciaInicio: z.iso.date().nullable().optional(),
+  diaVencimento: z.int().min(1).max(28).nullable().optional(),
 });
 export type CriarOrdemInput = z.input<typeof criarOrdemSchema>;
 export type CriarOrdemData = z.output<typeof criarOrdemSchema>;
 
 /** A saved preset of the "Criar ordem" form: everything except the client and dependents. */
 export const ordemModeloSchema = criarOrdemSchema
-  .omit({ clienteId: true, dependenteIds: true })
+  .omit({ clienteId: true, dependenteIds: true, vigenciaInicio: true, diaVencimento: true })
   .extend({
     nome: z.string().trim().min(1, "Informe o nome do modelo").max(120),
     planoId: z.uuid().nullable().optional(),

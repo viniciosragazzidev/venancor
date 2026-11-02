@@ -74,6 +74,7 @@ import {
 import {
   clienteSchema,
   dependenteSchema,
+  estadosCivis,
   type ClienteInput,
   type DependenteInput,
 } from "@/modules/clientes/schemas";
@@ -122,6 +123,9 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       cpf: "",
       nascimento: "",
       email: "",
+      nomeMae: "",
+      rg: "",
+      estadoCivil: "",
       cep: "",
       logradouro: "",
       numero: "",
@@ -146,7 +150,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     return (
       cliente.nome.toLowerCase().includes(termo) ||
       cliente.cpf.includes(termo.replace(/\D/g, "")) ||
-      cliente.cidade.toLowerCase().includes(termo)
+      (cliente.cidade ?? "").toLowerCase().includes(termo)
     );
   });
 
@@ -157,6 +161,9 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       cpf: "",
       nascimento: "",
       email: "",
+      nomeMae: "",
+      rg: "",
+      estadoCivil: "",
       cep: "",
       logradouro: "",
       numero: "",
@@ -176,13 +183,16 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       cpf: mascaraCPF(cliente.cpf),
       nascimento: cliente.nascimento,
       email: cliente.email,
-      cep: mascaraCEP(cliente.cep),
-      logradouro: cliente.logradouro,
-      numero: cliente.numero,
+      nomeMae: cliente.nomeMae ?? "",
+      rg: cliente.rg ?? "",
+      estadoCivil: cliente.estadoCivil ?? "",
+      cep: cliente.cep ? mascaraCEP(cliente.cep) : "",
+      logradouro: cliente.logradouro ?? "",
+      numero: cliente.numero ?? "",
       complemento: cliente.complemento ?? "",
-      bairro: cliente.bairro,
-      cidade: cliente.cidade,
-      uf: cliente.uf,
+      bairro: cliente.bairro ?? "",
+      cidade: cliente.cidade ?? "",
+      uf: cliente.uf ?? "",
     });
     setWhatsappTexto(formatarWhatsapp(cliente.whatsapp));
     setFormAberto(true);
@@ -368,7 +378,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
                         {formatarWhatsapp(cliente.whatsapp)}
                       </TableCell>
                       <TableCell>
-                        {cliente.cidade}/{cliente.uf}
+                        {cliente.cidade ? `${cliente.cidade}/${cliente.uf ?? ""}` : "Sem endereço"}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
@@ -414,7 +424,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
             <DialogDescription>
               {editando
                 ? "Atualize os dados do titular e do endereço."
-                : "Preencha os dados pessoais e o endereço do titular."}
+                : "Preencha os dados pessoais do titular. O endereço é opcional."}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -486,11 +496,59 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
                       onChange={(evento) => setWhatsappTexto(mascaraTelefone(evento.target.value))}
                     />
                   </Campo>
+                  <Campo label="Nome da mãe" htmlFor="cliente-mae" error={errors.nomeMae?.message}>
+                    <Input
+                      id="cliente-mae"
+                      className={inputPill}
+                      placeholder="Opcional"
+                      {...register("nomeMae")}
+                    />
+                  </Campo>
+                  <Campo label="RG" htmlFor="cliente-rg" error={errors.rg?.message}>
+                    <Input
+                      id="cliente-rg"
+                      className={`${inputPill} tabular-nums`}
+                      placeholder="Opcional"
+                      {...register("rg")}
+                    />
+                  </Campo>
+                  <Campo
+                    label="Estado civil"
+                    htmlFor="cliente-estado-civil"
+                    error={errors.estadoCivil?.message}
+                  >
+                    <Controller
+                      control={control}
+                      name="estadoCivil"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? ""}
+                          onValueChange={(valor) => field.onChange(valor ?? "")}
+                        >
+                          <SelectTrigger
+                            id="cliente-estado-civil"
+                            className={`${inputPill} w-full justify-between`}
+                          >
+                            <SelectValue placeholder="Opcional" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {estadosCivis.map((opcao) => (
+                              <SelectItem key={opcao} value={opcao}>
+                                {opcao}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Campo>
                 </div>
               </section>
 
               <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
-                <p className="text-sm font-medium">Endereço</p>
+                <p className="text-sm font-medium">
+                  Endereço <span className="font-normal text-muted-foreground">(opcional)</span>
+                </p>
                 <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                   <Campo
                     label="CEP"

@@ -162,6 +162,8 @@ export function OrdensTabela({
   const [formas, setFormas] = useState<string[]>([...FORMAS]);
   const [descontoTexto, setDescontoTexto] = useState("");
   const [personalizadoTexto, setPersonalizadoTexto] = useState("");
+  const [vigenciaTexto, setVigenciaTexto] = useState("");
+  const [vencimentoTexto, setVencimentoTexto] = useState("");
   const [modeloId, setModeloId] = useState(SEM_MODELO);
   const [contratoId, setContratoId] = useState(CONTRATO_AUTO);
   const [duplicandoId, setDuplicandoId] = useState<string | null>(null);
@@ -244,6 +246,8 @@ export function OrdensTabela({
       validadeDias: VALIDADE_PADRAO_DIAS,
     });
     aplicarCondicoes(condicoes);
+    setVigenciaTexto("");
+    setVencimentoTexto("");
     setDeps(dependentes);
     setDepsIds(dependenteIds);
     setModeloId(SEM_MODELO);
@@ -364,6 +368,14 @@ export function OrdensTabela({
       return;
     }
     const { desconto, valorPersonalizado } = lidos;
+    const diaVencimento = vencimentoTexto ? Number(vencimentoTexto) : undefined;
+    if (
+      diaVencimento !== undefined &&
+      !(Number.isInteger(diaVencimento) && diaVencimento >= 1 && diaVencimento <= 28)
+    ) {
+      toast.error("Dia do vencimento deve ser de 1 a 28.");
+      return;
+    }
     const payload: CriarOrdemInput = {
       clienteId: valores.clienteId,
       planoId: valores.planoId,
@@ -376,6 +388,8 @@ export function OrdensTabela({
       formasPagamento: [...formas] as CriarOrdemInput["formasPagamento"],
       maxParcelas: valores.maxParcelas,
       validadeDias: valores.validadeDias,
+      vigenciaInicio: vigenciaTexto || null,
+      diaVencimento: diaVencimento ?? null,
     };
     setEnviando(true);
     try {
@@ -966,6 +980,34 @@ export function OrdensTabela({
                           max={30}
                           className={`${inputPill} tabular-nums`}
                           {...register("validadeDias", { valueAsNumber: true })}
+                        />
+                      </Campo>
+                      <Campo
+                        label="Início da vigência"
+                        htmlFor="ordem-vigencia"
+                        hint="Em branco: imediata, a partir do pagamento."
+                      >
+                        <Input
+                          id="ordem-vigencia"
+                          type="date"
+                          className={`${inputPill} tabular-nums`}
+                          value={vigenciaTexto}
+                          onChange={(evento) => setVigenciaTexto(evento.target.value)}
+                        />
+                      </Campo>
+                      <Campo
+                        label="Dia do vencimento"
+                        htmlFor="ordem-vencimento"
+                        hint="Das mensalidades, de 1 a 28. Opcional."
+                      >
+                        <Input
+                          id="ordem-vencimento"
+                          type="number"
+                          min={1}
+                          max={28}
+                          className={`${inputPill} tabular-nums`}
+                          value={vencimentoTexto}
+                          onChange={(evento) => setVencimentoTexto(evento.target.value)}
                         />
                       </Campo>
                     </div>

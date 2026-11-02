@@ -66,6 +66,19 @@ export type ResolucaoToken =
 const brl = (centavos: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(centavos / 100);
 const mascararCpf = (cpf: string) => cpf.replace(/^(\d{3})\d{5}(\d{3})$/, "$1*****$2");
+const NAO_INFORMADO = "Não informado";
+const dataBr = (iso: string) => iso.split("-").reverse().join("/");
+const telefoneBr = (e164: string) =>
+  e164.replace(/^\+55/, "").replace(/^(\d{2})(\d{4,5})(\d{4})$/, "($1) $2-$3");
+const formasRotulo: Record<string, string> = { pix: "Pix", boleto: "Boleto", cartao: "Cartão" };
+
+function enderecoCompleto(cliente: typeof clientes.$inferSelect) {
+  if (!cliente.logradouro) return NAO_INFORMADO;
+  const rua = [cliente.logradouro, cliente.numero, cliente.complemento].filter(Boolean).join(", ");
+  const cidade = [cliente.cidade, cliente.uf].filter(Boolean).join("/");
+  const cep = cliente.cep ? `CEP ${cliente.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2")}` : "";
+  return [rua, cliente.bairro, cidade, cep].filter(Boolean).join(" - ");
+}
 
 /**
  * Resolves the client link. `registrarAbertura: false` shows the proposal without marking it as
@@ -122,12 +135,41 @@ export async function resolverToken(
   const titular = beneficiarios.find((item) => item.titular);
   if (!titular) throw new Error("Titular ausente do snapshot");
   const { operadora, plano } = snapshotSchema.parse(snapshot.dados);
+  const dependentesOrdem = beneficiarios.filter((b) => !b.titular);
   const vars: Record<VariavelContrato, string> = {
     "cliente.nome": titular.nome,
     "cliente.cpf": mascararCpf(titular.cpf),
+    "cliente.rg": cliente.rg ?? NAO_INFORMADO,
+    "cliente.nascimento": dataBr(titular.nascimento),
+    "cliente.mae": cliente.nomeMae ?? NAO_INFORMADO,
+    "cliente.estado_civil": cliente.estadoCivil ?? NAO_INFORMADO,
+    "cliente.email": cliente.email,
+    "cliente.telefone": telefoneBr(cliente.whatsapp),
+    "cliente.endereco": enderecoCompleto(cliente),
+    "operadora.nome": operadora.nome,
     "plano.nome": plano.nome,
+    "plano.rede": plano.redeCredenciada || NAO_INFORMADO,
+    "plano.abrangencia": plano.abrangencia.charAt(0).toUpperCase() + plano.abrangencia.slice(1),
+    "plano.carencias": plano.carencias || NAO_INFORMADO,
+    "plano.coberturas": plano.coberturas || NAO_INFORMADO,
+    "proposta.numero": String(ordem.numero),
+    "vigencia.inicio": ordem.vigenciaInicio
+      ? dataBr(ordem.vigenciaInicio)
+      : "Imediata, a partir da confirmação do pagamento",
+    "pagamento.vencimento": ordem.diaVencimento ? `Todo dia ${ordem.diaVencimento}` : NAO_INFORMADO,
+    "pagamento.formas": ordem.formasPagamento.map((f) => formasRotulo[f] ?? f).join(", "),
+    "beneficiarios.quantidade": String(beneficiarios.length),
+    "dependentes.lista": dependentesOrdem.length
+      ? dependentesOrdem
+          .map(
+            (b, i) =>
+              `Dependente ${i + 1}: ${b.nome}, CPF ${mascararCpf(b.cpf)}, nascimento ${dataBr(b.nascimento)}`,
+          )
+          .join("\n")
+      : "Nenhum dependente",
     "valor.total": brl(ordem.valorCobrado),
-    "valor.mensal": brl(ordem.valorMensal),
+    // Monthly fee the client will pay: the table price minus the discount.
+    "valor.mensal": brl(ordem.valorMensal - ordem.desconto),
     "valor.adesao": brl(ordem.valorAdesao),
     "beneficiarios.tabela": beneficiarios
       .map((b) => `${b.nome} (${b.faixaEtaria}): ${brl(b.valor)}`)

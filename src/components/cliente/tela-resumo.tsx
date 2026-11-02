@@ -31,9 +31,15 @@ export function TelaResumo({
             </p>
             <h2 className="text-lg leading-snug font-medium text-balance">{plano.plano_nome}</h2>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <Badge variant="secondary" className="rounded-full font-normal">
-                {rotulosAcomodacao[plano.acomodacao] ?? plano.acomodacao}
-              </Badge>
+              {plano.segmentacao === "odontologico" ? (
+                <Badge variant="secondary" className="rounded-full font-normal">
+                  Odontológico
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="rounded-full font-normal">
+                  {rotulosAcomodacao[plano.acomodacao] ?? plano.acomodacao}
+                </Badge>
+              )}
               <Badge variant="secondary" className="rounded-full font-normal">
                 {rotulosAbrangencia[plano.abrangencia] ?? plano.abrangencia}
               </Badge>

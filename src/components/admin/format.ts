@@ -40,7 +40,19 @@ export function mascaraCEP(valor: string): string {
 }
 
 /** "conjuge" → "Conjuge", "pai_mae" → "Pai Mae". */
+const rotulosFixos: Record<string, string> = {
+  odontologico: "Odontológico",
+  nao_se_aplica: "Não se aplica",
+  hospitalar_obstetricia: "Hospitalar Obstetrícia",
+  ambulatorial_hospitalar_obstetricia: "Ambulatorial Hospitalar Obstetrícia",
+  referencia: "Referência",
+  conjuge: "Cônjuge",
+  pai_mae: "Pai/Mãe",
+  cartao: "Cartão",
+};
+
 export function rotulo(valor: string): string {
+  if (rotulosFixos[valor]) return rotulosFixos[valor];
   return valor
     .split("_")
     .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))

@@ -51,8 +51,9 @@ export const segmentacao = pgEnum("segmentacao", [
   "ambulatorial_hospitalar",
   "ambulatorial_hospitalar_obstetricia",
   "referencia",
+  "odontologico",
 ]);
-export const acomodacao = pgEnum("acomodacao", ["enfermaria", "apartamento"]);
+export const acomodacao = pgEnum("acomodacao", ["enfermaria", "apartamento", "nao_se_aplica"]);
 export const abrangencia = pgEnum("abrangencia", ["municipal", "estadual", "nacional"]);
 export const tipoContratacao = pgEnum("tipo_contratacao", ["individual", "familiar", "pme"]);
 export const metodoPagamento = pgEnum("metodo_pagamento", ["pix", "boleto", "cartao"]);
@@ -153,13 +154,17 @@ export const clientes = pgTable("clientes", {
   nascimento: date("nascimento").notNull(),
   email: text("email").notNull(),
   whatsapp: text("whatsapp").notNull(),
-  cep: text("cep").notNull(),
-  logradouro: text("logradouro").notNull(),
-  numero: text("numero").notNull(),
+  nomeMae: text("nome_mae"),
+  rg: text("rg"),
+  estadoCivil: text("estado_civil"),
+  // Address is optional: lists imported from the broker often come without it.
+  cep: text("cep"),
+  logradouro: text("logradouro"),
+  numero: text("numero"),
   complemento: text("complemento"),
-  bairro: text("bairro").notNull(),
-  cidade: text("cidade").notNull(),
-  uf: text("uf").notNull(),
+  bairro: text("bairro"),
+  cidade: text("cidade"),
+  uf: text("uf"),
   criadoPor: text("criado_por").references(() => user.id),
   criadoEm: criadoEm(),
   atualizadoEm: atualizadoEm(),
@@ -201,12 +206,16 @@ export const ordens = pgTable(
   "ordens",
   {
     id: id(),
+    numero: integer("numero").generatedByDefaultAsIdentity({ startWith: 1001 }).notNull().unique(),
     clienteId: uuid("cliente_id")
       .notNull()
       .references(() => clientes.id),
     planoId: uuid("plano_id")
       .notNull()
       .references(() => planos.id),
+    // null = vigência imediata (a partir do pagamento).
+    vigenciaInicio: date("vigencia_inicio"),
+    diaVencimento: integer("dia_vencimento"),
     contratoModeloId: uuid("contrato_modelo_id").references(() => contratoModelos.id),
     status: ordemStatus("status").default("rascunho").notNull(),
     valorMensal: integer("valor_mensal").notNull(),
@@ -235,6 +244,7 @@ export const ordens = pgTable(
     index("ordens_status_idx").on(t.status),
     index("ordens_cliente_idx").on(t.clienteId),
     check("ordens_max_parcelas_ck", sql`${t.maxParcelas} between 1 and 12`),
+    check("ordens_dia_vencimento_ck", sql`${t.diaVencimento} between 1 and 28`),
   ],
 ).enableRLS();
 export const ordemModelos = pgTable("ordem_modelos", {

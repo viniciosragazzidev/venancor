@@ -48,11 +48,13 @@ export const rotulosSegmentacao: Record<string, string> = {
   ambulatorial_hospitalar: "Ambulatorial + Hospitalar",
   ambulatorial_hospitalar_obstetricia: "Ambulatorial + Hospitalar + Obstetrícia",
   referencia: "Referência",
+  odontologico: "Odontológico",
 };
 
 export const rotulosAcomodacao: Record<string, string> = {
   enfermaria: "Enfermaria",
   apartamento: "Apartamento",
+  nao_se_aplica: "Sem internação",
 };
 
 export const rotulosAbrangencia: Record<string, string> = {

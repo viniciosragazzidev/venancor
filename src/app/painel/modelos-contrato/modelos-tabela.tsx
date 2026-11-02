@@ -44,6 +44,7 @@ import {
   desativarContratoModelo,
   type listarContratoModelos,
 } from "@/modules/contratos/actions";
+import { variaveisContrato } from "@/modules/contratos/render";
 import { contratoModeloSchema, type ContratoModeloInput } from "@/modules/contratos/schemas";
 import { type listarPlanos } from "@/modules/planos/actions";
 
@@ -52,14 +53,7 @@ type Plano = Awaited<ReturnType<typeof listarPlanos>>[number];
 
 const GENÉRICO = "generico";
 
-const VARIAVEIS = [
-  "{{cliente.nome}}",
-  "{{cliente.cpf}}",
-  "{{plano.nome}}",
-  "{{valor.total}}",
-  "{{beneficiarios.tabela}}",
-  "{{data.hoje}}",
-];
+const VARIAVEIS = variaveisContrato.map((nome) => `{{${nome}}}`);
 
 export function ModelosTabela({ modelos, planos }: { modelos: Modelo[]; planos: Plano[] }) {
   const router = useRouter();

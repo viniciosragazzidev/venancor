@@ -93,7 +93,7 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
       />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
-          title={`Ordem de ${cliente?.nome ?? "cliente"}`}
+          title={`Proposta #${ordem.numero} de ${cliente?.nome ?? "cliente"}`}
           description={`${plano?.nome ?? "Plano"} · Criada em ${formatarDataHora(ordem.criadoEm)}`}
         />
         <Badge variant="outline" className={classesStatusOrdem(ordem.status)}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clienteSchema, dependenteSchema } from "./schemas";
+import { clienteAtualizacaoSchema, clienteSchema, dependenteSchema } from "./schemas";
 
 describe("dados de clientes e dependentes", () => {
   const cliente = {
@@ -21,6 +21,28 @@ describe("dados de clientes e dependentes", () => {
     expect(parsed.cpf).toBe("52998224725");
     expect(parsed.cep).toBe("01310100");
     expect(parsed.uf).toBe("SP");
+  });
+
+  it("aceita cliente sem endereço e guarda os campos da proposta", () => {
+    const parsed = clienteSchema.parse({
+      nome: "Ana",
+      cpf: "529.982.247-25",
+      nascimento: "1990-01-01",
+      email: "ana@exemplo.com",
+      whatsapp: "+5511999999999",
+      nomeMae: "Maria",
+      rg: "",
+      cep: "",
+    });
+    expect(parsed.cep).toBeNull();
+    expect(parsed.rg).toBeNull();
+    expect(parsed.nomeMae).toBe("Maria");
+    expect(parsed.logradouro).toBeUndefined();
+  });
+
+  it("atualização parcial não apaga campos ausentes", () => {
+    const parsed = clienteAtualizacaoSchema.parse({ nome: "Ana" });
+    expect(parsed).toEqual({ nome: "Ana" });
   });
 
   it("rejeita CPF e telefone inválidos", () => {
