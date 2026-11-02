@@ -11,6 +11,7 @@ import {
 } from "@/modules/ordens/cliente-status-actions";
 import { iniciarPagamento } from "@/modules/pagamentos/actions";
 import { fakePermitido } from "@/lib/modo-teste";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { FluxoCliente, type AcoesFluxo } from "./fluxo-cliente";
 import type { DadosOrdemCliente, OtpErro } from "./types";
 
@@ -70,8 +71,8 @@ export function FluxoReal({
 
   const acoes: AcoesFluxo = {
     onAceitarConsentimentos: async () => {
-      await aceitarConsentimento(token, "contrato");
-      await aceitarConsentimento(token, "lgpd");
+      valorOuErro(await aceitarConsentimento(token, "contrato"));
+      valorOuErro(await aceitarConsentimento(token, "lgpd"));
     },
     onEnviarOtp: async () => {
       try {
@@ -92,11 +93,11 @@ export function FluxoReal({
       }
     },
     onConcluirAssinatura: async ({ nome, cpf, imagemDataUrl }) => {
-      await concluirAssinatura(token, { nome, cpf, imagemBase64: imagemDataUrl });
+      valorOuErro(await concluirAssinatura(token, { nome, cpf, imagemBase64: imagemDataUrl }));
       setStatus("assinada");
     },
     onIniciarPagamento: async (metodo, parcelas) => {
-      const cobranca = await iniciarPagamento(token, metodo, parcelas);
+      const cobranca = valorOuErro(await iniciarPagamento(token, metodo, parcelas));
       setStatus("aguardando_pagamento");
       return cobranca;
     },

@@ -68,15 +68,13 @@ export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoT
       codigoHash,
       expiraEm: new Date(agora + 5 * 60_000),
     });
-    await tx
-      .insert(auditoria)
-      .values({
-        entidade: "ordens",
-        entidadeId: ordemId,
-        acao: "enviar_otp",
-        ator: "cliente",
-        metadados: ipHash ? { ipHash } : {},
-      });
+    await tx.insert(auditoria).values({
+      entidade: "ordens",
+      entidadeId: ordemId,
+      acao: "enviar_otp",
+      ator: "cliente",
+      metadados: ipHash ? { ipHash } : {},
+    });
   });
   await getMessagingProvider().enviarTemplate({
     para: cliente.whatsapp,

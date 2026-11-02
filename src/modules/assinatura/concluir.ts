@@ -9,6 +9,16 @@ import { otpValidado } from "./otp";
 import { assinaturaExigeOtp, obterOtpParaAssinatura } from "./otp-policy";
 import { concluirAssinaturaSchema, type ConcluirAssinaturaInput } from "./schema";
 
+/** Compares names ignoring case, accents and repeated spaces ("José  da Silva" = "jose da silva"). */
+export function normalizarNome(nome: string) {
+  return nome
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+
 export async function concluirAssinatura(
   token: string,
   input: ConcluirAssinaturaInput,
@@ -26,12 +36,10 @@ export async function concluirAssinatura(
     )
     .limit(1);
   if (!titular) throw new Error("Titular ausente do snapshot");
-  if (
-    dados.nome.trim().toLocaleLowerCase("pt-BR") !==
-      titular.nome.trim().toLocaleLowerCase("pt-BR") ||
-    dados.cpf !== titular.cpf
-  )
-    throw new Error("Nome ou CPF não conferem com o titular");
+  if (normalizarNome(dados.nome) !== normalizarNome(titular.nome))
+    throw new Error("O nome não confere com o do titular da proposta. Confira e tente novamente.");
+  if (dados.cpf !== titular.cpf)
+    throw new Error("O CPF digitado não confere com o do titular da proposta. Confira os números.");
   const otp = await obterOtpParaAssinatura(() => otpValidado(ordem.dados.id));
   const aceites = await db
     .select({ tipo: consentimentos.tipo })
