@@ -22,7 +22,6 @@ import { TelaContrato } from "./tela-contrato";
 import { TelaPagamento } from "./tela-pagamento";
 import { TelaResumo } from "./tela-resumo";
 import { TelaStatus, TelaSucesso } from "./tela-sucesso";
-import { Stepper } from "./stepper";
 import type { CobrancaCliente, DadosOrdemCliente, MetodoPagamento, OtpErro } from "./types";
 
 type Etapa = "resumo" | "contrato" | "assinatura" | "pagamento";
@@ -89,7 +88,7 @@ export function FluxoCliente({
 }) {
   const jaAssinada = ["assinada", "aguardando_pagamento", "paga"].includes(ordem.status);
   const [etapa, setEtapa] = useState<Etapa>(jaAssinada ? "pagamento" : "resumo");
-  const [assinaturaConcluida, setAssinaturaConcluida] = useState(jaAssinada);
+  const [, setAssinaturaConcluida] = useState(jaAssinada);
   const [sucessoAssinatura, setSucessoAssinatura] = useState(false);
   const [consentimentos, setConsentimentos] = useState<Consentimentos>({
     contrato: false,
@@ -259,17 +258,8 @@ export function FluxoCliente({
 
         {!emSucesso ? (
           <>
-            {/* Na etapa de pagamento a trilha sai: a tela fica só com o pagamento (04/11). */}
-            {etapa !== "pagamento" ? (
-              <Stepper
-                passos={passos}
-                atual={indiceEtapa(etapa)}
-                bloqueadoApos={!assinaturaConcluida ? 2 : undefined}
-                className="my-4"
-              />
-            ) : (
-              <div className="h-4" aria-hidden />
-            )}
+            {/* Sem trilha de etapas em nenhuma tela do link (pedido do Vinicios, 04/11). */}
+            <div className="h-6" aria-hidden />
             <div className="flex flex-col gap-1.5 pb-5">
               <h1 className="text-2xl leading-tight font-medium tracking-tight text-balance">
                 {etapaAtual.titulo}
