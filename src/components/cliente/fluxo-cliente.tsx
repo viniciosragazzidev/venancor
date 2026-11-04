@@ -259,12 +259,17 @@ export function FluxoCliente({
 
         {!emSucesso ? (
           <>
-            <Stepper
-              passos={passos}
-              atual={indiceEtapa(etapa)}
-              bloqueadoApos={!assinaturaConcluida ? 2 : undefined}
-              className="my-4"
-            />
+            {/* Na etapa de pagamento a trilha sai: a tela fica só com o pagamento (04/11). */}
+            {etapa !== "pagamento" ? (
+              <Stepper
+                passos={passos}
+                atual={indiceEtapa(etapa)}
+                bloqueadoApos={!assinaturaConcluida ? 2 : undefined}
+                className="my-4"
+              />
+            ) : (
+              <div className="h-4" aria-hidden />
+            )}
             <div className="flex flex-col gap-1.5 pb-5">
               <h1 className="text-2xl leading-tight font-medium tracking-tight text-balance">
                 {etapaAtual.titulo}
