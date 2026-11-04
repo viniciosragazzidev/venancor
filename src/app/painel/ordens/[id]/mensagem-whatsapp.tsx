@@ -53,14 +53,33 @@ export function MensagemWhatsApp({
 
   async function gerar() {
     setOcupado(true);
+    const pedido = copiarLinkOrdem(ordemId);
+    const montar = (novo: string) =>
+      mensagemPropostaWhatsApp({ nomeCliente, plano, valor, formasPagamento, link: novo });
+    // Safari perde o gesto do clique depois de um await: o ClipboardItem recebe a Promise do
+    // texto e copia quando o link chega, ainda dentro do clique. Sem suporte, copia depois.
+    const copiaNoGesto =
+      typeof ClipboardItem !== "undefined" && navigator.clipboard?.write
+        ? navigator.clipboard.write([
+            new ClipboardItem({
+              "text/plain": pedido.then((novo) => new Blob([montar(novo)], { type: "text/plain" })),
+            }),
+          ])
+        : null;
     try {
-      const novo = await copiarLinkOrdem(ordemId);
+      const novo = await pedido;
       setLink(novo);
-      await copiarTexto(
-        mensagemPropostaWhatsApp({ nomeCliente, plano, valor, formasPagamento, link: novo }),
-      );
+      if (copiaNoGesto) {
+        try {
+          await copiaNoGesto;
+          toast.success("Mensagem copiada. É só colar no WhatsApp do cliente.");
+        } catch {
+          await copiarTexto(montar(novo));
+        }
+      } else await copiarTexto(montar(novo));
       router.refresh();
     } catch (erro) {
+      copiaNoGesto?.catch(() => undefined);
       toast.error(erro instanceof Error ? erro.message : "Não foi possível gerar o link.");
     } finally {
       setOcupado(false);
