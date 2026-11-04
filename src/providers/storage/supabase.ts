@@ -45,7 +45,14 @@ export class SupabaseStorage implements StorageAdapter {
     const data = (await response.json()) as { signedURL?: string; signedUrl?: string };
     const signed = data.signedURL ?? data.signedUrl;
     if (!signed) throw new Error("Storage não retornou URL assinada");
-    return new URL(signed, this.url).toString();
+    // O Storage devolve o caminho relativo a /storage/v1 ("/object/sign/..."): sem o prefixo,
+    // o link abria "requested path is invalid" (Baixar PDF no painel, 04/11).
+    if (/^https?:\/\//.test(signed)) return signed;
+    const base = this.url.replace(/\/$/, "");
+    const caminho = signed.startsWith("/storage/v1/")
+      ? signed
+      : `/storage/v1${signed.startsWith("/") ? "" : "/"}${signed}`;
+    return `${base}${caminho}`;
   }
 
   async delete(path: string): Promise<void> {
