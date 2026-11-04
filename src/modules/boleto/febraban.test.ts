@@ -4,6 +4,8 @@ import {
   barrasItf,
   codigoBarrasParaLinha,
   codigoBarrasValido,
+  fatorDoCodigoBarras,
+  fatorVencimento,
   formatarLinha,
   linhaParaCodigoBarras,
   modulo11CodigoBarras,
@@ -41,5 +43,13 @@ describe("febraban", () => {
     expect(barras.slice(0, 4)).toEqual([1, 1, 1, 1]);
     expect(barras.slice(-3)).toEqual([3, 1, 1]);
     expect(barras.reduce((a, b) => a + b, 0)).toBe(405);
+  });
+  it("calcula o fator de vencimento antes e depois do reinício de 22/02/2025", () => {
+    expect(fatorVencimento("2000-07-03")).toBe(1000);
+    expect(fatorVencimento("2025-02-21")).toBe(9999);
+    expect(fatorVencimento("2025-02-22")).toBe(1000);
+    // Boleto real do Asaas: vencimento 05/11/2026, fator 1621 na linha.
+    expect(fatorVencimento("2026-11-05")).toBe(1621);
+    expect(fatorDoCodigoBarras(codigo)).toBe(1234);
   });
 });

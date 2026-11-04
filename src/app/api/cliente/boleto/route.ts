@@ -5,6 +5,8 @@ import { clientes, operadoras, ordens, pagamentos, planos } from "@/db/schema";
 import { log } from "@/lib/log";
 import {
   codigoBarrasValido,
+  fatorDoCodigoBarras,
+  fatorVencimento,
   linhaParaCodigoBarras,
   valorDoCodigoBarras,
 } from "@/modules/boleto/febraban";
@@ -68,7 +70,8 @@ export async function POST(request: Request) {
       codigo !== null &&
       (!detalhes?.codigoBarras ||
         (codigoBarrasValido(detalhes.codigoBarras) && detalhes.codigoBarras === codigo)) &&
-      valorDoCodigoBarras(codigo) === pagamento.valor;
+      valorDoCodigoBarras(codigo) === pagamento.valor &&
+      fatorDoCodigoBarras(codigo) === fatorVencimento(vencimento);
     if (!codigo || !confere) {
       log.warn("boleto_proprio_recusado", { pagamentoId: pagamento.id });
       return new Response(null, { status: 409 });

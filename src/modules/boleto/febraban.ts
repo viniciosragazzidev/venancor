@@ -62,6 +62,22 @@ export function codigoBarrasParaLinha(codigo: string): string {
   return `${campo1}${modulo10(campo1)}${campo2}${modulo10(campo2)}${campo3}${modulo10(campo3)}${c[4]}${c.slice(5, 19)}`;
 }
 
+/**
+ * Fator de vencimento Febraban: dias desde 07/10/1997. Chegou a 9999 em 21/02/2025 e reiniciou
+ * em 1000 no dia 22/02/2025 (ciclos de 9000 dias).
+ */
+export function fatorVencimento(vencimentoIso: string): number {
+  const dias = Math.round(
+    (Date.parse(`${vencimentoIso.slice(0, 10)}T00:00:00Z`) - Date.parse("1997-10-07T00:00:00Z")) /
+      86_400_000,
+  );
+  return dias > 9999 ? ((dias - 10_000) % 9000) + 1000 : dias;
+}
+
+export function fatorDoCodigoBarras(codigo: string): number {
+  return Number(soDigitos(codigo).slice(5, 9));
+}
+
 /** Valor em centavos gravado no código de barras (posições 10 a 19). */
 export function valorDoCodigoBarras(codigo: string): number {
   return Number(soDigitos(codigo).slice(9, 19));
