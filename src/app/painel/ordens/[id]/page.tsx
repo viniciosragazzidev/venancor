@@ -22,6 +22,7 @@ import { listarOrdens } from "@/modules/ordens/actions";
 import { listarEventosOrdem, obterDownloadsOrdem } from "@/modules/ordens/queries";
 import { listarPlanos } from "@/modules/planos/actions";
 
+import { MensagemWhatsApp } from "./mensagem-whatsapp";
 import { OrdemAcoes } from "./ordem-acoes";
 
 export const metadata: Metadata = {
@@ -102,6 +103,17 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
       </div>
 
       <OrdemAcoes ordemId={ordem.id} status={ordem.status} podeLembrar={podeLembrar} />
+
+      {["rascunho", "enviada", "visualizada"].includes(ordem.status) ? (
+        <MensagemWhatsApp
+          ordemId={ordem.id}
+          nomeCliente={cliente?.nome ?? "cliente"}
+          telefone={cliente?.whatsapp ?? null}
+          plano={plano?.nome ?? "Plano"}
+          valor={formatarCentavos(ordem.valorCobrado)}
+          formasPagamento={ordem.formasPagamento ?? []}
+        />
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Carta titulo="Valores">
