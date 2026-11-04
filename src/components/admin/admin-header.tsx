@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -87,7 +88,10 @@ export function AdminHeader() {
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="bottom" className="w-40">
-            <DropdownMenuLabel>Conta</DropdownMenuLabel>
+            {/* GroupLabel do Base UI só funciona dentro de um Group: solto, o menu quebrava a página. */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Conta</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2"
