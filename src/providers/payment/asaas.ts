@@ -1,4 +1,10 @@
-import type { Cobranca, CriarCobrancaInput, EventoPagamento, PaymentProvider } from "./types";
+import type {
+  Cobranca,
+  CriarCobrancaInput,
+  DetalhesBoleto,
+  EventoPagamento,
+  PaymentProvider,
+} from "./types";
 import { parseWebhookAsaas, validarWebhookAsaas } from "./asaas-webhook";
 import { fakePermitido } from "@/lib/modo-teste";
 
@@ -166,6 +172,33 @@ export class AsaasProvider implements PaymentProvider {
       body: "{}", // sem corpo JSON o sandbox responde 400 "erro desconhecido"
     });
     return this.consultarCobranca(id);
+  }
+
+  async detalhesBoleto(id: string): Promise<DetalhesBoleto> {
+    const caminho = `/payments/${encodeURIComponent(id)}`;
+    const linha = await this.request<{
+      identificationField: string;
+      nossoNumero?: string;
+      barCode?: string;
+    }>(`${caminho}/identificationField`);
+    // Pix do boleto e dados do beneficiário são extras: se falharem, o boleto sai sem eles.
+    const [pix, conta] = await Promise.all([
+      this.request<{ payload?: string; encodedImage?: string }>(`${caminho}/pixQrCode`).catch(
+        () => null,
+      ),
+      this.request<{ name?: string; companyName?: string; cpfCnpj?: string }>(
+        "/myAccount/commercialInfo/",
+      ).catch(() => null),
+    ]);
+    const nomeConta = conta?.companyName || conta?.name;
+    return {
+      linhaDigitavel: linha.identificationField,
+      codigoBarras: linha.barCode,
+      nossoNumero: linha.nossoNumero,
+      pixPayload: pix?.payload,
+      pixQrBase64: pix?.encodedImage,
+      beneficiario: nomeConta ? { nome: nomeConta, documento: conta?.cpfCnpj } : undefined,
+    };
   }
 
   async cancelarCobranca(id: string): Promise<void> {

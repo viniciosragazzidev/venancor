@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircleIcon, PencilIcon, PlusIcon, PowerIcon } from "lucide-react";
+import { ImageUpIcon, LoaderCircleIcon, PencilIcon, PlusIcon, PowerIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -35,6 +35,7 @@ import {
   atualizarOperadora,
   criarOperadora,
   desativarOperadora,
+  salvarLogoOperadora,
   type listarOperadoras,
 } from "@/modules/planos/actions";
 import { operadoraSchema, type OperadoraInput } from "@/modules/planos/schemas";
@@ -47,6 +48,25 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
   const [editando, setEditando] = useState<Operadora | null>(null);
   const [desativando, setDesativando] = useState<Operadora | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [enviandoLogo, setEnviandoLogo] = useState<string | null>(null);
+
+  async function enviarLogo(operadora: Operadora, arquivo: File | undefined) {
+    if (!arquivo) return;
+    if (arquivo.size > 900_000) {
+      toast.error("A logo deve ter até 900 KB.");
+      return;
+    }
+    setEnviandoLogo(operadora.id);
+    try {
+      await salvarLogoOperadora(operadora.id, arquivo);
+      toast.success(`Logo da ${operadora.nome} salva. Ela aparece no boleto.`);
+      router.refresh();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar a logo.");
+    } finally {
+      setEnviandoLogo(null);
+    }
+  }
 
   const {
     register,
@@ -123,13 +143,14 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[640px]">
+              <Table className="min-w-[760px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>CNPJ</TableHead>
                     <TableHead>Registro ANS</TableHead>
                     <TableHead>Situação</TableHead>
+                    <TableHead>Logo</TableHead>
                     <TableHead>
                       <span className="sr-only">Ações</span>
                     </TableHead>
@@ -145,6 +166,30 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
                         <Badge variant={operadora.ativa ? "secondary" : "outline"}>
                           {operadora.ativa ? "Ativa" : "Inativa"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-muted">
+                          {enviandoLogo === operadora.id ? (
+                            <LoaderCircleIcon
+                              aria-hidden
+                              className="size-3.5 animate-spin"
+                              strokeWidth={1.5}
+                            />
+                          ) : (
+                            <ImageUpIcon aria-hidden className="size-3.5" strokeWidth={1.5} />
+                          )}
+                          {operadora.logoPath ? "Trocar logo" : "Enviar logo"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="sr-only"
+                            disabled={enviandoLogo !== null}
+                            onChange={(evento) => {
+                              void enviarLogo(operadora, evento.target.files?.[0]);
+                              evento.target.value = "";
+                            }}
+                          />
+                        </label>
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">

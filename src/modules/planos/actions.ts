@@ -80,9 +80,14 @@ export async function salvarLogoOperadora(id: string, file: File) {
     .where(eq(operadoras.id, id))
     .limit(1);
   if (!operadora) throw new Error("Operadora não encontrada");
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const key = `operadoras/${id}/logo-${crypto.randomUUID()}.${ext}`;
-  await getStorageAdapter().put(key, new Uint8Array(await file.arrayBuffer()), file.type);
+  // Sempre PNG (04/11): o boleto próprio em PDF só embute PNG/JPEG, e WebP não entra no pdf-lib.
+  const { default: sharp } = await import("sharp");
+  const png = await sharp(Buffer.from(await file.arrayBuffer()))
+    .resize({ width: 600, height: 300, fit: "inside", withoutEnlargement: true })
+    .png()
+    .toBuffer();
+  const key = `operadoras/${id}/logo-${crypto.randomUUID()}.png`;
+  await getStorageAdapter().put(key, new Uint8Array(png), "image/png");
   await db
     .update(operadoras)
     .set({ logoPath: key, atualizadoEm: new Date() })

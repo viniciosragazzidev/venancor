@@ -32,8 +32,18 @@ export interface EventoPagamento {
   ordemId?: string;
   bruto: unknown;
 }
+/** Dados para desenhar o boleto próprio (04/11). Pix e beneficiário são opcionais. */
+export interface DetalhesBoleto {
+  linhaDigitavel: string;
+  codigoBarras?: string;
+  nossoNumero?: string;
+  pixPayload?: string;
+  pixQrBase64?: string;
+  beneficiario?: { nome: string; documento?: string };
+}
 export interface PaymentProvider {
   readonly nome: string;
+  detalhesBoleto?(providerPaymentId: string): Promise<DetalhesBoleto>;
   criarCobranca(input: CriarCobrancaInput): Promise<Cobranca>;
   consultarCobranca(providerPaymentId: string): Promise<Cobranca>;
   cancelarCobranca(providerPaymentId: string): Promise<void>;

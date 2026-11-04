@@ -69,6 +69,27 @@ export function FluxoReal({
     }
   }
 
+  // Boleto com a marca da Venacor (04/11). Se o boleto próprio não sair, abre o PDF do Asaas.
+  async function baixarBoleto(urlAsaas?: string) {
+    try {
+      const response = await fetch("/api/cliente/boleto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      if (!response.ok) throw new Error("boleto próprio indisponível");
+      const objeto = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = objeto;
+      link.download = "boleto-venacor.pdf";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(objeto), 60_000);
+    } catch {
+      if (urlAsaas) window.location.assign(urlAsaas);
+      else toast.error("Boleto indisponível. Gere a cobrança novamente.");
+    }
+  }
+
   const acoes: AcoesFluxo = {
     onAceitarConsentimentos: async () => {
       valorOuErro(await aceitarConsentimento(token, "contrato"));
@@ -105,8 +126,7 @@ export function FluxoReal({
       void baixarContrato();
     },
     onBaixarBoleto: (url) => {
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("Boleto indisponível. Gere a cobrança novamente.");
+      void baixarBoleto(url);
     },
     ...(fakePermitido() && simulacaoDisponivel
       ? {
