@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { ZodError } from "zod";
 
 /**
@@ -79,9 +80,16 @@ export async function executarAcao<T>(
   try {
     return { ok: true, valor: await acao() };
   } catch (erro) {
-    console.error(`[${rotulo}] falhou`, erro);
+    // Login redirect and not found (requireAdmin) must keep working.
+    unstable_rethrow(erro);
+    if (!(erro instanceof ErroNegocio) && !(erro instanceof ZodError)) console.error(`[${rotulo}] falhou`, erro);
     return { ok: false, erro: mensagemParaCliente(erro, opcoes) };
   }
+}
+
+/** Server action of the panel: field-named validation messages, never throws (React #441). */
+export async function executarAcaoPainel<T>(rotulo: string, acao: () => Promise<T>): Promise<ResultadoAcao<T>> {
+  return executarAcao(rotulo, acao, { validacao: "campo" });
 }
 
 /** Client side: turns the result back into a value or a thrown Error with the readable message. */
