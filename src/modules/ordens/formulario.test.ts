@@ -18,6 +18,7 @@ describe("modeloParaCondicoes", () => {
         formasPagamento: ["pix", "cartao"],
         maxParcelas: 3,
         validadeDias: 10,
+        exigeAssinatura: false,
       }),
     ).toEqual({
       planoId: PLANO,
@@ -29,6 +30,7 @@ describe("modeloParaCondicoes", () => {
       formasPagamento: ["pix", "cartao"],
       maxParcelas: 3,
       validadeDias: 10,
+      exigeAssinatura: false,
     });
   });
 
@@ -43,10 +45,12 @@ describe("modeloParaCondicoes", () => {
       formasPagamento: ["boleto"],
       maxParcelas: 1,
       validadeDias: 7,
+      exigeAssinatura: true,
     });
     expect(condicoes.valorPersonalizado).toBeNull();
     expect(condicoes.descontoObs).toBe("");
     expect(condicoes.planoId).toBeNull();
+    expect(condicoes.exigeAssinatura).toBe(true);
   });
 });
 
@@ -61,6 +65,7 @@ describe("ordemParaDuplicacao", () => {
     valorCobrado: 45678,
     formasPagamento: ["pix" as const],
     maxParcelas: 6,
+    exigeAssinatura: false,
   };
 
   it("usa o valor cobrado como personalizado e a validade padrão", () => {
@@ -73,6 +78,7 @@ describe("ordemParaDuplicacao", () => {
     expect(dup.descontoObs).toBe("");
     expect(dup.maxParcelas).toBe(6);
     expect(dup.formasPagamento).toEqual(["pix"]);
+    expect(dup.exigeAssinatura).toBe(false);
   });
 
   it("não define valor personalizado para outros tipos", () => {

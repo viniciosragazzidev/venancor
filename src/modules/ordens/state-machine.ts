@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { auditoria, ordens, ordemStatus } from "@/db/schema";
+import { ErroNegocio } from "@/lib/resultado-acao";
 
 export type OrdemStatus = (typeof ordemStatus.enumValues)[number];
 export const TRANSICOES: Record<OrdemStatus, readonly OrdemStatus[]> = {
@@ -13,18 +14,23 @@ export const TRANSICOES: Record<OrdemStatus, readonly OrdemStatus[]> = {
   cancelada: [],
 };
 
-export function podeTransicionar(de: OrdemStatus, para: OrdemStatus): boolean {
+export function podeTransicionar(
+  de: OrdemStatus,
+  para: OrdemStatus,
+  exigeAssinatura = true,
+): boolean {
+  if (de === "visualizada" && para === "aguardando_pagamento" && !exigeAssinatura) return true;
   return TRANSICOES[de].includes(para);
 }
 
-export class TransicaoInvalidaError extends Error {
+export class TransicaoInvalidaError extends ErroNegocio {
   constructor(de: OrdemStatus, para: OrdemStatus) {
     super(`Transição de ${de} para ${para} não permitida`);
     this.name = "TransicaoInvalidaError";
   }
 }
 
-export class ConflitoTransicaoError extends Error {
+export class ConflitoTransicaoError extends ErroNegocio {
   constructor() {
     super("A ordem foi alterada por outro processo");
     this.name = "ConflitoTransicaoError";
@@ -40,13 +46,14 @@ export async function transicionar(
   const { db } = await import("@/db/client");
   await db.transaction(async (tx) => {
     const [ordem] = await tx
-      .select({ status: ordens.status })
+      .select({ status: ordens.status, exigeAssinatura: ordens.exigeAssinatura })
       .from(ordens)
       .where(eq(ordens.id, ordemId))
       .limit(1);
     if (!ordem) throw new Error("Ordem não encontrada");
     const de = ordem.status;
-    if (!podeTransicionar(de, para)) throw new TransicaoInvalidaError(de, para);
+    if (!podeTransicionar(de, para, ordem.exigeAssinatura))
+      throw new TransicaoInvalidaError(de, para);
     const agora = new Date();
     const datas: Partial<typeof ordens.$inferInsert> =
       para === "enviada"
@@ -71,7 +78,7 @@ export async function transicionar(
       entidadeId: ordemId,
       acao: "transicionar",
       ator,
-      metadados: { de, para },
+      metadados: { de, para, exigeAssinatura: ordem.exigeAssinatura },
     });
   });
 }

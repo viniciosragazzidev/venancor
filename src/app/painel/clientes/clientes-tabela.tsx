@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { valorOuErro } from "@/lib/resultado-acao";
 import {
   Select,
   SelectContent,
@@ -234,10 +235,10 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     try {
       const payload: ClienteInput = { ...valores, whatsapp };
       if (editando) {
-        await atualizarCliente(editando.id, payload);
+        valorOuErro(await atualizarCliente(editando.id, payload));
         toast.success("Cliente atualizado.");
       } else {
-        await criarCliente(payload);
+        valorOuErro(await criarCliente(payload));
         toast.success("Cliente criado.");
       }
       setFormAberto(false);
@@ -252,7 +253,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
   async function confirmarExclusao() {
     if (!excluindo) return;
     try {
-      await excluirCliente(excluindo.id);
+      valorOuErro(await excluirCliente(excluindo.id));
       toast.success("Cliente excluído.");
       setExcluindo(null);
       router.refresh();
@@ -299,10 +300,15 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     setEnviandoDep(true);
     try {
       if (editandoDep) {
-        await atualizarDependente(editandoDep.id, dadosDep);
+        valorOuErro(await atualizarDependente(editandoDep.id, dadosDep));
         toast.success("Dependente atualizado.");
       } else {
-        await criarDependente({ ...dadosDep, clienteId: clienteSel.id } satisfies DependenteInput);
+        valorOuErro(
+          await criarDependente({
+            ...dadosDep,
+            clienteId: clienteSel.id,
+          } satisfies DependenteInput),
+        );
         toast.success("Dependente adicionado.");
       }
       setDependentes(await listarDependentes(clienteSel.id));
@@ -316,7 +322,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
 
   async function excluirDependenteLista(dependente: Dependente) {
     try {
-      await excluirDependente(dependente.id);
+      valorOuErro(await excluirDependente(dependente.id));
       toast.success("Dependente excluído.");
       if (clienteSel) setDependentes(await listarDependentes(clienteSel.id));
     } catch (erro) {

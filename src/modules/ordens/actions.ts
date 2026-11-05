@@ -1,56 +1,196 @@
 "use server";
 
 import { and, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db/client";
 import {
+  assinaturas,
   auditoria,
   clientes,
+  consentimentos,
   dependentes,
+  leads,
+  mensagens,
   ordemBeneficiarios,
+  ordemSnapshotPlano,
   ordens,
+  otpCodigos,
   pagamentos,
   planos,
 } from "@/db/schema";
+import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import { gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
 import { getPaymentProvider } from "@/providers/payment";
 import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
+import { executarCriacaoOrdensLote } from "./lote";
+import { MAX_ORDENS_EXCLUSAO, motivoBloqueioExclusaoOrdem } from "./exclusao";
 import { ordemParaDuplicacao, type DuplicacaoOrdem } from "./formulario";
 import { urlCliente } from "./link";
 import { criarOrdemComo } from "./criar";
-import { type CriarOrdemInput } from "./schemas";
-import { transicionar } from "./state-machine";
+import {
+  criarOrdemSchema,
+  criarOrdensLoteSchema,
+  type CriarOrdemInput,
+  type CriarOrdensLoteInput,
+} from "./schemas";
+import { transicionar, type OrdemStatus } from "./state-machine";
 
-export async function criarOrdem(input: CriarOrdemInput) {
-  const admin = await requireAdmin();
-  return criarOrdemComo(input, admin.id);
-}
+const excluirOrdensLoteSchema = z.object({
+  ordemIds: z
+    .array(z.uuid())
+    .min(1, "Selecione ao menos uma ordem")
+    .max(MAX_ORDENS_EXCLUSAO, `Selecione no máximo ${MAX_ORDENS_EXCLUSAO} ordens`),
+});
 
-/**
- * The panel's "Criar ordem". In production Next hides the message of an error thrown by a server
- * action (the screen showed "Minified React error #441"), so the reason comes back as data.
- */
 export async function criarOrdemNoPainel(
   input: CriarOrdemInput,
-): Promise<{ ok: true; ordemId: string; link: string } | { ok: false; erro: string }> {
-  try {
-    const { ordem, link } = await criarOrdem(input);
-    return { ok: true, ordemId: ordem.id, link };
-  } catch (erro) {
-    console.error("[ordens] criar falhou", erro);
-    return {
-      ok: false,
-      erro: erro instanceof Error ? erro.message : "Não foi possível criar a ordem.",
-    };
-  }
+): Promise<ResultadoAcao<{ ordemId: string; link: string }>> {
+  const admin = await requireAdmin();
+  return executarAcao(
+    "painel.ordem.criar",
+    async () => {
+      const dados = criarOrdemSchema.parse(input);
+      const { ordem, link } = await criarOrdemComo(dados, admin.id);
+      return { ordemId: ordem.id, link };
+    },
+    { validacao: "campo" },
+  );
+}
+
+export async function criarOrdensEmLote(
+  input: CriarOrdensLoteInput,
+): Promise<ResultadoAcao<Awaited<ReturnType<typeof executarCriacaoOrdensLote>>>> {
+  const admin = await requireAdmin();
+  return executarAcao(
+    "painel.ordens.criar_lote",
+    async () => {
+      const dados = criarOrdensLoteSchema.parse(input);
+      const { clienteIds, incluirDependentes, ...condicoes } = dados;
+      const clientesEncontrados = await db
+        .select({ id: clientes.id, nome: clientes.nome })
+        .from(clientes)
+        .where(inArray(clientes.id, clienteIds));
+      const porId = new Map(clientesEncontrados.map((cliente) => [cliente.id, cliente]));
+      const validos = clienteIds.flatMap((id) => {
+        const cliente = porId.get(id);
+        return cliente ? [cliente] : [];
+      });
+      const resultado = await executarCriacaoOrdensLote(validos, async (cliente) => {
+        const dependenteIds = incluirDependentes
+          ? (
+              await db
+                .select({ id: dependentes.id })
+                .from(dependentes)
+                .where(eq(dependentes.clienteId, cliente.id))
+            ).map((dependente) => dependente.id)
+          : [];
+        const { ordem } = await criarOrdemComo(
+          { ...condicoes, clienteId: cliente.id, dependenteIds },
+          admin.id,
+        );
+        return { ordemId: ordem.id, numero: ordem.numero };
+      });
+      const ausentes = clienteIds
+        .filter((id) => !porId.has(id))
+        .map((id) => ({ id, nome: "Cliente indisponível", erro: "Cliente não encontrado." }));
+      return { criadas: resultado.criadas, falhas: [...resultado.falhas, ...ausentes] };
+    },
+    { validacao: "campo" },
+  );
 }
 
 /**
- * "Duplicar" in the orders list: the original order's conditions, client and dependents, to
- * prefill the "Criar ordem" form. Creating still goes through criarOrdemNoPainel (new order and
- * link); the original is not touched.
+ * The source lead is retained and detached if its draft order is removed. Its status returns to
+ * Aguardando so an admin can create a replacement order. Message delivery logs are removed with
+ * the draft order; the deletion audit is kept as the only order event.
  */
+export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
+  ResultadoAcao<{
+    excluidas: Array<{ ordemId: string; numero: number }>;
+    puladas: Array<{ ordemId: string; numero?: number; motivo: string }>;
+  }>
+> {
+  const admin = await requireAdmin();
+  return executarAcao(
+    "painel.ordens.excluir_lote",
+    async () => {
+      const { ordemIds: ids } = excluirOrdensLoteSchema.parse({ ordemIds: [...new Set(ordemIds)] });
+      return db.transaction(async (tx) => {
+        const excluidas: Array<{ ordemId: string; numero: number }> = [];
+        const puladas: Array<{ ordemId: string; numero?: number; motivo: string }> = [];
+        for (const ordemId of ids) {
+          const [ordem] = await tx
+            .select({ id: ordens.id, numero: ordens.numero, status: ordens.status })
+            .from(ordens)
+            .where(eq(ordens.id, ordemId))
+            .limit(1)
+            .for("update");
+          if (!ordem) {
+            puladas.push({ ordemId, motivo: "Ordem não encontrada." });
+            continue;
+          }
+          const [assinatura] = await tx
+            .select({ id: assinaturas.id })
+            .from(assinaturas)
+            .where(eq(assinaturas.ordemId, ordemId))
+            .limit(1);
+          const [pagamento] = await tx
+            .select({ id: pagamentos.id })
+            .from(pagamentos)
+            .where(eq(pagamentos.ordemId, ordemId))
+            .limit(1);
+          const motivo = motivoBloqueioExclusaoOrdem({
+            status: ordem.status as OrdemStatus,
+            assinaturaExiste: Boolean(assinatura),
+            pagamentoExiste: Boolean(pagamento),
+          });
+          if (motivo) {
+            puladas.push({ ordemId, numero: ordem.numero, motivo });
+            continue;
+          }
+
+          await tx.delete(consentimentos).where(eq(consentimentos.ordemId, ordemId));
+          await tx.delete(otpCodigos).where(eq(otpCodigos.ordemId, ordemId));
+          await tx.delete(ordemBeneficiarios).where(eq(ordemBeneficiarios.ordemId, ordemId));
+          await tx.delete(ordemSnapshotPlano).where(eq(ordemSnapshotPlano.ordemId, ordemId));
+          await tx.delete(mensagens).where(eq(mensagens.ordemId, ordemId));
+          const [lead] = await tx
+            .update(leads)
+            .set({ ordemId: null, status: "Aguardando", atualizadoEm: new Date() })
+            .where(eq(leads.ordemId, ordemId))
+            .returning({ id: leads.id });
+          if (lead) {
+            await tx.insert(auditoria).values({
+              entidade: "leads",
+              entidadeId: lead.id,
+              acao: "desvincular_ordem_excluida",
+              ator: `admin:${admin.id}`,
+              metadados: { ordemId, numero: ordem.numero },
+            });
+          }
+          await tx
+            .delete(auditoria)
+            .where(and(eq(auditoria.entidade, "ordens"), eq(auditoria.entidadeId, ordemId)));
+          await tx.delete(ordens).where(eq(ordens.id, ordemId));
+          await tx.insert(auditoria).values({
+            entidade: "ordens",
+            entidadeId: ordemId,
+            acao: "excluir_em_massa",
+            ator: `admin:${admin.id}`,
+            metadados: { numero: ordem.numero, status: ordem.status },
+          });
+          excluidas.push({ ordemId, numero: ordem.numero });
+        }
+        return { excluidas, puladas };
+      });
+    },
+    { validacao: "campo" },
+  );
+}
+
+/** Loads the original order's conditions to prefill a new, independent proposal. */
 export async function obterDuplicacaoOrdem(
   ordemId: string,
 ): Promise<
@@ -60,7 +200,7 @@ export async function obterDuplicacaoOrdem(
   await requireAdmin();
   try {
     const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
-    if (!ordem) throw new Error("Ordem não encontrada");
+    if (!ordem) throw new ErroNegocio("Ordem não encontrada.");
     const [beneficiarios, familiares] = await Promise.all([
       db
         .select({ titular: ordemBeneficiarios.titular, cpf: ordemBeneficiarios.cpf })
@@ -88,8 +228,7 @@ export async function listarOrdens() {
   return db.select().from(ordens);
 }
 
-export async function gerarNovoLink(ordemId: string) {
-  const admin = await requireAdmin();
+async function gerarNovoLinkComoAdmin(ordemId: string, adminId: string) {
   const { token, hash } = gerarToken();
   const link = urlCliente(token);
   const [ordem] = await db
@@ -103,74 +242,86 @@ export async function gerarNovoLink(ordemId: string) {
       and(eq(ordens.id, ordemId), inArray(ordens.status, ["rascunho", "enviada", "visualizada"])),
     )
     .returning();
-  if (!ordem) throw new Error("Ordem indisponível para novo link");
+  if (!ordem) throw new ErroNegocio("Esta ordem não está disponível para gerar um novo link.");
   await db.insert(auditoria).values({
     entidade: "ordens",
     entidadeId: ordemId,
     acao: "regenerar_link",
-    ator: `admin:${admin.id}`,
+    ator: `admin:${adminId}`,
   });
   return link;
 }
 
-export async function enviarOrdem(ordemId: string) {
+export async function gerarNovoLink(ordemId: string): Promise<ResultadoAcao<string>> {
   const admin = await requireAdmin();
+  return executarAcao("painel.ordem.gerar_link", () => gerarNovoLinkComoAdmin(ordemId, admin.id));
+}
+
+async function enviarOrdemComoAdmin(ordemId: string, adminId: string) {
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
   if (!ordem || !["rascunho", "enviada", "visualizada"].includes(ordem.status))
-    throw new Error("Ordem indisponível para envio");
+    throw new ErroNegocio("Esta ordem não está disponível para envio.");
   const [cliente] = await db
     .select()
     .from(clientes)
     .where(eq(clientes.id, ordem.clienteId))
     .limit(1);
   const [plano] = await db.select().from(planos).where(eq(planos.id, ordem.planoId)).limit(1);
-  if (!cliente || !plano) throw new Error("Dados da ordem ausentes");
-  const link = await gerarNovoLink(ordemId);
+  if (!cliente || !plano) throw new ErroNegocio("Os dados desta ordem estão incompletos.");
+  const link = await gerarNovoLinkComoAdmin(ordemId, adminId);
   await getMessagingProvider().enviarTemplate({
     para: cliente.whatsapp,
     template: "proposta_enviada",
     variaveis: { nome: cliente.nome, plano: plano.nome, link },
     ordemId,
   });
-  if (ordem.status === "rascunho") await transicionar(ordemId, "enviada", `admin:${admin.id}`);
+  if (ordem.status === "rascunho") await transicionar(ordemId, "enviada", `admin:${adminId}`);
   return link;
 }
 
-export async function reenviarOrdem(ordemId: string) {
+export async function enviarOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
+  const admin = await requireAdmin();
+  return executarAcao("painel.ordem.enviar", () => enviarOrdemComoAdmin(ordemId, admin.id));
+}
+
+export async function reenviarOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
   return enviarOrdem(ordemId);
 }
-export async function copiarLinkOrdem(ordemId: string) {
+
+export async function copiarLinkOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
   return gerarNovoLink(ordemId);
 }
 
-export async function cancelarOrdem(ordemId: string) {
+export async function cancelarOrdem(ordemId: string): Promise<ResultadoAcao<void>> {
   const admin = await requireAdmin();
-  const [ordem] = await db
-    .select({ status: ordens.status })
-    .from(ordens)
-    .where(eq(ordens.id, ordemId))
-    .limit(1);
-  if (
-    !ordem ||
-    !["rascunho", "enviada", "visualizada", "assinada", "aguardando_pagamento"].includes(
-      ordem.status,
+  return executarAcao("painel.ordem.cancelar", async () => {
+    const [ordem] = await db
+      .select({ status: ordens.status })
+      .from(ordens)
+      .where(eq(ordens.id, ordemId))
+      .limit(1);
+    if (
+      !ordem ||
+      !["rascunho", "enviada", "visualizada", "assinada", "aguardando_pagamento"].includes(
+        ordem.status,
+      )
     )
-  )
-    throw new Error("Ordem indisponível para cancelamento");
-  const pendentes = await db
-    .select()
-    .from(pagamentos)
-    .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
-  for (const pagamento of pendentes) {
-    if (!pagamento.providerPaymentId) continue;
-    const provider = getPaymentProvider();
-    if (provider.nome !== pagamento.provider)
-      throw new Error("Provedor da cobrança não configurado");
-    await provider.cancelarCobranca(pagamento.providerPaymentId);
-  }
-  await transicionar(ordemId, "cancelada", `admin:${admin.id}`);
-  await db
-    .update(pagamentos)
-    .set({ status: "cancelado", atualizadoEm: new Date() })
-    .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
+      throw new ErroNegocio("Esta ordem não está disponível para cancelamento.");
+    const pendentes = await db
+      .select()
+      .from(pagamentos)
+      .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
+    for (const pagamento of pendentes) {
+      if (!pagamento.providerPaymentId) continue;
+      const provider = getPaymentProvider();
+      if (provider.nome !== pagamento.provider)
+        throw new ErroNegocio("O provedor desta cobrança não está configurado.");
+      await provider.cancelarCobranca(pagamento.providerPaymentId);
+    }
+    await transicionar(ordemId, "cancelada", `admin:${admin.id}`);
+    await db
+      .update(pagamentos)
+      .set({ status: "cancelado", atualizadoEm: new Date() })
+      .where(and(eq(pagamentos.ordemId, ordemId), eq(pagamentos.status, "pendente")));
+  });
 }

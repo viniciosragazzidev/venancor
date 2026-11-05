@@ -27,6 +27,7 @@ const snapshotSchema = z.object({
 export interface DadosOrdemCliente {
   id: string;
   status: OrdemStatus;
+  exige_assinatura: boolean;
   expira_em: string;
   cliente: { nome: string; cpf: string; whatsapp: string };
   plano: {
@@ -182,6 +183,7 @@ export async function resolverToken(
   const dados: DadosOrdemCliente = {
     id: ordem.id,
     status: ["rascunho", "enviada"].includes(ordem.status) ? "visualizada" : ordem.status,
+    exige_assinatura: ordem.exigeAssinatura,
     expira_em: ordem.expiraEm.toISOString(),
     cliente: { nome: titular.nome, cpf: mascararCpf(titular.cpf), whatsapp: cliente.whatsapp },
     plano: {
@@ -223,6 +225,8 @@ export async function registrarConsentimento(
   userAgent: string,
 ) {
   const resolucao = await resolverToken(token);
+  if (resolucao.tipo === "ativa" && !resolucao.dados.exige_assinatura)
+    throw new ErroNegocio("Esta proposta não exige assinatura do contrato.");
   if (resolucao.tipo !== "ativa" || !["enviada", "visualizada"].includes(resolucao.dados.status))
     throw new ErroNegocio("Esta proposta não está mais disponível para aceite.");
   const { consentimentos } = await import("@/db/schema");

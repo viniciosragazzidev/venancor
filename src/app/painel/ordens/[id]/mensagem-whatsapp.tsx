@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { copiarLinkOrdem } from "@/modules/ordens/actions";
 import { linkWhatsApp, mensagemPropostaWhatsApp } from "@/modules/ordens/mensagem-whatsapp";
 
@@ -53,7 +54,7 @@ export function MensagemWhatsApp({
 
   async function gerar() {
     setOcupado(true);
-    const pedido = copiarLinkOrdem(ordemId);
+    const pedido = copiarLinkOrdem(ordemId).then((resultado) => valorOuErro(resultado));
     const montar = (novo: string) =>
       mensagemPropostaWhatsApp({ nomeCliente, plano, valor, formasPagamento, link: novo });
     // Safari perde o gesto do clique depois de um await: o ClipboardItem recebe a Promise do

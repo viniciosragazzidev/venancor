@@ -14,6 +14,7 @@ import {
   PlusIcon,
   SaveIcon,
   SearchIcon,
+  Trash2Icon,
 } from "lucide-react";
 import { useQueryState } from "nuqs";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -33,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +44,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -61,7 +64,9 @@ import { listarDependentes, type listarClientes } from "@/modules/clientes/actio
 import { type ResumoLembretes } from "@/modules/lembretes/actions";
 import { lembreteDisponivel, MAX_LEMBRETES } from "@/modules/lembretes/regras";
 import {
+  criarOrdensEmLote,
   criarOrdemNoPainel,
+  excluirOrdensEmMassa,
   obterDuplicacaoOrdem,
   type listarOrdens,
 } from "@/modules/ordens/actions";
@@ -78,6 +83,9 @@ import {
 } from "@/modules/ordens/funil";
 import { criarOrdemModelo } from "@/modules/ordens/modelos-actions";
 import { criarOrdemSchema, type CriarOrdemInput } from "@/modules/ordens/schemas";
+import { valorOuErro } from "@/lib/resultado-acao";
+import { MAX_CLIENTES_ORDEM_LOTE, type ResultadoCriacaoOrdensLote } from "@/modules/ordens/lote";
+import { MAX_ORDENS_EXCLUSAO } from "@/modules/ordens/exclusao";
 import { type listarPlanos } from "@/modules/planos/actions";
 
 import { GerenciarModelosDialog, SalvarModeloDialog, type OrdemModelo } from "./modelos-ordem";
@@ -95,7 +103,6 @@ export interface ContratoOpcao {
 
 const SEM_MODELO = "nenhum";
 const CONTRATO_AUTO = "auto";
-
 const resolverSchema = criarOrdemSchema.omit({
   dependenteIds: true,
   formasPagamento: true,
@@ -152,9 +159,20 @@ export function OrdensTabela({
   const [lembrarId, setLembrarId] = useState<string | null>(null);
   const [formAberto, setFormAberto] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [vista, setVista] = useState<"form" | "sucesso">("form");
+  const [vista, setVista] = useState<"form" | "sucesso" | "lote-sucesso">("form");
   const [linkCriado, setLinkCriado] = useState<string | null>(null);
   const [ordemCriadaId, setOrdemCriadaId] = useState<string | null>(null);
+  const [modoLote, setModoLote] = useState(false);
+  const [buscaClienteLote, setBuscaClienteLote] = useState("");
+  const [clientesLoteIds, setClientesLoteIds] = useState<string[]>([]);
+  const [incluirDependentesLote, setIncluirDependentesLote] = useState(false);
+  const [resultadoLote, setResultadoLote] = useState<ResultadoCriacaoOrdensLote | null>(null);
+  const [ordensSelecionadas, setOrdensSelecionadas] = useState<string[]>([]);
+  const [confirmarExclusaoAberto, setConfirmarExclusaoAberto] = useState(false);
+  const [resultadoExclusao, setResultadoExclusao] = useState<{
+    excluidas: Array<{ ordemId: string; numero: number }>;
+    puladas: Array<{ ordemId: string; numero?: number; motivo: string }>;
+  } | null>(null);
 
   const [deps, setDeps] = useState<Dependente[]>([]);
   const [depsIds, setDepsIds] = useState<string[]>([]);
@@ -188,6 +206,7 @@ export function OrdensTabela({
       descontoObs: "",
       maxParcelas: 1,
       validadeDias: 7,
+      exigeAssinatura: true,
     },
   });
 
@@ -199,8 +218,10 @@ export function OrdensTabela({
     return !!contrato && (!contrato.planoId || contrato.planoId === planoId);
   };
 
-  const nomeCliente = (id: string) => clientes.find((cliente) => cliente.id === id)?.nome ?? "—";
-  const nomePlano = (id: string) => planos.find((plano) => plano.id === id)?.nome ?? "—";
+  const nomeCliente = (id: string) =>
+    clientes.find((cliente) => cliente.id === id)?.nome ?? "Não informado";
+  const nomePlano = (id: string) =>
+    planos.find((plano) => plano.id === id)?.nome ?? "Não informado";
 
   const filtradas = filtrarPorEtapa(ordens, etapa, agora).filter((ordem) => {
     const termo = busca.trim().toLowerCase();
@@ -220,6 +241,7 @@ export function OrdensTabela({
     setValue("descontoObs", condicoes.descontoObs);
     setValue("maxParcelas", condicoes.maxParcelas);
     setValue("validadeDias", condicoes.validadeDias);
+    setValue("exigeAssinatura", condicoes.exigeAssinatura);
     setContratoId(
       condicoes.contratoModeloId && contratoServe(condicoes.contratoModeloId, planoId)
         ? condicoes.contratoModeloId
@@ -236,6 +258,7 @@ export function OrdensTabela({
     condicoes: CondicoesOrdem,
     dependentes: Dependente[] = [],
     dependenteIds: string[] = [],
+    lote = false,
   ) {
     reset({
       clienteId,
@@ -244,6 +267,7 @@ export function OrdensTabela({
       descontoObs: "",
       maxParcelas: 1,
       validadeDias: VALIDADE_PADRAO_DIAS,
+      exigeAssinatura: true,
     });
     aplicarCondicoes(condicoes);
     setVigenciaTexto("");
@@ -252,6 +276,11 @@ export function OrdensTabela({
     setDepsIds(dependenteIds);
     setModeloId(SEM_MODELO);
     setTituloForm(titulo);
+    setModoLote(lote);
+    setBuscaClienteLote("");
+    setClientesLoteIds([]);
+    setIncluirDependentesLote(false);
+    setResultadoLote(null);
     setVista("form");
     setLinkCriado(null);
     setOrdemCriadaId(null);
@@ -269,7 +298,30 @@ export function OrdensTabela({
       formasPagamento: [...FORMAS],
       maxParcelas: 1,
       validadeDias: VALIDADE_PADRAO_DIAS,
+      exigeAssinatura: true,
     });
+  }
+
+  function abrirLote() {
+    abrirFormulario(
+      "Criar ordens em lote",
+      clientes[0]?.id ?? "",
+      {
+        planoId: planos.find((plano) => plano.ativo)?.id ?? null,
+        contratoModeloId: null,
+        desconto: 0,
+        descontoObs: "",
+        valorCobradoTipo: "primeira_mensalidade_adesao",
+        valorPersonalizado: null,
+        formasPagamento: [...FORMAS],
+        maxParcelas: 1,
+        validadeDias: VALIDADE_PADRAO_DIAS,
+        exigeAssinatura: true,
+      },
+      [],
+      [],
+      true,
+    );
   }
 
   async function duplicar(ordem: Ordem) {
@@ -330,13 +382,14 @@ export function OrdensTabela({
       formasPagamento: [...formas] as CriarOrdemInput["formasPagamento"],
       maxParcelas: Number.isInteger(maxParcelas) ? maxParcelas : 1,
       validadeDias: Number.isInteger(validadeDias) ? validadeDias : VALIDADE_PADRAO_DIAS,
+      exigeAssinatura: valores.exigeAssinatura,
     });
     if (!resultado.ok) {
       toast.error(resultado.erro);
       return false;
     }
     toast.success("Modelo salvo.");
-    setModeloId(resultado.modelo.id);
+    setModeloId(resultado.valor.id);
     router.refresh();
     return true;
   }
@@ -376,10 +429,8 @@ export function OrdensTabela({
       toast.error("Dia do vencimento deve ser de 1 a 28.");
       return;
     }
-    const payload: CriarOrdemInput = {
-      clienteId: valores.clienteId,
+    const condicoes = {
       planoId: valores.planoId,
-      dependenteIds: depsIds,
       contratoModeloId: contratoId === CONTRATO_AUTO ? undefined : contratoId,
       desconto,
       descontoObs: valores.descontoObs?.trim() || undefined,
@@ -388,16 +439,36 @@ export function OrdensTabela({
       formasPagamento: [...formas] as CriarOrdemInput["formasPagamento"],
       maxParcelas: valores.maxParcelas,
       validadeDias: valores.validadeDias,
+      exigeAssinatura: valores.exigeAssinatura,
       vigenciaInicio: vigenciaTexto || null,
       diaVencimento: diaVencimento ?? null,
     };
     setEnviando(true);
     try {
-      const resultado = await criarOrdemNoPainel(payload);
-      if (!resultado.ok) {
-        toast.error(resultado.erro);
+      if (modoLote) {
+        if (clientesLoteIds.length === 0) {
+          toast.error("Selecione ao menos um cliente.");
+          return;
+        }
+        const resultado = valorOuErro(
+          await criarOrdensEmLote({
+            ...condicoes,
+            clienteIds: clientesLoteIds,
+            incluirDependentes: incluirDependentesLote,
+          }),
+        );
+        setResultadoLote(resultado);
+        setVista("lote-sucesso");
+        router.refresh();
         return;
       }
+
+      const payload: CriarOrdemInput = {
+        ...condicoes,
+        clienteId: valores.clienteId,
+        dependenteIds: depsIds,
+      };
+      const resultado = valorOuErro(await criarOrdemNoPainel(payload));
       setOrdemCriadaId(resultado.ordemId);
       setLinkCriado(resultado.link);
       setVista("sucesso");
@@ -418,6 +489,68 @@ export function OrdensTabela({
       toast.error("Não foi possível copiar o link.");
     }
   }
+
+  function alternarClienteLote(clienteId: string, checked: boolean) {
+    setClientesLoteIds((atuais) => {
+      if (checked) {
+        if (atuais.includes(clienteId)) return atuais;
+        if (atuais.length >= MAX_CLIENTES_ORDEM_LOTE) {
+          toast.error(`O lote aceita no máximo ${MAX_CLIENTES_ORDEM_LOTE} clientes.`);
+          return atuais;
+        }
+        return [...atuais, clienteId];
+      }
+      return atuais.filter((id) => id !== clienteId);
+    });
+  }
+
+  async function excluirSelecionadas() {
+    try {
+      const resultado = valorOuErro(await excluirOrdensEmMassa(ordensSelecionadas));
+      setResultadoExclusao(resultado);
+      setOrdensSelecionadas([]);
+      router.refresh();
+      if (resultado.excluidas.length > 0) {
+        toast.success(`${resultado.excluidas.length} ordem(ns) excluída(s).`);
+      }
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir as ordens.");
+    }
+  }
+
+  function alternarOrdemSelecionada(ordemId: string, checked: boolean) {
+    setOrdensSelecionadas((atuais) => {
+      if (checked) {
+        if (atuais.includes(ordemId)) return atuais;
+        if (atuais.length >= MAX_ORDENS_EXCLUSAO) {
+          toast.error(`Selecione no máximo ${MAX_ORDENS_EXCLUSAO} ordens por vez.`);
+          return atuais;
+        }
+        return [...atuais, ordemId];
+      }
+      return atuais.filter((id) => id !== ordemId);
+    });
+  }
+
+  function selecionarVisiveis(checked: boolean) {
+    setOrdensSelecionadas((atuais) => {
+      if (!checked) return atuais.filter((id) => !filtradas.some((ordem) => ordem.id === id));
+      const combinadas = new Set([...atuais, ...filtradas.map((ordem) => ordem.id)]);
+      if (combinadas.size > MAX_ORDENS_EXCLUSAO) {
+        toast.error(`Selecione no máximo ${MAX_ORDENS_EXCLUSAO} ordens por vez.`);
+        return atuais;
+      }
+      return [...combinadas];
+    });
+  }
+
+  const todosVisiveisSelecionados =
+    filtradas.length > 0 && filtradas.every((ordem) => ordensSelecionadas.includes(ordem.id));
+  const algumaVisivelSelecionada = filtradas.some((ordem) => ordensSelecionadas.includes(ordem.id));
+  const clientesLoteFiltrados = clientes.filter((cliente) => {
+    const termo = buscaClienteLote.trim().toLocaleLowerCase("pt-BR");
+    return !termo || cliente.nome.toLocaleLowerCase("pt-BR").includes(termo);
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -440,6 +573,14 @@ export function OrdensTabela({
           <Button
             variant="outline"
             className="h-12 w-full rounded-full px-6 sm:w-auto"
+            onClick={abrirLote}
+          >
+            <CopyPlusIcon aria-hidden strokeWidth={1.5} />
+            Criar em lote
+          </Button>
+          <Button
+            variant="outline"
+            className="h-12 w-full rounded-full px-6 sm:w-auto"
             onClick={() => setGerenciarAberto(true)}
           >
             <LayersIcon aria-hidden strokeWidth={1.5} />
@@ -451,6 +592,22 @@ export function OrdensTabela({
           </Button>
         </div>
       </div>
+
+      {ordensSelecionadas.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-muted/30 px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            {ordensSelecionadas.length} ordem(ns) selecionada(s)
+          </p>
+          <Button
+            variant="destructive"
+            className="h-10 rounded-full px-5"
+            onClick={() => setConfirmarExclusaoAberto(true)}
+          >
+            <Trash2Icon aria-hidden strokeWidth={1.5} />
+            Excluir selecionadas
+          </Button>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div
@@ -508,9 +665,17 @@ export function OrdensTabela({
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <Table className="min-w-[1000px]">
+              <Table className="min-w-[1050px]">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        aria-label="Selecionar ordens visíveis"
+                        checked={todosVisiveisSelecionados}
+                        indeterminate={!todosVisiveisSelecionados && algumaVisivelSelecionada}
+                        onCheckedChange={(checked) => selecionarVisiveis(checked === true)}
+                      />
+                    </TableHead>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Plano</TableHead>
                     <TableHead>Cobrado</TableHead>
@@ -525,6 +690,15 @@ export function OrdensTabela({
                 <TableBody>
                   {filtradas.map((ordem) => (
                     <TableRow key={ordem.id}>
+                      <TableCell>
+                        <Checkbox
+                          aria-label={`Selecionar ordem ${ordem.numero}`}
+                          checked={ordensSelecionadas.includes(ordem.id)}
+                          onCheckedChange={(checked) =>
+                            alternarOrdemSelecionada(ordem.id, checked === true)
+                          }
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{nomeCliente(ordem.clienteId)}</TableCell>
                       <TableCell>{nomePlano(ordem.planoId)}</TableCell>
                       <TableCell className="tabular-nums">
@@ -534,6 +708,11 @@ export function OrdensTabela({
                         <Badge variant="outline" className={classesStatusOrdem(ordem.status)}>
                           {rotuloStatusOrdem(ordem.status)}
                         </Badge>
+                        {!ordem.exigeAssinatura ? (
+                          <Badge variant="secondary" className="ml-2 rounded-full">
+                            Sem assinatura
+                          </Badge>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <FunilOrdem
@@ -661,6 +840,37 @@ export function OrdensTabela({
                 </Button>
               </DialogFooter>
             </>
+          ) : vista === "lote-sucesso" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Resultado do lote</DialogTitle>
+                <DialogDescription className="text-pretty">
+                  {resultadoLote?.criadas.length ?? 0} ordem(ns) criada(s) e{" "}
+                  {resultadoLote?.falhas.length ?? 0} falha(s).
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto pt-4">
+                {resultadoLote?.criadas.map((item) => (
+                  <div key={item.id} className="rounded-2xl bg-success/10 px-4 py-3 text-sm">
+                    {item.nome}: ordem #{item.numero} criada.
+                  </div>
+                ))}
+                {resultadoLote?.falhas.map((item) => (
+                  <div key={item.id} className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm">
+                    {item.nome}: {item.erro}
+                  </div>
+                ))}
+              </div>
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  className="h-12 rounded-full px-6"
+                  onClick={() => setFormAberto(false)}
+                >
+                  Fechar
+                </Button>
+              </DialogFooter>
+            </>
           ) : (
             <>
               <DialogHeader className="shrink-0 border-b px-6 py-5 pr-16 sm:px-8">
@@ -668,7 +878,9 @@ export function OrdensTabela({
                 <DialogDescription>
                   {tituloForm === "Duplicar ordem"
                     ? "Mesmas condições da ordem original. Ajuste o que precisar: uma nova ordem e um novo link serão criados."
-                    : "Escolha o cliente, o plano e as condições da proposta."}
+                    : modoLote
+                      ? `Selecione os clientes e as condições comuns. Serão criadas até ${MAX_CLIENTES_ORDEM_LOTE} ordens em rascunho.`
+                      : "Escolha o cliente, o plano e as condições da proposta."}
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -683,7 +895,9 @@ export function OrdensTabela({
                     hint={
                       modelos.length === 0
                         ? "Nenhum modelo salvo. Preencha a ordem e use Salvar como modelo."
-                        : "Preenche plano, contrato, valores e condições. Depois é só escolher o cliente."
+                        : modoLote
+                          ? "Preenche plano, contrato, valores e condições para os clientes selecionados."
+                          : "Preenche plano, contrato, valores e condições. Depois é só escolher o cliente."
                     }
                   >
                     <Select
@@ -717,38 +931,78 @@ export function OrdensTabela({
                     <p className="text-sm font-medium">Proposta</p>
                     <div className="grid gap-5 sm:grid-cols-2">
                       <Campo
-                        label="Cliente"
+                        label={modoLote ? "Clientes" : "Cliente"}
                         htmlFor="ordem-cliente"
-                        error={errors.clienteId?.message}
+                        hint={
+                          modoLote
+                            ? `${clientesLoteIds.length}/${MAX_CLIENTES_ORDEM_LOTE} selecionados`
+                            : undefined
+                        }
+                        error={modoLote ? undefined : errors.clienteId?.message}
                       >
-                        <Controller
-                          control={control}
-                          name="clienteId"
-                          render={({ field }) => (
-                            <Select
-                              value={field.value}
-                              onValueChange={(valor) => {
-                                if (!valor) return;
-                                field.onChange(valor);
-                                void carregarDependentes(valor);
-                              }}
-                            >
-                              <SelectTrigger
-                                id="ordem-cliente"
-                                className={`${inputPill} w-full justify-between`}
+                        {modoLote ? (
+                          <div className="flex flex-col gap-3">
+                            <Input
+                              id="ordem-cliente"
+                              aria-label="Buscar clientes para o lote"
+                              className={inputPill}
+                              placeholder="Buscar cliente pelo nome"
+                              value={buscaClienteLote}
+                              onChange={(evento) => setBuscaClienteLote(evento.target.value)}
+                            />
+                            <div className="flex max-h-56 flex-col gap-1 overflow-y-auto rounded-2xl border p-2">
+                              {clientesLoteFiltrados.length === 0 ? (
+                                <p className="px-3 py-4 text-sm text-muted-foreground">
+                                  Nenhum cliente encontrado.
+                                </p>
+                              ) : (
+                                clientesLoteFiltrados.map((cliente) => (
+                                  <label
+                                    key={cliente.id}
+                                    className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm hover:bg-muted/60"
+                                  >
+                                    <Checkbox
+                                      checked={clientesLoteIds.includes(cliente.id)}
+                                      onCheckedChange={(checked) =>
+                                        alternarClienteLote(cliente.id, checked === true)
+                                      }
+                                    />
+                                    <span className="min-w-0 truncate">{cliente.nome}</span>
+                                  </label>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <Controller
+                            control={control}
+                            name="clienteId"
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={(valor) => {
+                                  if (!valor) return;
+                                  field.onChange(valor);
+                                  void carregarDependentes(valor);
+                                }}
                               >
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {clientes.map((cliente) => (
-                                  <SelectItem key={cliente.id} value={cliente.id}>
-                                    {cliente.nome}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
+                                <SelectTrigger
+                                  id="ordem-cliente"
+                                  className={`${inputPill} w-full justify-between`}
+                                >
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {clientes.map((cliente) => (
+                                    <SelectItem key={cliente.id} value={cliente.id}>
+                                      {cliente.nome}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        )}
                       </Campo>
                       <Campo label="Plano" htmlFor="ordem-plano" error={errors.planoId?.message}>
                         <Controller
@@ -829,41 +1083,62 @@ export function OrdensTabela({
                     </div>
 
                     <div className="rounded-3xl border bg-muted/40 p-4">
-                      <p className="text-sm font-medium">Beneficiários</p>
-                      <p className="text-xs text-muted-foreground">
-                        O titular entra automaticamente. Marque os dependentes que vão na proposta.
-                      </p>
-                      <div className="mt-3 flex flex-col gap-2">
-                        {carregandoDeps ? (
-                          <p className="py-2 text-sm text-muted-foreground">Carregando...</p>
-                        ) : deps.length === 0 ? (
-                          <p className="py-2 text-sm text-muted-foreground">
-                            Este cliente não tem dependentes cadastrados.
+                      {modoLote ? (
+                        <label className="flex cursor-pointer items-center justify-between gap-4">
+                          <span className="flex flex-col gap-1">
+                            <span className="text-sm font-medium">
+                              Incluir dependentes cadastrados
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Cada ordem recebe os dependentes do respectivo cliente.
+                            </span>
+                          </span>
+                          <Switch
+                            aria-label="Incluir dependentes cadastrados de cada cliente"
+                            checked={incluirDependentesLote}
+                            onCheckedChange={setIncluirDependentesLote}
+                          />
+                        </label>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium">Beneficiários</p>
+                          <p className="text-xs text-muted-foreground">
+                            O titular entra automaticamente. Marque os dependentes que vão na
+                            proposta.
                           </p>
-                        ) : (
-                          deps.map((dependente) => (
-                            <label
-                              key={dependente.id}
-                              className="flex cursor-pointer items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm"
-                            >
-                              <Checkbox
-                                checked={depsIds.includes(dependente.id)}
-                                onCheckedChange={(valor) =>
-                                  setDepsIds((atual) =>
-                                    valor === true
-                                      ? [...atual, dependente.id]
-                                      : atual.filter((id) => id !== dependente.id),
-                                  )
-                                }
-                              />
-                              <span className="font-medium">{dependente.nome}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {dependente.nascimento.split("-").reverse().join("/")}
-                              </span>
-                            </label>
-                          ))
-                        )}
-                      </div>
+                          <div className="mt-3 flex flex-col gap-2">
+                            {carregandoDeps ? (
+                              <p className="py-2 text-sm text-muted-foreground">Carregando...</p>
+                            ) : deps.length === 0 ? (
+                              <p className="py-2 text-sm text-muted-foreground">
+                                Este cliente não tem dependentes cadastrados.
+                              </p>
+                            ) : (
+                              deps.map((dependente) => (
+                                <label
+                                  key={dependente.id}
+                                  className="flex cursor-pointer items-center gap-3 rounded-2xl bg-card px-4 py-3 text-sm"
+                                >
+                                  <Checkbox
+                                    checked={depsIds.includes(dependente.id)}
+                                    onCheckedChange={(valor) =>
+                                      setDepsIds((atual) =>
+                                        valor === true
+                                          ? [...atual, dependente.id]
+                                          : atual.filter((id) => id !== dependente.id),
+                                      )
+                                    }
+                                  />
+                                  <span className="font-medium">{dependente.nome}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {dependente.nascimento.split("-").reverse().join("/")}
+                                  </span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </section>
 
@@ -929,6 +1204,26 @@ export function OrdensTabela({
 
                   <section className="flex flex-col gap-5 rounded-3xl bg-muted/40 p-5 sm:p-6">
                     <p className="text-sm font-medium">Condições de pagamento</p>
+                    <Controller
+                      control={control}
+                      name="exigeAssinatura"
+                      render={({ field }) => (
+                        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border bg-card px-4 py-3">
+                          <span className="flex flex-col gap-1">
+                            <span className="text-sm font-medium">
+                              Exigir assinatura do contrato
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              Desative para abrir a proposta direto no pagamento.
+                            </span>
+                          </span>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={(checked) => field.onChange(checked)}
+                          />
+                        </label>
+                      )}
+                    />
                     <div className="flex flex-wrap gap-2">
                       {FORMAS.map((forma) => (
                         <label
@@ -1039,12 +1334,63 @@ export function OrdensTabela({
                       <LoaderCircleIcon aria-hidden className="animate-spin" strokeWidth={1.5} />
                     ) : null}
                     <CheckIcon aria-hidden strokeWidth={1.5} />
-                    Criar ordem
+                    {modoLote ? "Criar ordens" : "Criar ordem"}
                   </Button>
                 </DialogFooter>
               </form>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={confirmarExclusaoAberto}
+        onOpenChange={setConfirmarExclusaoAberto}
+        titulo="Excluir ordens selecionadas?"
+        descricao={`Você selecionou ${ordensSelecionadas.length} ordem(ns). Ordens com assinatura ou qualquer registro de pagamento serão preservadas e aparecerão no resultado com o motivo.`}
+        confirmarTexto="Excluir selecionadas"
+        onConfirmar={excluirSelecionadas}
+      />
+
+      <Dialog
+        open={resultadoExclusao !== null}
+        onOpenChange={(aberto) => {
+          if (!aberto) setResultadoExclusao(null);
+        }}
+      >
+        <DialogContent className="gap-0 rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Resultado da exclusão</DialogTitle>
+            <DialogDescription className="text-pretty">
+              {resultadoExclusao?.excluidas.length ?? 0} ordem(ns) excluída(s).{" "}
+              {resultadoExclusao?.puladas.length ?? 0} preservada(s).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex max-h-[55vh] flex-col gap-2 overflow-y-auto pt-4">
+            {resultadoExclusao?.puladas.length === 0 ? (
+              <p className="rounded-2xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                Todas as ordens selecionadas foram excluídas.
+              </p>
+            ) : (
+              resultadoExclusao?.puladas.map((ordem) => (
+                <div key={ordem.ordemId} className="rounded-2xl bg-muted/40 px-4 py-3 text-sm">
+                  <span className="font-medium">
+                    {ordem.numero ? `Ordem #${ordem.numero}` : "Ordem"}
+                  </span>
+                  <span className="text-muted-foreground">: {ordem.motivo}</span>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter className="pt-4">
+            <Button
+              type="button"
+              className="h-12 rounded-full px-6"
+              onClick={() => setResultadoExclusao(null)}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

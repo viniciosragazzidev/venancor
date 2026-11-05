@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { LembrarAgoraDialog } from "@/components/admin/lembrar-agora";
 import { Button } from "@/components/ui/button";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { cancelarOrdem, copiarLinkOrdem, enviarOrdem } from "@/modules/ordens/actions";
 
 const STATUS_COM_LINK = ["rascunho", "enviada", "visualizada"];
@@ -37,9 +38,9 @@ export function OrdemAcoes({
   async function enviar() {
     setOcupado("enviar");
     try {
-      await enviarOrdem(ordemId);
+      valorOuErro(await enviarOrdem(ordemId));
       toast.success("Proposta enviada no WhatsApp do cliente.");
-      toast.warning("Um novo link foi gerado — o link anterior deixou de funcionar.");
+      toast.warning("Um novo link foi gerado. O link anterior deixou de funcionar.");
       router.refresh();
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível enviar.");
@@ -51,10 +52,10 @@ export function OrdemAcoes({
   async function copiar() {
     setOcupado("copiar");
     try {
-      const link = await copiarLinkOrdem(ordemId);
+      const link = valorOuErro(await copiarLinkOrdem(ordemId));
       await navigator.clipboard.writeText(link);
       toast.success("Novo link copiado para a área de transferência.");
-      toast.warning("O link anterior foi invalidado — compartilhe somente este novo link.");
+      toast.warning("O link anterior foi invalidado. Compartilhe somente este novo link.");
       router.refresh();
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível gerar o link.");
@@ -65,7 +66,7 @@ export function OrdemAcoes({
 
   async function cancelar() {
     try {
-      await cancelarOrdem(ordemId);
+      valorOuErro(await cancelarOrdem(ordemId));
       toast.success("Ordem cancelada.");
       router.refresh();
     } catch (erro) {

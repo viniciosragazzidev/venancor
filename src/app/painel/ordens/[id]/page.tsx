@@ -100,6 +100,11 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
         <Badge variant="outline" className={classesStatusOrdem(ordem.status)}>
           {rotuloStatusOrdem(ordem.status)}
         </Badge>
+        {!ordem.exigeAssinatura ? (
+          <Badge variant="secondary" className="rounded-full">
+            Sem assinatura
+          </Badge>
+        ) : null}
       </div>
 
       <OrdemAcoes ordemId={ordem.id} status={ordem.status} podeLembrar={podeLembrar} />

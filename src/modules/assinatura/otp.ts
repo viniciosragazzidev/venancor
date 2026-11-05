@@ -18,7 +18,12 @@ const segredoOtp = () => {
 
 export async function enviarOtp(ordemId: string, ip?: string): Promise<{ codigoTeste?: string }> {
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
-  if (!ordem || ordem.status !== "visualizada" || ordem.expiraEm.getTime() < Date.now())
+  if (
+    !ordem ||
+    !ordem.exigeAssinatura ||
+    ordem.status !== "visualizada" ||
+    ordem.expiraEm.getTime() < Date.now()
+  )
     throw new ErroNegocio("Ordem indisponível para OTP");
   const [cliente] = await db
     .select()

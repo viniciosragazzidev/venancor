@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { metodoPagamento, valorCobradoTipo } from "@/db/schema";
+import { MAX_CLIENTES_ORDEM_LOTE } from "./lote";
 
 export const criarOrdemSchema = z.object({
   clienteId: z.uuid(),
@@ -16,6 +17,7 @@ export const criarOrdemSchema = z.object({
     .default(["pix", "boleto", "cartao"]),
   maxParcelas: z.int().min(1).max(12).default(1),
   validadeDias: z.int().min(1).max(30).default(7),
+  exigeAssinatura: z.boolean().default(true),
   /** Start of coverage; empty means immediate (from the payment). */
   vigenciaInicio: z.iso.date().nullable().optional(),
   diaVencimento: z.int().min(1).max(28).nullable().optional(),
@@ -36,3 +38,23 @@ export const ordemModeloSchema = criarOrdemSchema
 export type OrdemModeloInput = z.input<typeof ordemModeloSchema>;
 export type OrdemModeloData = z.output<typeof ordemModeloSchema>;
 export const ordemModeloAtualizacaoSchema = ordemModeloSchema.partial();
+
+export const criarOrdensLoteSchema = criarOrdemSchema
+  .omit({ clienteId: true, dependenteIds: true })
+  .extend({
+    clienteIds: z
+      .array(z.uuid())
+      .min(1, "Selecione ao menos um cliente")
+      .max(MAX_CLIENTES_ORDEM_LOTE, `Selecione no máximo ${MAX_CLIENTES_ORDEM_LOTE} clientes`),
+    incluirDependentes: z.boolean().default(false),
+  })
+  .superRefine((dados, contexto) => {
+    if (new Set(dados.clienteIds).size !== dados.clienteIds.length) {
+      contexto.addIssue({
+        code: "custom",
+        path: ["clienteIds"],
+        message: "Há clientes repetidos na seleção",
+      });
+    }
+  });
+export type CriarOrdensLoteInput = z.input<typeof criarOrdensLoteSchema>;

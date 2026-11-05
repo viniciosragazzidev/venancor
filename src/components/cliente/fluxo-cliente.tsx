@@ -52,7 +52,14 @@ const titulos: Record<Etapa, { titulo: string; subtitulo: string }> = {
   },
 };
 
-const indiceEtapa = (etapa: Etapa) => passos.findIndex((passo) => passo.id === etapa);
+function passosDaOrdem(exigeAssinatura: boolean) {
+  return exigeAssinatura
+    ? passos
+    : passos.filter((passo) => passo.id === "resumo" || passo.id === "pagamento");
+}
+
+const indiceEtapa = (etapa: Etapa, exigeAssinatura: boolean) =>
+  passosDaOrdem(exigeAssinatura).findIndex((passo) => passo.id === etapa);
 
 export type Consentimentos = { contrato: boolean; lgpd: boolean };
 
@@ -87,7 +94,9 @@ export function FluxoCliente({
   exigeOtp?: boolean;
 }) {
   const jaAssinada = ["assinada", "aguardando_pagamento", "paga"].includes(ordem.status);
-  const [etapa, setEtapa] = useState<Etapa>(jaAssinada ? "pagamento" : "resumo");
+  const [etapa, setEtapa] = useState<Etapa>(
+    jaAssinada || !ordem.exige_assinatura ? "pagamento" : "resumo",
+  );
   const [, setAssinaturaConcluida] = useState(jaAssinada);
   const [sucessoAssinatura, setSucessoAssinatura] = useState(false);
   const [consentimentos, setConsentimentos] = useState<Consentimentos>({
@@ -100,9 +109,10 @@ export function FluxoCliente({
   const emSucesso = statusTerminal || sucessoAssinatura;
 
   function voltar() {
-    const indice = indiceEtapa(etapa);
+    const etapas = passosDaOrdem(ordem.exige_assinatura);
+    const indice = indiceEtapa(etapa, ordem.exige_assinatura);
     if (indice > 0) {
-      setEtapa(passos[indice - 1].id);
+      setEtapa(etapas[indice - 1].id);
     }
   }
 
@@ -122,7 +132,11 @@ export function FluxoCliente({
       return <TelaStatus tipo="cancelada" />;
     }
     if (ordem.status === "paga") {
-      return <TelaSucesso variante="pagamento" onAcaoPrimaria={acoes.onBaixarContratoAssinado} />;
+      return ordem.exige_assinatura ? (
+        <TelaSucesso variante="pagamento" onAcaoPrimaria={acoes.onBaixarContratoAssinado} />
+      ) : (
+        <TelaSucesso variante="pagamento-sem-assinatura" />
+      );
     }
     if (sucessoAssinatura) {
       return (
@@ -139,7 +153,12 @@ export function FluxoCliente({
 
     switch (etapa) {
       case "resumo":
-        return <TelaResumo ordem={ordem} onAvancar={() => setEtapa("contrato")} />;
+        return (
+          <TelaResumo
+            ordem={ordem}
+            onAvancar={() => setEtapa(ordem.exige_assinatura ? "contrato" : "pagamento")}
+          />
+        );
       case "contrato":
         return (
           <TelaContrato
@@ -177,12 +196,15 @@ export function FluxoCliente({
         );
       case "pagamento":
         return (
-          <TelaPagamento
-            ordem={ordem}
-            onIniciarPagamento={acoes.onIniciarPagamento}
-            onBaixarBoleto={acoes.onBaixarBoleto}
-            onSimularPagamento={acoes.onSimularPagamento}
-          />
+          <div className="flex flex-col gap-4">
+            {!ordem.exige_assinatura ? <TelaResumo ordem={ordem} /> : null}
+            <TelaPagamento
+              ordem={ordem}
+              onIniciarPagamento={acoes.onIniciarPagamento}
+              onBaixarBoleto={acoes.onBaixarBoleto}
+              onSimularPagamento={acoes.onSimularPagamento}
+            />
+          </div>
         );
     }
   }
@@ -194,7 +216,7 @@ export function FluxoCliente({
       <FaixaAmbienteTeste />
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-6">
         <header className="flex items-center justify-between py-4">
-          {indiceEtapa(etapa) > 0 && !emSucesso ? (
+          {indiceEtapa(etapa, ordem.exige_assinatura) > 0 && !emSucesso ? (
             <Button
               variant="outline"
               size="icon"
@@ -242,9 +264,9 @@ export function FluxoCliente({
                 </SheetHeader>
                 <div className="flex flex-col gap-2.5 px-5 pb-6 text-sm leading-relaxed text-pretty text-muted-foreground">
                   <p>
-                    Este link é pessoal e usa um endereço único, impossível de adivinhar. A
-                    assinatura é registrada com evidências (data, hora e dispositivo) e o pagamento
-                    só é liberado depois da assinatura concluída.
+                    {ordem.exige_assinatura
+                      ? "Este link é pessoal e usa um endereço único, impossível de adivinhar. A assinatura é registrada com evidências (data, hora e dispositivo) e o pagamento só é liberado depois da assinatura concluída."
+                      : "Este link é pessoal e usa um endereço único, impossível de adivinhar. Esta proposta não exige assinatura e segue direto para o pagamento."}
                   </p>
                   <p>
                     Seus dados são tratados conforme a LGPD e usados apenas para a contratação do

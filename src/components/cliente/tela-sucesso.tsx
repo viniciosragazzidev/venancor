@@ -5,7 +5,7 @@ import { CircleCheckIcon, CircleXIcon, ClockIcon, DownloadIcon } from "lucide-re
 
 import { Button } from "@/components/ui/button";
 
-type VarianteSucesso = "assinatura" | "pagamento";
+type VarianteSucesso = "assinatura" | "pagamento" | "pagamento-sem-assinatura";
 
 const conteudos: Record<
   VarianteSucesso,
@@ -25,6 +25,12 @@ const conteudos: Record<
     textoPrimario: "Baixar contrato assinado",
     textoSecundario: "Baixar comprovante",
   },
+  "pagamento-sem-assinatura": {
+    titulo: "Pagamento confirmado!",
+    subtitulo: "Recebemos seu pagamento. Seu plano está sendo ativado.",
+    textoPrimario: "",
+    textoSecundario: "",
+  },
 };
 
 export function TelaSucesso({
@@ -33,7 +39,7 @@ export function TelaSucesso({
   onAcaoSecundaria,
 }: {
   variante: VarianteSucesso;
-  onAcaoPrimaria: () => void;
+  onAcaoPrimaria?: () => void;
   onAcaoSecundaria?: () => void;
 }) {
   const conteudo = conteudos[variante];
@@ -78,14 +84,16 @@ export function TelaSucesso({
             {conteudo.textoSecundario}
           </Button>
         ) : null}
-        <Button
-          size="lg"
-          className="h-12 w-full rounded-full px-6 text-base"
-          onClick={onAcaoPrimaria}
-        >
-          {variante === "pagamento" ? <DownloadIcon aria-hidden strokeWidth={1.5} /> : null}
-          {conteudo.textoPrimario}
-        </Button>
+        {onAcaoPrimaria && conteudo.textoPrimario ? (
+          <Button
+            size="lg"
+            className="h-12 w-full rounded-full px-6 text-base"
+            onClick={onAcaoPrimaria}
+          >
+            {variante === "pagamento" ? <DownloadIcon aria-hidden strokeWidth={1.5} /> : null}
+            {conteudo.textoPrimario}
+          </Button>
+        ) : null}
       </motion.div>
     </div>
   );

@@ -26,6 +26,8 @@ export async function concluirAssinatura(
   contexto: { ip: string; userAgent: string },
 ) {
   const ordem = await resolverToken(token);
+  if (ordem.tipo === "ativa" && !ordem.dados.exige_assinatura)
+    throw new ErroNegocio("Esta proposta não exige assinatura do contrato.");
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
     throw new ErroNegocio("Esta proposta não está mais disponível para assinatura.");
   const dados = concluirAssinaturaSchema.parse(input);

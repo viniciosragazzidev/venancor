@@ -7,6 +7,45 @@ import { ZodError } from "zod";
  */
 export type ResultadoAcao<T> = { ok: true; valor: T } | { ok: false; erro: string };
 
+export type OpcoesResultadoAcao = { validacao?: "generica" | "campo" };
+
+const camposPt: Record<string, string> = {
+  nome: "Nome",
+  cpf: "CPF",
+  nascimento: "Data de nascimento",
+  email: "E-mail",
+  whatsapp: "WhatsApp",
+  nomeMae: "Nome da mãe",
+  rg: "RG",
+  estadoCivil: "Estado civil",
+  cep: "CEP",
+  logradouro: "Logradouro",
+  numero: "Número",
+  complemento: "Complemento",
+  bairro: "Bairro",
+  cidade: "Cidade",
+  uf: "Estado",
+  clienteId: "Cliente",
+  clienteIds: "Clientes",
+  ordemIds: "Ordens",
+  planoId: "Plano",
+  dependenteIds: "Dependentes",
+  parentesco: "Parentesco",
+  contratoModeloId: "Modelo de contrato",
+  valorCobradoTipo: "Forma de cobrança",
+  valorPersonalizado: "Valor personalizado",
+  formasPagamento: "Formas de pagamento",
+  maxParcelas: "Máximo de parcelas",
+  validadeDias: "Validade do link",
+  desconto: "Desconto",
+  descontoObs: "Observação do desconto",
+  vigenciaInicio: "Início da vigência",
+  diaVencimento: "Dia do vencimento",
+  exigeAssinatura: "Exigir assinatura do contrato",
+  incluirDependentes: "Incluir dependentes",
+  nomeModelo: "Nome do modelo",
+};
+
 /** An error whose message is written for the client and safe to show on the link page. */
 export class ErroNegocio extends Error {
   readonly negocio = true;
@@ -16,21 +55,32 @@ export class ErroNegocio extends Error {
  * Only messages marked as business errors reach the client. Everything else (database, payment
  * provider, configuration, network, bugs) becomes a generic message and stays in the server log.
  */
-export function mensagemParaCliente(erro: unknown): string {
+export function mensagemParaCliente(erro: unknown, opcoes: OpcoesResultadoAcao = {}): string {
   if (erro instanceof ErroNegocio) return erro.message;
-  if (erro instanceof ZodError) return "Confira os dados informados e tente novamente.";
+  if (erro instanceof ZodError) {
+    if (opcoes.validacao === "campo") {
+      const primeira = erro.issues[0];
+      if (primeira) {
+        const chave = primeira.path.find((parte): parte is string => typeof parte === "string");
+        const campo = chave ? camposPt[chave] : undefined;
+        return campo ? `${campo}: ${primeira.message}` : primeira.message;
+      }
+    }
+    return "Confira os dados informados e tente novamente.";
+  }
   return "Não foi possível concluir agora. Tente novamente em instantes.";
 }
 
 export async function executarAcao<T>(
   rotulo: string,
   acao: () => Promise<T>,
+  opcoes: OpcoesResultadoAcao = {},
 ): Promise<ResultadoAcao<T>> {
   try {
     return { ok: true, valor: await acao() };
   } catch (erro) {
     console.error(`[${rotulo}] falhou`, erro);
-    return { ok: false, erro: mensagemParaCliente(erro) };
+    return { ok: false, erro: mensagemParaCliente(erro, opcoes) };
   }
 }
 

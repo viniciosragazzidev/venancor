@@ -33,15 +33,13 @@ export async function processarEventoPagamento(
         .limit(1)
         .for("update");
       if (!pagamento) {
-        await tx
-          .insert(auditoria)
-          .values({
-            entidade: "pagamentos",
-            entidadeId: evento.providerPaymentId,
-            acao: "pagamento_orfao",
-            ator: `webhook:${provider}`,
-            metadados: { eventoId: evento.eventId },
-          });
+        await tx.insert(auditoria).values({
+          entidade: "pagamentos",
+          entidadeId: evento.providerPaymentId,
+          acao: "pagamento_orfao",
+          ator: `webhook:${provider}`,
+          metadados: { eventoId: evento.eventId },
+        });
         await tx
           .update(webhookEventos)
           .set({ processadoEm: new Date(), erro: "Pagamento não encontrado" })
@@ -49,7 +47,7 @@ export async function processarEventoPagamento(
         return "processado";
       }
       const [ordem] = await tx
-        .select({ status: ordens.status })
+        .select({ status: ordens.status, exigeAssinatura: ordens.exigeAssinatura })
         .from(ordens)
         .where(eq(ordens.id, pagamento.ordemId))
         .limit(1)
@@ -72,22 +70,24 @@ export async function processarEventoPagamento(
           .update(pagamentos)
           .set({ status: evento.tipo, pagoEm: agora, atualizadoEm: agora })
           .where(eq(pagamentos.id, pagamento.id));
-        if (!assinatura || !["assinada", "aguardando_pagamento", "paga"].includes(ordem.status)) {
+        const assinaturaObrigatoriaAusente = ordem.exigeAssinatura && !assinatura;
+        if (
+          assinaturaObrigatoriaAusente ||
+          !["assinada", "aguardando_pagamento", "paga"].includes(ordem.status)
+        ) {
           const terminal = ordem.status === "cancelada" || ordem.status === "expirada";
-          await tx
-            .insert(auditoria)
-            .values({
-              entidade: "ordens",
-              entidadeId: pagamento.ordemId,
-              acao: terminal ? "pagamento_orfao" : "webhook_ignorado",
-              ator: `webhook:${provider}`,
-              metadados: {
-                pagamentoId: pagamento.id,
-                eventoId: evento.eventId,
-                motivo: !assinatura ? "sem_assinatura" : `status_${ordem.status}`,
-                requerAtencao: true,
-              },
-            });
+          await tx.insert(auditoria).values({
+            entidade: "ordens",
+            entidadeId: pagamento.ordemId,
+            acao: terminal ? "pagamento_orfao" : "webhook_ignorado",
+            ator: `webhook:${provider}`,
+            metadados: {
+              pagamentoId: pagamento.id,
+              eventoId: evento.eventId,
+              motivo: assinaturaObrigatoriaAusente ? "sem_assinatura" : `status_${ordem.status}`,
+              requerAtencao: true,
+            },
+          });
         } else if (ordem.status === "aguardando_pagamento") {
           await tx
             .update(ordens)
@@ -106,19 +106,17 @@ export async function processarEventoPagamento(
           .update(pagamentos)
           .set({ status: "estornado", atualizadoEm: new Date() })
           .where(eq(pagamentos.id, pagamento.id));
-        await tx
-          .insert(auditoria)
-          .values({
-            entidade: "ordens",
-            entidadeId: pagamento.ordemId,
-            acao: "pagamento_estornado",
-            ator: `webhook:${provider}`,
-            metadados: {
-              pagamentoId: pagamento.id,
-              eventoId: evento.eventId,
-              requerAtencao: ordem.status === "paga",
-            },
-          });
+        await tx.insert(auditoria).values({
+          entidade: "ordens",
+          entidadeId: pagamento.ordemId,
+          acao: "pagamento_estornado",
+          ator: `webhook:${provider}`,
+          metadados: {
+            pagamentoId: pagamento.id,
+            eventoId: evento.eventId,
+            requerAtencao: ordem.status === "paga",
+          },
+        });
       } else if (pagamento.status !== "confirmado" && pagamento.status !== "recebido") {
         await tx
           .update(pagamentos)

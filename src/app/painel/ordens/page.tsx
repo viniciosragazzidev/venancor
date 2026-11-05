@@ -42,7 +42,7 @@ export default async function OrdensPage() {
       />
       <PageHeader
         title="Ordens"
-        description="Propostas criadas para os clientes, com status e link de assinatura."
+        description="Propostas criadas para os clientes, com status e link de pagamento."
       />
       <OrdensTabela
         ordens={ordens}

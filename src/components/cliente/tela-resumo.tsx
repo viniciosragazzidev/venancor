@@ -17,7 +17,7 @@ export function TelaResumo({
   onAvancar,
 }: {
   ordem: DadosOrdemCliente;
-  onAvancar: () => void;
+  onAvancar?: () => void;
 }) {
   const { plano, beneficiarios } = ordem;
 
@@ -99,10 +99,12 @@ export function TelaResumo({
         </CardContent>
       </Card>
 
-      <Button size="lg" className="h-12 w-full rounded-full px-6 text-base" onClick={onAvancar}>
-        Ver contrato
-        <ChevronRightIcon data-icon="inline-end" aria-hidden strokeWidth={1.5} />
-      </Button>
+      {onAvancar ? (
+        <Button size="lg" className="h-12 w-full rounded-full px-6 text-base" onClick={onAvancar}>
+          {ordem.exige_assinatura ? "Ver contrato" : "Ir para o pagamento"}
+          <ChevronRightIcon data-icon="inline-end" aria-hidden strokeWidth={1.5} />
+        </Button>
+      ) : null}
 
       <Card className="rounded-3xl" size="sm">
         <CardContent className="flex flex-col gap-3">

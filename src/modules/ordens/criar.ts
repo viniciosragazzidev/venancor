@@ -13,6 +13,7 @@ import {
   planos,
 } from "@/db/schema";
 import { calcularOrdem, type FaixaEtaria } from "@/lib/pricing";
+import { ErroNegocio } from "@/lib/resultado-acao";
 import { gerarToken } from "@/lib/tokens";
 import { urlCliente } from "./link";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
@@ -25,7 +26,8 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
   const admin = { id: adminId };
   const dados = criarOrdemSchema.parse(input);
   const dependenteIds = [...new Set(dados.dependenteIds)];
-  if (dependenteIds.length !== dados.dependenteIds.length) throw new Error("Dependente repetido");
+  if (dependenteIds.length !== dados.dependenteIds.length)
+    throw new ErroNegocio("Dependente repetido");
   const [cliente] = await db
     .select()
     .from(clientes)
@@ -36,13 +38,13 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
     .from(planos)
     .where(and(eq(planos.id, dados.planoId), eq(planos.ativo, true)))
     .limit(1);
-  if (!cliente || !plano) throw new Error("Cliente ou plano não encontrado");
+  if (!cliente || !plano) throw new ErroNegocio("Cliente ou plano não encontrado");
   const [operadora] = await db
     .select()
     .from(operadoras)
     .where(eq(operadoras.id, plano.operadoraId))
     .limit(1);
-  if (!operadora) throw new Error("Operadora não encontrada");
+  if (!operadora) throw new ErroNegocio("Operadora não encontrada");
   const familiares = dependenteIds.length
     ? await db
         .select()
@@ -50,9 +52,9 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
         .where(and(eq(dependentes.clienteId, cliente.id), inArray(dependentes.id, dependenteIds)))
     : [];
   if (familiares.length !== dependenteIds.length)
-    throw new Error("Dependente não pertence ao cliente");
+    throw new ErroNegocio("Dependente não pertence ao cliente");
   const tabela = await db.select().from(planoPrecos).where(eq(planoPrecos.planoId, plano.id));
-  if (tabela.length !== 10) throw new Error("Tabela de preços incompleta");
+  if (tabela.length !== 10) throw new ErroNegocio("Tabela de preços incompleta");
   const precos = Object.fromEntries(tabela.map((item) => [item.faixaEtaria, item.valor])) as Record<
     FaixaEtaria,
     number
@@ -86,11 +88,11 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
         .where(and(isNull(contratoModelos.planoId), eq(contratoModelos.ativo, true)))
         .limit(1);
   if (!generico)
-    throw new Error(
+    throw new ErroNegocio(
       "Nenhum modelo de contrato ativo para este plano. Cadastre um em Modelos de contrato (pode ser geral, sem plano).",
     );
   if (generico.planoId && generico.planoId !== plano.id)
-    throw new Error("Modelo de contrato não pertence ao plano");
+    throw new ErroNegocio("Modelo de contrato não pertence ao plano");
   const { token, hash } = gerarToken();
   const link = urlCliente(token);
   const expiraEm = new Date(Date.now() + dados.validadeDias * 86_400_000);
@@ -111,6 +113,7 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
         valorCobrado: calculo.valorCobrado,
         formasPagamento: dados.formasPagamento,
         maxParcelas: dados.maxParcelas,
+        exigeAssinatura: dados.exigeAssinatura,
         tokenHash: hash,
         expiraEm,
         criadaPor: admin.id,
@@ -152,7 +155,7 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
       entidadeId: nova.id,
       acao: "criar",
       ator: `admin:${admin.id}`,
-      metadados: { planoId: plano.id },
+      metadados: { planoId: plano.id, exigeAssinatura: dados.exigeAssinatura },
     });
     return nova;
   });

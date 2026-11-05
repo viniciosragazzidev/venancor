@@ -4,8 +4,9 @@ import { desc, eq, isNull, sql, and } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditoria, leads } from "@/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { criarCliente } from "@/modules/clientes/actions";
-import { criarOrdem } from "@/modules/ordens/actions";
+import { criarOrdemComo } from "@/modules/ordens/criar";
 import { gerarOrdemLeadSchema, type GerarOrdemLeadInput } from "./schemas";
 
 export type Lead = typeof leads.$inferSelect;
@@ -32,33 +33,36 @@ export async function gerarOrdemAPartirDoLead(input: GerarOrdemLeadInput) {
     if (dados.origemCliente === "existente") clienteId = dados.clienteId;
     else if (lead.clienteId) clienteId = lead.clienteId;
     else {
-      const cliente = await criarCliente({
-        ...dados.cliente,
-        nome: lead.nome,
-        whatsapp: `+55${lead.whatsapp}`,
-      });
+      const cliente = valorOuErro(
+        await criarCliente({
+          ...dados.cliente,
+          nome: lead.nome,
+          whatsapp: `+55${lead.whatsapp}`,
+        }),
+      );
       clienteId = cliente.id;
       await tx
         .update(leads)
         .set({ clienteId, atualizadoEm: new Date() })
         .where(eq(leads.id, lead.id));
     }
-    const { ordem, link } = await criarOrdem({ ...dados.ordem, clienteId, planoId: dados.planoId });
+    const { ordem, link } = await criarOrdemComo(
+      { ...dados.ordem, clienteId, planoId: dados.planoId },
+      admin.id,
+    );
     const [convertido] = await tx
       .update(leads)
       .set({ clienteId, ordemId: ordem.id, status: "Convertido", atualizadoEm: new Date() })
       .where(and(eq(leads.id, lead.id), isNull(leads.ordemId)))
       .returning({ id: leads.id });
     if (!convertido) throw new Error("Lead convertido por outra operação");
-    await tx
-      .insert(auditoria)
-      .values({
-        entidade: "leads",
-        entidadeId: lead.id,
-        acao: "converter_em_ordem",
-        ator: `admin:${admin.id}`,
-        metadados: { ordemId: ordem.id, clienteId },
-      });
+    await tx.insert(auditoria).values({
+      entidade: "leads",
+      entidadeId: lead.id,
+      acao: "converter_em_ordem",
+      ator: `admin:${admin.id}`,
+      metadados: { ordemId: ordem.id, clienteId },
+    });
     return { leadId: lead.id, clienteId, ordemId: ordem.id, link };
   });
 }

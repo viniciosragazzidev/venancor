@@ -16,6 +16,16 @@ describe("resultado de ação do link do cliente", () => {
     expect(() => valorOuErro(r)).toThrow("não confere");
   });
 
+  it("mostra o CPF duplicado com o nome já cadastrado", async () => {
+    const resultado = await executarAcao("painel.cliente.criar", async () => {
+      throw new ErroNegocio("Já existe um cliente com este CPF (Ana Silva).");
+    });
+    expect(resultado).toEqual({
+      ok: false,
+      erro: "Já existe um cliente com este CPF (Ana Silva).",
+    });
+  });
+
   it("esconde erro de provedor, configuração e TypeError", () => {
     for (const erro of [
       new Error("Asaas respondeu HTTP 400 (invalid_customer: x)"),
@@ -32,6 +42,20 @@ describe("resultado de ação do link do cliente", () => {
     const banco = Object.assign(new Error('column "x" does not exist'), { code: "42703" });
     expect(mensagemParaCliente(banco)).not.toContain("column");
     expect(mensagemParaCliente(z.string().safeParse(1).error)).toContain("Confira");
+  });
+
+  it("mostra a primeira validação com o nome do campo em português no painel", async () => {
+    const schema = z.object({ nome: z.string().min(1), nascimento: z.iso.date() });
+    const erro = schema.safeParse({ nome: "", nascimento: "não é data" }).error;
+    const resultado = await executarAcao(
+      "painel.cliente.criar",
+      async () => {
+        throw erro;
+      },
+      { validacao: "campo" },
+    );
+
+    expect(resultado).toEqual({ ok: false, erro: expect.stringMatching(/^Nome:/) });
   });
 
   it("devolve o valor quando dá certo", async () => {

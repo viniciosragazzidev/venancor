@@ -47,7 +47,7 @@ export async function iniciarPagamento(
     .where(eq(assinaturas.ordemId, resolucao.dados.id))
     .limit(1);
   if (!ordem) throw new Error("Ordem não encontrada");
-  assertPodeIniciarPagamento(ordem.status, Boolean(assinatura));
+  assertPodeIniciarPagamento(ordem.status, Boolean(assinatura), ordem.exigeAssinatura);
   if (!ordem.formasPagamento.includes(metodo))
     throw new ErroNegocio("Forma de pagamento indisponível");
   if (
@@ -95,11 +95,12 @@ export async function iniciarPagamento(
     },
     ordem.status,
     Boolean(assinatura),
+    ordem.exigeAssinatura,
   );
   try {
     const pagamento = await db.transaction(async (tx) => {
       const [atual] = await tx
-        .select({ status: ordens.status })
+        .select({ status: ordens.status, exigeAssinatura: ordens.exigeAssinatura })
         .from(ordens)
         .where(eq(ordens.id, ordem.id))
         .limit(1)
@@ -110,7 +111,7 @@ export async function iniciarPagamento(
         .where(eq(assinaturas.ordemId, ordem.id))
         .limit(1);
       if (!atual) throw new Error("Ordem não encontrada");
-      assertPodeIniciarPagamento(atual.status, Boolean(assinaturaAtual));
+      assertPodeIniciarPagamento(atual.status, Boolean(assinaturaAtual), atual.exigeAssinatura);
       const [duplicado] = await tx
         .select({ id: pagamentos.id })
         .from(pagamentos)
@@ -143,11 +144,23 @@ export async function iniciarPagamento(
           vencimento: vencimento.toISOString().slice(0, 10),
         })
         .returning();
-      if (atual.status === "assinada")
+      if (
+        atual.status === "assinada" ||
+        (atual.status === "visualizada" && !atual.exigeAssinatura)
+      ) {
+        const de = atual.status;
         await tx
           .update(ordens)
           .set({ status: "aguardando_pagamento", atualizadoEm: new Date() })
           .where(eq(ordens.id, ordem.id));
+        await tx.insert(auditoria).values({
+          entidade: "ordens",
+          entidadeId: ordem.id,
+          acao: "transicionar",
+          ator: "cliente",
+          metadados: { de, para: "aguardando_pagamento", exigeAssinatura: atual.exigeAssinatura },
+        });
+      }
       await tx.insert(auditoria).values({
         entidade: "ordens",
         entidadeId: ordem.id,

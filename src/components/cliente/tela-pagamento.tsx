@@ -77,8 +77,9 @@ export function TelaPagamento({
             <span className="text-2xl font-medium tabular-nums">{formatarBRL(total)}</span>
           </div>
           <p className="text-xs text-pretty text-muted-foreground">
-            Contrato assinado com sucesso. Pague até {formatarData(vencimento)} para ativar a
-            cobertura do plano.
+            {ordem.exige_assinatura
+              ? `Contrato assinado com sucesso. Pague até ${formatarData(vencimento)} para ativar a cobertura do plano.`
+              : `Esta proposta não exige assinatura. Pague até ${formatarData(vencimento)} para ativar a cobertura do plano.`}
           </p>
         </CardContent>
       </Card>

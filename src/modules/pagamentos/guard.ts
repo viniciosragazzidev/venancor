@@ -9,9 +9,16 @@ export class PagamentoSemAssinaturaError extends ErroNegocio {
   }
 }
 
-export function assertPodeIniciarPagamento(status: OrdemStatus, assinaturaExiste: boolean): void {
-  if (!assinaturaExiste || !["assinada", "aguardando_pagamento"].includes(status))
-    throw new PagamentoSemAssinaturaError();
+export function assertPodeIniciarPagamento(
+  status: OrdemStatus,
+  assinaturaExiste: boolean,
+  exigeAssinatura = true,
+): void {
+  const assinaturaConcluida =
+    assinaturaExiste && ["assinada", "aguardando_pagamento"].includes(status);
+  const ordemSemAssinatura =
+    !exigeAssinatura && ["visualizada", "aguardando_pagamento"].includes(status);
+  if (!assinaturaConcluida && !ordemSemAssinatura) throw new PagamentoSemAssinaturaError();
 }
 
 export async function criarCobrancaSeAssinada(
@@ -19,7 +26,8 @@ export async function criarCobrancaSeAssinada(
   input: CriarCobrancaInput,
   status: OrdemStatus,
   assinaturaExiste: boolean,
+  exigeAssinatura = true,
 ) {
-  assertPodeIniciarPagamento(status, assinaturaExiste);
+  assertPodeIniciarPagamento(status, assinaturaExiste, exigeAssinatura);
   return provider.criarCobranca(input);
 }

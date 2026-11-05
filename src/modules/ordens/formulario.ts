@@ -16,6 +16,7 @@ export interface CondicoesOrdem {
   formasPagamento: MetodoPagamento[];
   maxParcelas: number;
   validadeDias: number;
+  exigeAssinatura: boolean;
 }
 
 export interface DuplicacaoOrdem extends CondicoesOrdem {
@@ -33,6 +34,7 @@ interface ModeloLike {
   formasPagamento: MetodoPagamento[];
   maxParcelas: number;
   validadeDias: number;
+  exigeAssinatura: boolean;
 }
 
 interface OrdemLike {
@@ -45,6 +47,7 @@ interface OrdemLike {
   valorCobrado: number;
   formasPagamento: MetodoPagamento[];
   maxParcelas: number;
+  exigeAssinatura: boolean;
 }
 
 export function modeloParaCondicoes(modelo: ModeloLike): CondicoesOrdem {
@@ -59,6 +62,7 @@ export function modeloParaCondicoes(modelo: ModeloLike): CondicoesOrdem {
     formasPagamento: [...modelo.formasPagamento],
     maxParcelas: modelo.maxParcelas,
     validadeDias: modelo.validadeDias,
+    exigeAssinatura: modelo.exigeAssinatura,
   };
 }
 
@@ -88,5 +92,6 @@ export function ordemParaDuplicacao(
     formasPagamento: [...ordem.formasPagamento],
     maxParcelas: ordem.maxParcelas,
     validadeDias: VALIDADE_PADRAO_DIAS,
+    exigeAssinatura: ordem.exigeAssinatura,
   };
 }

@@ -9,6 +9,7 @@ import { Campo, inputPill } from "@/components/admin/campo";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { formatarCentavos } from "@/components/admin/format";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { valorOuErro } from "@/lib/resultado-acao";
 import {
   atualizarOrdemModelo,
   desativarOrdemModelo,
@@ -124,6 +127,7 @@ export function GerenciarModelosDialog({
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [nomeEditado, setNomeEditado] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [alterandoAssinaturaId, setAlterandoAssinaturaId] = useState<string | null>(null);
   const [desativando, setDesativando] = useState<OrdemModelo | null>(null);
 
   const nomePlano = (id: string | null) =>
@@ -158,6 +162,23 @@ export function GerenciarModelosDialog({
     }
     toast.success("Modelo desativado.");
     router.refresh();
+  }
+
+  async function alterarPoliticaAssinatura(modelo: OrdemModelo, exigeAssinatura: boolean) {
+    setAlterandoAssinaturaId(modelo.id);
+    try {
+      valorOuErro(await atualizarOrdemModelo(modelo.id, { exigeAssinatura }));
+      toast.success(
+        exigeAssinatura
+          ? "O modelo agora exige assinatura."
+          : "O modelo agora vai direto para o pagamento.",
+      );
+      router.refresh();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível atualizar o modelo.");
+    } finally {
+      setAlterandoAssinaturaId(null);
+    }
   }
 
   return (
@@ -234,7 +255,14 @@ export function GerenciarModelosDialog({
                   ) : (
                     <>
                       <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-sm font-medium">{modelo.nome}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium">{modelo.nome}</span>
+                          {!modelo.exigeAssinatura ? (
+                            <Badge variant="secondary" className="shrink-0 rounded-full">
+                              Sem assinatura
+                            </Badge>
+                          ) : null}
+                        </span>
                         <span className="truncate text-xs text-muted-foreground">
                           {nomePlano(modelo.planoId)}
                           {modelo.desconto > 0
@@ -242,6 +270,17 @@ export function GerenciarModelosDialog({
                             : ""}
                           {`, até ${modelo.maxParcelas}x`}
                         </span>
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">Assinatura</span>
+                        <Switch
+                          aria-label={`Exigir assinatura no modelo ${modelo.nome}`}
+                          checked={modelo.exigeAssinatura}
+                          disabled={alterandoAssinaturaId !== null}
+                          onCheckedChange={(checked) =>
+                            void alterarPoliticaAssinatura(modelo, checked)
+                          }
+                        />
                       </div>
                       <Button
                         type="button"

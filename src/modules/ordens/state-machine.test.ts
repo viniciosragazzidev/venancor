@@ -28,4 +28,10 @@ describe("máquina de estados da ordem", () => {
     for (const de of ["paga", "expirada", "cancelada"] as const)
       expect(status.some((para) => podeTransicionar(de, para))).toBe(false);
   });
+  it("only skips signature when the order policy allows it", () => {
+    expect(podeTransicionar("visualizada", "aguardando_pagamento")).toBe(false);
+    expect(podeTransicionar("visualizada", "aguardando_pagamento", true)).toBe(false);
+    expect(podeTransicionar("visualizada", "aguardando_pagamento", false)).toBe(true);
+    expect(podeTransicionar("enviada", "aguardando_pagamento", false)).toBe(false);
+  });
 });
