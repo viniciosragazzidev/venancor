@@ -5,7 +5,7 @@ import { db } from "@/db/client";
 import { auditoria, leads } from "@/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
 import { ErroNegocio, executarAcaoPainel, type ResultadoAcao } from "@/lib/resultado-acao";
-import { criarCliente } from "@/modules/clientes/actions";
+import { criarClienteNaTransacao } from "@/modules/clientes/criar";
 import { criarOrdemComo } from "@/modules/ordens/criar";
 import { gerarOrdemLeadSchema, type GerarOrdemLeadInput } from "./schemas";
 
@@ -36,13 +36,12 @@ export async function gerarOrdemAPartirDoLead(
       if (dados.origemCliente === "existente") clienteId = dados.clienteId;
       else if (lead.clienteId) clienteId = lead.clienteId;
       else {
-        const resultadoCliente = await criarCliente({
+        const cliente = await criarClienteNaTransacao(tx, {
           ...dados.cliente,
           nome: lead.nome,
           whatsapp: `+55${lead.whatsapp}`,
-        });
-        if (!resultadoCliente.ok) throw new ErroNegocio(resultadoCliente.erro);
-        clienteId = resultadoCliente.valor.id;
+        }, admin.id);
+        clienteId = cliente.id;
         await tx
           .update(leads)
           .set({ clienteId, atualizadoEm: new Date() })

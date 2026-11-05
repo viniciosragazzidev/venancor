@@ -1,15 +1,15 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { clientes, dependentes, ordens } from "@/db/schema";
 import { registrarAuditoria } from "@/lib/audit";
 import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import { cepSchema } from "@/lib/validators";
+import { criarClienteNaTransacao, exigirCpfLivre } from "./criar";
 import {
   clienteAtualizacaoSchema,
-  clienteSchema,
   dependenteAtualizacaoSchema,
   dependenteSchema,
   enderecoViaCepSchema,
@@ -18,30 +18,6 @@ import {
   type DependenteAtualizacaoInput,
   type DependenteInput,
 } from "./schemas";
-
-async function exigirCpfLivre(cpf: string, exceto?: { clienteId?: string; dependenteId?: string }) {
-  const [cliente] = await db
-    .select({ id: clientes.id, nome: clientes.nome })
-    .from(clientes)
-    .where(
-      exceto?.clienteId
-        ? and(eq(clientes.cpf, cpf), ne(clientes.id, exceto.clienteId))
-        : eq(clientes.cpf, cpf),
-    )
-    .limit(1);
-  const [dependente] = await db
-    .select({ id: dependentes.id, nome: dependentes.nome })
-    .from(dependentes)
-    .where(
-      exceto?.dependenteId
-        ? and(eq(dependentes.cpf, cpf), ne(dependentes.id, exceto.dependenteId))
-        : eq(dependentes.cpf, cpf),
-    )
-    .limit(1);
-  if (cliente) throw new ErroNegocio(`Já existe um cliente com este CPF (${cliente.nome}).`);
-  if (dependente)
-    throw new ErroNegocio(`Já existe um dependente com este CPF (${dependente.nome}).`);
-}
 
 export async function listarClientes() {
   await requireAdmin();
@@ -54,21 +30,7 @@ export async function criarCliente(
   const admin = await requireAdmin();
   return executarAcao(
     "painel.cliente.criar",
-    async () => {
-      const data = clienteSchema.parse(input);
-      await exigirCpfLivre(data.cpf);
-      const [cliente] = await db
-        .insert(clientes)
-        .values({ ...data, criadoPor: admin.id })
-        .returning();
-      await registrarAuditoria({
-        entidade: "clientes",
-        entidadeId: cliente.id,
-        acao: "criar",
-        ator: `admin:${admin.id}`,
-      });
-      return cliente;
-    },
+    () => db.transaction((tx) => criarClienteNaTransacao(tx, input, admin.id)),
     { validacao: "campo" },
   );
 }
