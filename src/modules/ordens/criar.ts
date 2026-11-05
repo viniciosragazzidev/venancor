@@ -18,11 +18,17 @@ import { gerarToken } from "@/lib/tokens";
 import { urlCliente } from "./link";
 import { criarOrdemSchema, type CriarOrdemInput } from "./schemas";
 
+type TransacaoBanco = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /**
  * Creates an order (draft) with its snapshot. Not a server action: callers check who the admin is
  * (the panel action) or run with a known admin (import scripts).
  */
-export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
+export async function criarOrdemComo(
+  input: CriarOrdemInput,
+  adminId: string,
+  transacaoExterna?: TransacaoBanco,
+) {
   const admin = { id: adminId };
   const dados = criarOrdemSchema.parse(input);
   const dependenteIds = [...new Set(dados.dependenteIds)];
@@ -96,7 +102,7 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
   const { token, hash } = gerarToken();
   const link = urlCliente(token);
   const expiraEm = new Date(Date.now() + dados.validadeDias * 86_400_000);
-  const ordem = await db.transaction(async (tx) => {
+  const inserirOrdem = async (tx: TransacaoBanco) => {
     const [nova] = await tx
       .insert(ordens)
       .values({
@@ -158,6 +164,9 @@ export async function criarOrdemComo(input: CriarOrdemInput, adminId: string) {
       metadados: { planoId: plano.id, exigeAssinatura: dados.exigeAssinatura },
     });
     return nova;
-  });
+  };
+  const ordem = transacaoExterna
+    ? await inserirOrdem(transacaoExterna)
+    : await db.transaction(inserirOrdem);
   return { ordem, link };
 }

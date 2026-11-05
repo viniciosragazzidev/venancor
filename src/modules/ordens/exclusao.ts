@@ -14,7 +14,9 @@ export function motivoBloqueioExclusaoOrdem(input: {
   status: OrdemStatus;
   assinaturaExiste: boolean;
   pagamentoExiste: boolean;
+  consentimentoExiste: boolean;
 }): string | null {
+  if (input.consentimentoExiste) return "cliente já abriu e aceitou os termos";
   if (input.assinaturaExiste) return "A ordem tem registro de assinatura.";
   if (input.pagamentoExiste) return "A ordem tem registro de pagamento.";
   if (!STATUS_EXCLUIVEIS.has(input.status)) {

@@ -103,8 +103,8 @@ export async function criarOrdensEmLote(
 
 /**
  * The source lead is retained and detached if its draft order is removed. Its status returns to
- * Aguardando so an admin can create a replacement order. Message delivery logs are removed with
- * the draft order; the deletion audit is kept as the only order event.
+ * Aguardando so an admin can create a replacement order. Consent blocks deletion, audit history
+ * stays intact, and message delivery logs are detached from the removed order.
  */
 export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
   ResultadoAcao<{
@@ -141,21 +141,29 @@ export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
             .from(pagamentos)
             .where(eq(pagamentos.ordemId, ordemId))
             .limit(1);
+          const [consentimento] = await tx
+            .select({ id: consentimentos.id })
+            .from(consentimentos)
+            .where(eq(consentimentos.ordemId, ordemId))
+            .limit(1);
           const motivo = motivoBloqueioExclusaoOrdem({
             status: ordem.status as OrdemStatus,
             assinaturaExiste: Boolean(assinatura),
             pagamentoExiste: Boolean(pagamento),
+            consentimentoExiste: Boolean(consentimento),
           });
           if (motivo) {
             puladas.push({ ordemId, numero: ordem.numero, motivo });
             continue;
           }
 
-          await tx.delete(consentimentos).where(eq(consentimentos.ordemId, ordemId));
           await tx.delete(otpCodigos).where(eq(otpCodigos.ordemId, ordemId));
           await tx.delete(ordemBeneficiarios).where(eq(ordemBeneficiarios.ordemId, ordemId));
           await tx.delete(ordemSnapshotPlano).where(eq(ordemSnapshotPlano.ordemId, ordemId));
-          await tx.delete(mensagens).where(eq(mensagens.ordemId, ordemId));
+          await tx
+            .update(mensagens)
+            .set({ ordemId: null, atualizadoEm: new Date() })
+            .where(eq(mensagens.ordemId, ordemId));
           const [lead] = await tx
             .update(leads)
             .set({ ordemId: null, status: "Aguardando", atualizadoEm: new Date() })
@@ -170,9 +178,6 @@ export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
               metadados: { ordemId, numero: ordem.numero },
             });
           }
-          await tx
-            .delete(auditoria)
-            .where(and(eq(auditoria.entidade, "ordens"), eq(auditoria.entidadeId, ordemId)));
           await tx.delete(ordens).where(eq(ordens.id, ordemId));
           await tx.insert(auditoria).values({
             entidade: "ordens",
