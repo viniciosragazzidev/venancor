@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { ZodError } from "zod";
 
 /**
@@ -31,6 +32,55 @@ export async function executarAcao<T>(
   } catch (erro) {
     console.error(`[${rotulo}] falhou`, erro);
     return { ok: false, erro: mensagemParaCliente(erro) };
+  }
+}
+
+/** Field names of the panel forms, for the validation message. */
+const ROTULOS_CAMPOS: Record<string, string> = {
+  nome: "Nome",
+  cpf: "CPF",
+  nascimento: "Nascimento",
+  email: "E-mail",
+  whatsapp: "WhatsApp",
+  nomeMae: "Nome da mãe",
+  rg: "RG",
+  estadoCivil: "Estado civil",
+  cep: "CEP",
+  logradouro: "Endereço",
+  numero: "Número",
+  complemento: "Complemento",
+  bairro: "Bairro",
+  cidade: "Cidade",
+  uf: "UF",
+  parentesco: "Parentesco",
+};
+
+/**
+ * Panel version: the operator needs to know which field is wrong, so a validation error names the
+ * field. Business errors keep their message; anything else stays generic and goes to the server log.
+ */
+export function mensagemParaPainel(erro: unknown): string {
+  if (erro instanceof ZodError) {
+    const issue = erro.issues[0];
+    const campo = typeof issue?.path[0] === "string" ? ROTULOS_CAMPOS[issue.path[0]] : undefined;
+    const detalhe = issue?.message && !/^(Invalid|Expected|Too)/.test(issue.message) ? issue.message : "valor inválido";
+    return campo ? `${campo}: ${detalhe}.` : "Confira os dados informados e tente novamente.";
+  }
+  return mensagemParaCliente(erro);
+}
+
+/** Server action of the panel: never throws, so production does not hide the reason (#441). */
+export async function executarAcaoPainel<T>(
+  rotulo: string,
+  acao: () => Promise<T>,
+): Promise<ResultadoAcao<T>> {
+  try {
+    return { ok: true, valor: await acao() };
+  } catch (erro) {
+    // Login redirect and not found (requireAdmin) must keep working.
+    unstable_rethrow(erro);
+    if (!(erro instanceof ErroNegocio) && !(erro instanceof ZodError)) console.error(`[${rotulo}] falhou`, erro);
+    return { ok: false, erro: mensagemParaPainel(erro) };
   }
 }
 

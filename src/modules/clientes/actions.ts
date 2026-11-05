@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { clientes, dependentes, ordens } from "@/db/schema";
 import { registrarAuditoria } from "@/lib/audit";
 import { requireAdmin } from "@/lib/require-admin";
+import { ErroNegocio, executarAcaoPainel } from "@/lib/resultado-acao";
 import { cepSchema } from "@/lib/validators";
 import {
   clienteAtualizacaoSchema,
@@ -37,7 +38,8 @@ async function exigirCpfLivre(cpf: string, exceto?: { clienteId?: string; depend
         : eq(dependentes.cpf, cpf),
     )
     .limit(1);
-  if (cliente || dependente) throw new Error("CPF já cadastrado");
+  if (cliente) throw new ErroNegocio("Já existe um cliente com este CPF. Procure por ele na lista.");
+  if (dependente) throw new ErroNegocio("Este CPF já está cadastrado como dependente de outro cliente.");
 }
 
 export async function listarClientes() {
@@ -45,7 +47,7 @@ export async function listarClientes() {
   return db.select().from(clientes);
 }
 
-export async function criarCliente(input: ClienteInput) {
+async function criarClienteInterno(input: ClienteInput) {
   const admin = await requireAdmin();
   const data = clienteSchema.parse(input);
   await exigirCpfLivre(data.cpf);
@@ -62,7 +64,7 @@ export async function criarCliente(input: ClienteInput) {
   return cliente;
 }
 
-export async function atualizarCliente(id: string, input: ClienteAtualizacaoInput) {
+async function atualizarClienteInterno(id: string, input: ClienteAtualizacaoInput) {
   const admin = await requireAdmin();
   const data = clienteAtualizacaoSchema.parse(input);
   if (data.cpf) await exigirCpfLivre(data.cpf, { clienteId: id });
@@ -71,7 +73,7 @@ export async function atualizarCliente(id: string, input: ClienteAtualizacaoInpu
     .set({ ...data, atualizadoEm: new Date() })
     .where(eq(clientes.id, id))
     .returning();
-  if (!cliente) throw new Error("Cliente não encontrado");
+  if (!cliente) throw new ErroNegocio("Cliente não encontrado.");
   await registrarAuditoria({
     entidade: "clientes",
     entidadeId: id,
@@ -81,19 +83,19 @@ export async function atualizarCliente(id: string, input: ClienteAtualizacaoInpu
   return cliente;
 }
 
-export async function excluirCliente(id: string) {
+async function excluirClienteInterno(id: string) {
   const admin = await requireAdmin();
   const [ordem] = await db
     .select({ id: ordens.id })
     .from(ordens)
     .where(eq(ordens.clienteId, id))
     .limit(1);
-  if (ordem) throw new Error("Cliente com ordem não pode ser excluído");
+  if (ordem) throw new ErroNegocio("Este cliente tem ordem e não pode ser excluído.");
   const [cliente] = await db
     .delete(clientes)
     .where(eq(clientes.id, id))
     .returning({ id: clientes.id });
-  if (!cliente) throw new Error("Cliente não encontrado");
+  if (!cliente) throw new ErroNegocio("Cliente não encontrado.");
   await registrarAuditoria({
     entidade: "clientes",
     entidadeId: id,
@@ -107,7 +109,7 @@ export async function listarDependentes(clienteId: string) {
   return db.select().from(dependentes).where(eq(dependentes.clienteId, clienteId));
 }
 
-export async function criarDependente(input: DependenteInput) {
+async function criarDependenteInterno(input: DependenteInput) {
   const admin = await requireAdmin();
   const data = dependenteSchema.parse(input);
   await exigirCpfLivre(data.cpf);
@@ -121,7 +123,7 @@ export async function criarDependente(input: DependenteInput) {
   return dependente;
 }
 
-export async function atualizarDependente(id: string, input: DependenteAtualizacaoInput) {
+async function atualizarDependenteInterno(id: string, input: DependenteAtualizacaoInput) {
   const admin = await requireAdmin();
   const data = dependenteAtualizacaoSchema.parse(input);
   if (data.cpf) await exigirCpfLivre(data.cpf, { dependenteId: id });
@@ -130,7 +132,7 @@ export async function atualizarDependente(id: string, input: DependenteAtualizac
     .set({ ...data, atualizadoEm: new Date() })
     .where(eq(dependentes.id, id))
     .returning();
-  if (!dependente) throw new Error("Dependente não encontrado");
+  if (!dependente) throw new ErroNegocio("Dependente não encontrado.");
   await registrarAuditoria({
     entidade: "dependentes",
     entidadeId: id,
@@ -140,13 +142,13 @@ export async function atualizarDependente(id: string, input: DependenteAtualizac
   return dependente;
 }
 
-export async function excluirDependente(id: string) {
+async function excluirDependenteInterno(id: string) {
   const admin = await requireAdmin();
   const [dependente] = await db
     .delete(dependentes)
     .where(eq(dependentes.id, id))
     .returning({ id: dependentes.id });
-  if (!dependente) throw new Error("Dependente não encontrado");
+  if (!dependente) throw new ErroNegocio("Dependente não encontrado.");
   await registrarAuditoria({
     entidade: "dependentes",
     entidadeId: id,
@@ -155,15 +157,15 @@ export async function excluirDependente(id: string) {
   });
 }
 
-export async function buscarCep(input: string) {
+async function buscarCepInterno(input: string) {
   await requireAdmin();
   const cep = cepSchema.parse(input);
   const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
     signal: AbortSignal.timeout(5000),
   });
-  if (!response.ok) throw new Error("Não foi possível consultar o CEP");
+  if (!response.ok) throw new ErroNegocio("Não foi possível consultar o CEP.");
   const data = (await response.json()) as Record<string, unknown>;
-  if (data.erro) throw new Error("CEP não encontrado");
+  if (data.erro) throw new ErroNegocio("CEP não encontrado.");
   return enderecoViaCepSchema.parse({
     cep,
     logradouro: data.logradouro,
@@ -172,4 +174,36 @@ export async function buscarCep(input: string) {
     cidade: data.localidade,
     uf: data.uf,
   });
+}
+
+/**
+ * Server actions of the panel (05/11): they return the reason as data instead of throwing, because
+ * in production Next hides the message of a thrown error ("Minified React error #441").
+ */
+export async function criarCliente(input: ClienteInput) {
+  return executarAcaoPainel("criar-cliente", () => criarClienteInterno(input));
+}
+
+export async function atualizarCliente(id: string, input: ClienteAtualizacaoInput) {
+  return executarAcaoPainel("atualizar-cliente", () => atualizarClienteInterno(id, input));
+}
+
+export async function excluirCliente(id: string) {
+  return executarAcaoPainel("excluir-cliente", () => excluirClienteInterno(id));
+}
+
+export async function criarDependente(input: DependenteInput) {
+  return executarAcaoPainel("criar-dependente", () => criarDependenteInterno(input));
+}
+
+export async function atualizarDependente(id: string, input: DependenteAtualizacaoInput) {
+  return executarAcaoPainel("atualizar-dependente", () => atualizarDependenteInterno(id, input));
+}
+
+export async function excluirDependente(id: string) {
+  return executarAcaoPainel("excluir-dependente", () => excluirDependenteInterno(id));
+}
+
+export async function buscarCep(input: string) {
+  return executarAcaoPainel("buscar-cep", () => buscarCepInterno(input));
 }

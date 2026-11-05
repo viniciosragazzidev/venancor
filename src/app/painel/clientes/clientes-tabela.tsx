@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { z } from "zod";
 
 import { Campo, inputPill } from "@/components/admin/campo";
@@ -203,7 +204,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     if (digitos.length !== 8) return;
     setBuscandoCep(true);
     try {
-      const endereco = await buscarCep(digitos);
+      const endereco = valorOuErro(await buscarCep(digitos));
       setValue("logradouro", endereco.logradouro, { shouldDirty: true });
       setValue("bairro", endereco.bairro, { shouldDirty: true });
       setValue("cidade", endereco.cidade, { shouldDirty: true });
@@ -234,10 +235,10 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     try {
       const payload: ClienteInput = { ...valores, whatsapp };
       if (editando) {
-        await atualizarCliente(editando.id, payload);
+        valorOuErro(await atualizarCliente(editando.id, payload));
         toast.success("Cliente atualizado.");
       } else {
-        await criarCliente(payload);
+        valorOuErro(await criarCliente(payload));
         toast.success("Cliente criado.");
       }
       setFormAberto(false);
@@ -252,7 +253,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
   async function confirmarExclusao() {
     if (!excluindo) return;
     try {
-      await excluirCliente(excluindo.id);
+      valorOuErro(await excluirCliente(excluindo.id));
       toast.success("Cliente excluído.");
       setExcluindo(null);
       router.refresh();
@@ -299,10 +300,10 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     setEnviandoDep(true);
     try {
       if (editandoDep) {
-        await atualizarDependente(editandoDep.id, dadosDep);
+        valorOuErro(await atualizarDependente(editandoDep.id, dadosDep));
         toast.success("Dependente atualizado.");
       } else {
-        await criarDependente({ ...dadosDep, clienteId: clienteSel.id } satisfies DependenteInput);
+        valorOuErro(await criarDependente({ ...dadosDep, clienteId: clienteSel.id } satisfies DependenteInput));
         toast.success("Dependente adicionado.");
       }
       setDependentes(await listarDependentes(clienteSel.id));
@@ -316,7 +317,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
 
   async function excluirDependenteLista(dependente: Dependente) {
     try {
-      await excluirDependente(dependente.id);
+      valorOuErro(await excluirDependente(dependente.id));
       toast.success("Dependente excluído.");
       if (clienteSel) setDependentes(await listarDependentes(clienteSel.id));
     } catch (erro) {

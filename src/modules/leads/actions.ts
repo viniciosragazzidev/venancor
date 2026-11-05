@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { auditoria, leads } from "@/db/schema";
 import { requireAdmin } from "@/lib/require-admin";
 import { criarCliente } from "@/modules/clientes/actions";
+import { valorOuErro } from "@/lib/resultado-acao";
 import { criarOrdem } from "@/modules/ordens/actions";
 import { gerarOrdemLeadSchema, type GerarOrdemLeadInput } from "./schemas";
 
@@ -32,11 +33,13 @@ export async function gerarOrdemAPartirDoLead(input: GerarOrdemLeadInput) {
     if (dados.origemCliente === "existente") clienteId = dados.clienteId;
     else if (lead.clienteId) clienteId = lead.clienteId;
     else {
-      const cliente = await criarCliente({
-        ...dados.cliente,
-        nome: lead.nome,
-        whatsapp: `+55${lead.whatsapp}`,
-      });
+      const cliente = valorOuErro(
+        await criarCliente({
+          ...dados.cliente,
+          nome: lead.nome,
+          whatsapp: `+55${lead.whatsapp}`,
+        }),
+      );
       clienteId = cliente.id;
       await tx
         .update(leads)
