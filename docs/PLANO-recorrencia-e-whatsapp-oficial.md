@@ -29,6 +29,8 @@ Entregas:
 - Modelos prontos (categoria UTILITY): `proposta_enviada` (nome, plano, link), `lembrete_proposta` (nome, plano, prazo, link), `pagamento_confirmado` (nome, plano), `cobranca_mensalidade` (nome, competência, valor, vencimento, link), `cobranca_lembrete` (nome, valor, vencimento, link), `cobranca_vencida` (nome, valor, dias, link). Botão de URL dinâmica para o link quando a Meta aceitar o domínio.
 - Webhook: além dos status (enviada, entregue, lida, falhou), grava a resposta do cliente só como registro e trata "SAIR"/"PARAR" como pedido para não receber mais mensagens automáticas. Sem tela de conversa.
 - O provedor `meta.ts` passa a ler o canal do banco (variáveis de ambiente ficam como reserva).
+- Opt-out (antes de qualquer envio automático): tabela própria do MedLink `whatsapp_opt_outs` (telefone normalizado, cliente, mensagem de origem, data), única por telefone e sem prazo. "SAIR", "PARAR" e "não quero receber" gravam ali. A fila consulta antes de cada envio automático e pula com motivo; a cobrança continua disponível no painel e pode ser mandada à mão. Não tem relação com o opt-out do pós-venda do CRM (outro sistema, outra tabela).
+- Cronograma: a Meta leva de minutos a 24 h para aprovar cada template (pode recusar e pedir ajuste). Enviar os 6 templates logo no início da Fase 2, para estarem aprovados antes das cobranças da Fase 4. Fora da janela de 24 h só sai template aprovado; por isso lembrete D-1 e vencida D+5 são sempre templates, nunca texto livre.
 
 ## Fase 3: fila de envio e mensagens automáticas
 
