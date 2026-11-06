@@ -28,6 +28,7 @@ import { executarCriacaoOrdensLote } from "./lote";
 import { MAX_ORDENS_EXCLUSAO, motivoBloqueioExclusaoOrdem } from "./exclusao";
 import { ordemParaDuplicacao, type DuplicacaoOrdem } from "./formulario";
 import { urlCliente } from "./link";
+import { decidirLinkAtual } from "./link-estavel";
 import { criarOrdemComo } from "./criar";
 import {
   criarOrdemSchema,
@@ -239,17 +240,20 @@ const VALIDADE_LINK_MS = 7 * 86_400_000;
 
 /**
  * The order's current link, without replacing it (06/11): "Copiar link", "Enviar/Reenviar" and the
- * reminders reuse the same link, so a link already sent keeps working. When the deadline passed it
- * is extended for 7 more days, same link. Only orders created before this change (no stored token)
+ * reminders reuse the same link, so a link already sent keeps working. A deadline ending within 24h
+ * is extended for 7 more days, same link; a link already expired is never reopened (decidirLinkAtual). Only orders created before this change (no stored token)
  * get a new link, once. A new link only comes from "Gerar novo link".
  */
 async function linkAtualComoAdmin(ordemId: string, adminId: string): Promise<{ link: string; novo: boolean }> {
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
   if (!ordem || !(STATUS_LINK_ATIVO as readonly string[]).includes(ordem.status))
     throw new ErroNegocio("Esta ordem não tem link ativo para o cliente.");
+  const decisao = decidirLinkAtual({ status: ordem.status, expiraEm: ordem.expiraEm, agora: new Date() });
+  if (decisao === "vencido")
+    throw new ErroNegocio("Este link venceu. Use \"Gerar novo link\" para mandar um link novo ao cliente.");
   const token = decifrarToken(ordem.tokenCifrado, ordem.tokenHash);
   if (!token) return { link: await gerarNovoLinkComoAdmin(ordemId, adminId), novo: true };
-  if (ordem.expiraEm.getTime() < Date.now() + 86_400_000) {
+  if (decisao === "renovar") {
     await db
       .update(ordens)
       .set({ expiraEm: new Date(Date.now() + VALIDADE_LINK_MS), atualizadoEm: new Date() })
