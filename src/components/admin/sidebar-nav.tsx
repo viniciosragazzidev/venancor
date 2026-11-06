@@ -8,6 +8,7 @@ import {
   FileTextIcon,
   HeartPulseIcon,
   LayoutDashboardIcon,
+  SettingsIcon,
   UsersIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { href: "/painel/planos", label: "Planos", icon: HeartPulseIcon },
   { href: "/painel/operadoras", label: "Operadoras", icon: Building2Icon },
   { href: "/painel/modelos-contrato", label: "Modelos de contrato", icon: FileTextIcon },
+  { href: "/painel/configuracoes", label: "Configurações", icon: SettingsIcon },
 ];
 
 function isActive(pathname: string, href: string) {
