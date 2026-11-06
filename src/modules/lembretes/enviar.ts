@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditoria, clientes, ordens, pagamentos, planos } from "@/db/schema";
-import { gerarToken } from "@/lib/tokens";
+import { decifrarToken, gerarToken } from "@/lib/tokens";
 import { urlCliente } from "@/modules/ordens/link";
 import { getMessagingProvider } from "@/providers/messaging";
 import {
@@ -120,13 +120,18 @@ export async function enviarLembrete(
       .limit(1);
     if (!dados) throw new Error("Dados da ordem ausentes");
 
-    const { token, hash } = gerarToken();
-    const [rotacionada] = await tx
-      .update(ordens)
-      .set({ tokenHash: hash, atualizadoEm: agora })
-      .where(and(eq(ordens.id, ordem.id), eq(ordens.status, ordem.status)))
-      .returning({ id: ordens.id });
-    if (!rotacionada) return { enviado: false, motivo: "indisponivel" };
+    // Same link the client already has (06/11); only orders without a stored token get a new one.
+    let token = decifrarToken(ordem.tokenCifrado, ordem.tokenHash);
+    if (!token) {
+      const novo = gerarToken();
+      const [rotacionada] = await tx
+        .update(ordens)
+        .set({ tokenHash: novo.hash, tokenCifrado: novo.cifrado, atualizadoEm: agora })
+        .where(and(eq(ordens.id, ordem.id), eq(ordens.status, ordem.status)))
+        .returning({ id: ordens.id });
+      if (!rotacionada) return { enviado: false, motivo: "indisponivel" };
+      token = novo.token;
+    }
     await tx.insert(auditoria).values({
       entidade: "ordens",
       entidadeId: ordem.id,

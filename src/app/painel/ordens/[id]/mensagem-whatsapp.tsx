@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { CopyIcon, ExternalLinkIcon, LoaderCircleIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { valorOuErro } from "@/lib/resultado-acao";
 import { copiarLinkOrdem } from "@/modules/ordens/actions";
 import { linkWhatsApp, mensagemPropostaWhatsApp } from "@/modules/ordens/mensagem-whatsapp";
 
-const SEM_LINK = "(o link novo entra aqui)";
+const SEM_LINK = "(o link da proposta entra aqui)";
 
 /** Modelo de mensagem com o link da proposta, para mandar pelo WhatsApp do próprio admin. */
 export function MensagemWhatsApp({
@@ -33,7 +32,6 @@ export function MensagemWhatsApp({
   const router = useRouter();
   const [link, setLink] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
-  const [confirma, setConfirma] = useState(false);
 
   const mensagem = mensagemPropostaWhatsApp({
     nomeCliente,
@@ -54,7 +52,7 @@ export function MensagemWhatsApp({
 
   async function gerar() {
     setOcupado(true);
-    const pedido = copiarLinkOrdem(ordemId).then((resultado) => valorOuErro(resultado));
+    const pedido = copiarLinkOrdem(ordemId).then((resultado) => valorOuErro(resultado).link);
     const montar = (novo: string) =>
       mensagemPropostaWhatsApp({ nomeCliente, plano, valor, formasPagamento, link: novo });
     // Safari perde o gesto do clique depois de um await: o ClipboardItem recebe a Promise do
@@ -81,7 +79,7 @@ export function MensagemWhatsApp({
       router.refresh();
     } catch (erro) {
       copiaNoGesto?.catch(() => undefined);
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível gerar o link.");
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível copiar o link.");
     } finally {
       setOcupado(false);
     }
@@ -93,7 +91,7 @@ export function MensagemWhatsApp({
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium">Mensagem para o WhatsApp</p>
           <p className="text-xs text-pretty text-muted-foreground">
-            Gera um link novo e copia a mensagem pronta. O link anterior deixa de funcionar.
+            Copia a mensagem pronta com o link da proposta. O link é sempre o mesmo: o que você já mandou continua valendo.
           </p>
         </div>
         <pre className="rounded-2xl bg-muted/50 p-4 font-sans text-sm leading-relaxed whitespace-pre-wrap text-pretty select-all">
@@ -122,26 +120,18 @@ export function MensagemWhatsApp({
             <Button
               className="h-11 rounded-full px-5"
               disabled={ocupado}
-              onClick={() => setConfirma(true)}
+              onClick={() => void gerar()}
             >
               {ocupado ? (
                 <LoaderCircleIcon aria-hidden className="animate-spin" strokeWidth={1.5} />
               ) : (
                 <CopyIcon aria-hidden strokeWidth={1.5} />
               )}
-              Gerar link e copiar mensagem
+              Copiar mensagem com o link
             </Button>
           )}
         </div>
       </CardContent>
-      <ConfirmDialog
-        open={confirma}
-        onOpenChange={setConfirma}
-        titulo="Gerar novo link?"
-        descricao="Um novo link será criado e a mensagem copiada. O link anterior é invalidado imediatamente: se você já o mandou ao cliente, ele deixa de funcionar."
-        confirmarTexto="Gerar e copiar"
-        onConfirmar={gerar}
-      />
     </Card>
   );
 }

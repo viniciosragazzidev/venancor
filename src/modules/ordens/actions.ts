@@ -20,7 +20,7 @@ import {
 } from "@/db/schema";
 import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
-import { gerarToken } from "@/lib/tokens";
+import { decifrarToken, gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
 import { getPaymentProvider } from "@/providers/payment";
 import { sincronizarPendentesAsaas } from "@/modules/pagamentos/sincronizar-asaas";
@@ -233,18 +233,50 @@ export async function listarOrdens() {
   return db.select().from(ordens);
 }
 
+/** Statuses in which the client link is still useful (before signing, or signed waiting for payment). */
+const STATUS_LINK_ATIVO = ["rascunho", "enviada", "visualizada", "assinada", "aguardando_pagamento"] as const;
+const VALIDADE_LINK_MS = 7 * 86_400_000;
+
+/**
+ * The order's current link, without replacing it (06/11): "Copiar link", "Enviar/Reenviar" and the
+ * reminders reuse the same link, so a link already sent keeps working. When the deadline passed it
+ * is extended for 7 more days, same link. Only orders created before this change (no stored token)
+ * get a new link, once. A new link only comes from "Gerar novo link".
+ */
+async function linkAtualComoAdmin(ordemId: string, adminId: string): Promise<{ link: string; novo: boolean }> {
+  const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
+  if (!ordem || !(STATUS_LINK_ATIVO as readonly string[]).includes(ordem.status))
+    throw new ErroNegocio("Esta ordem não tem link ativo para o cliente.");
+  const token = decifrarToken(ordem.tokenCifrado, ordem.tokenHash);
+  if (!token) return { link: await gerarNovoLinkComoAdmin(ordemId, adminId), novo: true };
+  if (ordem.expiraEm.getTime() < Date.now() + 86_400_000) {
+    await db
+      .update(ordens)
+      .set({ expiraEm: new Date(Date.now() + VALIDADE_LINK_MS), atualizadoEm: new Date() })
+      .where(and(eq(ordens.id, ordemId), eq(ordens.tokenHash, ordem.tokenHash)));
+    await db.insert(auditoria).values({
+      entidade: "ordens",
+      entidadeId: ordemId,
+      acao: "renovar_prazo_link",
+      ator: `admin:${adminId}`,
+    });
+  }
+  return { link: urlCliente(token), novo: false };
+}
+
 async function gerarNovoLinkComoAdmin(ordemId: string, adminId: string) {
-  const { token, hash } = gerarToken();
+  const { token, hash, cifrado } = gerarToken();
   const link = urlCliente(token);
   const [ordem] = await db
     .update(ordens)
     .set({
       tokenHash: hash,
+      tokenCifrado: cifrado,
       expiraEm: new Date(Date.now() + 7 * 86_400_000),
       atualizadoEm: new Date(),
     })
     .where(
-      and(eq(ordens.id, ordemId), inArray(ordens.status, ["rascunho", "enviada", "visualizada"])),
+      and(eq(ordens.id, ordemId), inArray(ordens.status, [...STATUS_LINK_ATIVO])),
     )
     .returning();
   if (!ordem) throw new ErroNegocio("Esta ordem não está disponível para gerar um novo link.");
@@ -273,7 +305,7 @@ async function enviarOrdemComoAdmin(ordemId: string, adminId: string) {
     .limit(1);
   const [plano] = await db.select().from(planos).where(eq(planos.id, ordem.planoId)).limit(1);
   if (!cliente || !plano) throw new ErroNegocio("Os dados desta ordem estão incompletos.");
-  const link = await gerarNovoLinkComoAdmin(ordemId, adminId);
+  const { link } = await linkAtualComoAdmin(ordemId, adminId);
   await getMessagingProvider().enviarTemplate({
     para: cliente.whatsapp,
     template: "proposta_enviada",
@@ -293,8 +325,10 @@ export async function reenviarOrdem(ordemId: string): Promise<ResultadoAcao<stri
   return enviarOrdem(ordemId);
 }
 
-export async function copiarLinkOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
-  return gerarNovoLink(ordemId);
+/** Copies the current link (same link already sent); `novo` is true only for old orders without one. */
+export async function copiarLinkOrdem(ordemId: string): Promise<ResultadoAcao<{ link: string; novo: boolean }>> {
+  const admin = await requireAdmin();
+  return executarAcao("painel.ordem.copiar_link", () => linkAtualComoAdmin(ordemId, admin.id));
 }
 
 export async function cancelarOrdem(ordemId: string): Promise<ResultadoAcao<void>> {

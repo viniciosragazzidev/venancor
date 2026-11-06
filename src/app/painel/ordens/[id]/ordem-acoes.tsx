@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BanIcon, BellRingIcon, CopyIcon, LoaderCircleIcon, MessageCircleIcon } from "lucide-react";
+import { BanIcon, BellRingIcon, CopyIcon, LoaderCircleIcon, MessageCircleIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { LembrarAgoraDialog } from "@/components/admin/lembrar-agora";
 import { Button } from "@/components/ui/button";
 import { valorOuErro } from "@/lib/resultado-acao";
-import { cancelarOrdem, copiarLinkOrdem, enviarOrdem } from "@/modules/ordens/actions";
+import { cancelarOrdem, copiarLinkOrdem, enviarOrdem, gerarNovoLink } from "@/modules/ordens/actions";
 
-const STATUS_COM_LINK = ["rascunho", "enviada", "visualizada"];
+const STATUS_COM_ENVIO = ["rascunho", "enviada", "visualizada"];
+/** The client link still matters until payment: copy and "Gerar novo link" stay available. */
+const STATUS_COM_LINK = ["rascunho", "enviada", "visualizada", "assinada", "aguardando_pagamento"];
 const STATUS_SEM_CANCELAMENTO = ["paga", "expirada", "cancelada"];
 
 export function OrdemAcoes({
@@ -25,12 +27,13 @@ export function OrdemAcoes({
   podeLembrar?: boolean;
 }) {
   const router = useRouter();
-  const [ocupado, setOcupado] = useState<"enviar" | "copiar" | null>(null);
+  const [ocupado, setOcupado] = useState<"enviar" | "copiar" | "novo" | null>(null);
   const [confirmaEnvio, setConfirmaEnvio] = useState(false);
-  const [confirmaCopia, setConfirmaCopia] = useState(false);
+  const [confirmaNovoLink, setConfirmaNovoLink] = useState(false);
   const [confirmaCancelamento, setConfirmaCancelamento] = useState(false);
   const [lembrarAberto, setLembrarAberto] = useState(false);
 
+  const podeEnviar = STATUS_COM_ENVIO.includes(status);
   const podeLink = STATUS_COM_LINK.includes(status);
   const podeCancelar = !STATUS_SEM_CANCELAMENTO.includes(status);
   if (!podeLink && !podeCancelar) return null;
@@ -39,8 +42,7 @@ export function OrdemAcoes({
     setOcupado("enviar");
     try {
       valorOuErro(await enviarOrdem(ordemId));
-      toast.success("Proposta enviada no WhatsApp do cliente.");
-      toast.warning("Um novo link foi gerado. O link anterior deixou de funcionar.");
+      toast.success("Proposta enviada no WhatsApp do cliente, com o mesmo link.");
       router.refresh();
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível enviar.");
@@ -52,10 +54,25 @@ export function OrdemAcoes({
   async function copiar() {
     setOcupado("copiar");
     try {
-      const link = valorOuErro(await copiarLinkOrdem(ordemId));
+      const { link, novo } = valorOuErro(await copiarLinkOrdem(ordemId));
       await navigator.clipboard.writeText(link);
-      toast.success("Novo link copiado para a área de transferência.");
-      toast.warning("O link anterior foi invalidado. Compartilhe somente este novo link.");
+      if (novo) toast.warning("Esta ordem era antiga e ganhou um link novo. A partir de agora ele não muda mais ao copiar.");
+      else toast.success("Link copiado. É o mesmo link que o cliente já tem.");
+      router.refresh();
+    } catch (erro) {
+      toast.error(erro instanceof Error ? erro.message : "Não foi possível copiar o link.");
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function gerarNovo() {
+    setOcupado("novo");
+    try {
+      const link = valorOuErro(await gerarNovoLink(ordemId));
+      await navigator.clipboard.writeText(link);
+      toast.success("Novo link gerado e copiado.");
+      toast.warning("O link anterior deixou de funcionar. Mande este novo ao cliente.");
       router.refresh();
     } catch (erro) {
       toast.error(erro instanceof Error ? erro.message : "Não foi possível gerar o link.");
@@ -77,7 +94,7 @@ export function OrdemAcoes({
   return (
     <>
       <div className="flex flex-wrap gap-3">
-        {podeLink ? (
+        {podeEnviar ? (
           <Button
             className="h-12 rounded-full px-6"
             disabled={ocupado !== null}
@@ -96,10 +113,25 @@ export function OrdemAcoes({
             variant="outline"
             className="h-12 rounded-full px-6"
             disabled={ocupado !== null}
-            onClick={() => setConfirmaCopia(true)}
+            onClick={() => void copiar()}
           >
-            <CopyIcon aria-hidden strokeWidth={1.5} />
+            {ocupado === "copiar" ? (
+              <LoaderCircleIcon aria-hidden className="animate-spin" strokeWidth={1.5} />
+            ) : (
+              <CopyIcon aria-hidden strokeWidth={1.5} />
+            )}
             Copiar link
+          </Button>
+        ) : null}
+        {podeLink ? (
+          <Button
+            variant="ghost"
+            className="h-12 rounded-full px-6"
+            disabled={ocupado !== null}
+            onClick={() => setConfirmaNovoLink(true)}
+          >
+            <RefreshCwIcon aria-hidden strokeWidth={1.5} />
+            Gerar novo link
           </Button>
         ) : null}
         {podeLembrar ? (
@@ -130,18 +162,18 @@ export function OrdemAcoes({
         open={confirmaEnvio}
         onOpenChange={setConfirmaEnvio}
         titulo="Enviar proposta?"
-        descricao="Um novo link será gerado e enviado no WhatsApp do cliente. Qualquer link anterior deixará de funcionar."
+        descricao="A proposta vai para o WhatsApp do cliente com o mesmo link de sempre. Links já enviados continuam funcionando."
         confirmarTexto="Enviar"
         onConfirmar={enviar}
       />
 
       <ConfirmDialog
-        open={confirmaCopia}
-        onOpenChange={setConfirmaCopia}
+        open={confirmaNovoLink}
+        onOpenChange={setConfirmaNovoLink}
         titulo="Gerar novo link?"
-        descricao="Um novo link será criado e copiado. O link anterior é invalidado imediatamente: se você já o compartilhou com o cliente, ele deixa de funcionar."
+        descricao="Um novo link será criado e copiado. O link anterior deixa de funcionar na hora: use só se o link vazou ou foi para a pessoa errada."
         confirmarTexto="Gerar e copiar"
-        onConfirmar={copiar}
+        onConfirmar={gerarNovo}
       />
 
       <LembrarAgoraDialog

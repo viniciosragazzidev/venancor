@@ -231,6 +231,8 @@ export const ordens = pgTable(
       .notNull(),
     maxParcelas: integer("max_parcelas").default(1).notNull(),
     tokenHash: text("token_hash").notNull().unique(),
+    /** Same token, encrypted: lets "Copiar link" and resends reuse the link (06/11). Null on old orders. */
+    tokenCifrado: text("token_cifrado"),
     expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
     enviadaEm: timestamp("enviada_em", { withTimezone: true }),
     visualizadaEm: timestamp("visualizada_em", { withTimezone: true }),

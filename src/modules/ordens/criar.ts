@@ -99,7 +99,7 @@ export async function criarOrdemComo(
     );
   if (generico.planoId && generico.planoId !== plano.id)
     throw new ErroNegocio("Modelo de contrato não pertence ao plano");
-  const { token, hash } = gerarToken();
+  const { token, hash, cifrado } = gerarToken();
   const link = urlCliente(token);
   const expiraEm = new Date(Date.now() + dados.validadeDias * 86_400_000);
   const inserirOrdem = async (tx: TransacaoBanco) => {
@@ -121,6 +121,7 @@ export async function criarOrdemComo(
         maxParcelas: dados.maxParcelas,
         exigeAssinatura: dados.exigeAssinatura,
         tokenHash: hash,
+        tokenCifrado: cifrado,
         expiraEm,
         criadaPor: admin.id,
       })

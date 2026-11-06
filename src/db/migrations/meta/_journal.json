@@ -50,6 +50,13 @@
       "when": 1793900153722,
       "tag": "0006_exige_assinatura_ordens",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794006280644,
+      "tag": "0007_link_estavel",
+      "breakpoints": true
     }
   ]
 }
