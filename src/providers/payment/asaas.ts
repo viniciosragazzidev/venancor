@@ -6,7 +6,10 @@ import type {
   PaymentProvider,
 } from "./types";
 import { parseWebhookAsaas, validarWebhookAsaas } from "./asaas-webhook";
+import { ErroProvedorPagamento } from "./erros";
 import { fakePermitido } from "@/lib/modo-teste";
+
+export { ErroProvedorPagamento } from "./erros";
 
 type AsaasPayment = {
   id: string;
@@ -27,7 +30,7 @@ export class AsaasProvider implements PaymentProvider {
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const token = process.env.ASAAS_API_KEY;
-    if (!token) throw new Error("ASAAS_API_KEY não configurada");
+    if (!token) throw new ErroProvedorPagamento({ status: null, code: "missing_api_key" });
     let response: Response;
     try {
       response = await fetch(`${this.base}${path}`, {
@@ -45,29 +48,34 @@ export class AsaasProvider implements PaymentProvider {
     } catch (error) {
       // TimeoutError/AbortError são DOMException (message só leitura): converte para Error comum.
       const nome = error instanceof Error ? error.name : "";
-      throw new Error(
-        nome === "TimeoutError" || nome === "AbortError"
-          ? "Asaas não respondeu a tempo. Tente de novo."
-          : "Falha de rede ao falar com o Asaas.",
-      );
+      throw new ErroProvedorPagamento({
+        status: null,
+        code: nome === "TimeoutError" || nome === "AbortError" ? "timeout" : "network_error",
+      });
     }
     if (!response.ok) {
-      // O Asaas devolve { errors: [{ code, description }] }: mensagem sem dados pessoais, útil para diagnosticar.
-      let detalhe = "";
+      let erroApi: { code?: string; description?: string } | undefined;
       try {
         const erro = (await response.json()) as {
           errors?: { code?: string; description?: string }[];
         };
-        detalhe = (erro.errors ?? [])
-          .map((e) => [e.code, e.description].filter(Boolean).join(": "))
-          .join("; ");
+        erroApi = erro.errors?.[0];
       } catch {
         // corpo vazio ou não-JSON
       }
-      throw new Error(`Asaas respondeu HTTP ${response.status}${detalhe ? ` (${detalhe})` : ""}`);
+      throw new ErroProvedorPagamento({
+        status: response.status,
+        code: erroApi?.code ?? `http_${response.status}`,
+        description: erroApi?.description,
+      });
     }
     const body = await response.text();
-    return (body ? JSON.parse(body) : undefined) as T;
+    if (!body) return undefined as T;
+    try {
+      return JSON.parse(body) as T;
+    } catch {
+      throw new ErroProvedorPagamento({ status: response.status, code: "invalid_response" });
+    }
   }
 
   private status(status: string): Cobranca["status"] {

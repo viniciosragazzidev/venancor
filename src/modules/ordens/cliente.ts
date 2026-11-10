@@ -7,6 +7,9 @@ import { hashToken } from "@/lib/tokens";
 import { renderizarContrato, type VariavelContrato } from "@/modules/contratos/render";
 import { transicionar, type OrdemStatus } from "./state-machine";
 import { ErroNegocio } from "@/lib/resultado-acao";
+import { mensagemPropostaIndisponivel } from "./mensagens";
+
+export { mensagemPropostaIndisponivel } from "./mensagens";
 
 const snapshotSchema = z.object({
   operadora: z.object({ nome: z.string(), registroAns: z.string() }),
@@ -228,7 +231,7 @@ export async function registrarConsentimento(
   if (resolucao.tipo === "ativa" && !resolucao.dados.exige_assinatura)
     throw new ErroNegocio("Esta proposta não exige assinatura do contrato.");
   if (resolucao.tipo !== "ativa" || !["enviada", "visualizada"].includes(resolucao.dados.status))
-    throw new ErroNegocio("Esta proposta não está mais disponível para aceite.");
+    throw new ErroNegocio(mensagemPropostaIndisponivel(resolucao.tipo, "aceite"));
   const { consentimentos } = await import("@/db/schema");
   const versaoTexto =
     tipo === "contrato"

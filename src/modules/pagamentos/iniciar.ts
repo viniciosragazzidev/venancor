@@ -1,9 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assinaturas, auditoria, clientes, ordens, pagamentos } from "@/db/schema";
-import { resolverToken } from "@/modules/ordens/cliente";
+import { mensagemPropostaIndisponivel, resolverToken } from "@/modules/ordens/cliente";
 import { getPaymentProvider, type Metodo } from "@/providers/payment";
+import { erroAsaasEhDadoCadastro } from "@/providers/payment/erros";
 import { assertPodeIniciarPagamento, criarCobrancaSeAssinada } from "./guard";
+import { metadadosRecusaCadastroAsaas } from "./auditoria-recusa";
 import { ErroNegocio } from "@/lib/resultado-acao";
 
 export interface PagamentoIniciado {
@@ -39,24 +41,24 @@ export async function iniciarPagamento(
 ): Promise<PagamentoIniciado> {
   const resolucao = await resolverToken(token);
   if (resolucao.tipo !== "ativa")
-    throw new ErroNegocio("Este link não está mais disponível para pagamento.");
+    throw new ErroNegocio(mensagemPropostaIndisponivel(resolucao.tipo, "pagamento"));
   const [ordem] = await db.select().from(ordens).where(eq(ordens.id, resolucao.dados.id)).limit(1);
   const [assinatura] = await db
     .select({ id: assinaturas.id })
     .from(assinaturas)
     .where(eq(assinaturas.ordemId, resolucao.dados.id))
     .limit(1);
-  if (!ordem) throw new Error("Ordem não encontrada");
+  if (!ordem) throw new ErroNegocio("Esta proposta não está mais disponível. Fale com seu corretor.");
   assertPodeIniciarPagamento(ordem.status, Boolean(assinatura), ordem.exigeAssinatura);
   if (!ordem.formasPagamento.includes(metodo))
-    throw new ErroNegocio("Forma de pagamento indisponível");
+    throw new ErroNegocio("Esta forma de pagamento não está disponível para a proposta. Escolha uma das opções exibidas.");
   if (
     !Number.isInteger(parcelas) ||
     parcelas < 1 ||
     parcelas > ordem.maxParcelas ||
     (metodo !== "cartao" && parcelas !== 1)
   )
-    throw new ErroNegocio("Parcelamento inválido");
+    throw new ErroNegocio("O número de parcelas não é válido para esta forma de pagamento.");
   const [existente] = await db
     .select()
     .from(pagamentos)
@@ -74,29 +76,51 @@ export async function iniciarPagamento(
     .from(clientes)
     .where(eq(clientes.id, ordem.clienteId))
     .limit(1);
-  if (!cliente) throw new Error("Cliente não encontrado");
+  if (!cliente) throw new ErroNegocio("Os dados do cliente desta proposta não estão disponíveis. Fale com seu corretor.");
   const vencimento = new Date(Date.now() + 3 * 86_400_000);
   const provider = getPaymentProvider();
-  const cobranca = await criarCobrancaSeAssinada(
-    provider,
-    {
-      ordemId: ordem.id,
-      cliente: {
-        nome: cliente.nome,
-        cpf: cliente.cpf,
-        email: cliente.email,
-        whatsapp: cliente.whatsapp,
+  let cobranca: Awaited<ReturnType<typeof criarCobrancaSeAssinada>>;
+  try {
+    cobranca = await criarCobrancaSeAssinada(
+      provider,
+      {
+        ordemId: ordem.id,
+        cliente: {
+          nome: cliente.nome,
+          cpf: cliente.cpf,
+          email: cliente.email,
+          whatsapp: cliente.whatsapp,
+        },
+        metodo,
+        valorCentavos: ordem.valorCobrado,
+        parcelas,
+        vencimento,
+        descricao: `Primeira cobrança do plano de saúde - ordem ${ordem.id}`,
       },
-      metodo,
-      valorCentavos: ordem.valorCobrado,
-      parcelas,
-      vencimento,
-      descricao: `Primeira cobrança do plano de saúde - ordem ${ordem.id}`,
-    },
-    ordem.status,
-    Boolean(assinatura),
-    ordem.exigeAssinatura,
-  );
+      ordem.status,
+      Boolean(assinatura),
+      ordem.exigeAssinatura,
+    );
+  } catch (error) {
+    if (provider.nome === "asaas" && erroAsaasEhDadoCadastro(error)) {
+      try {
+        await db.insert(auditoria).values({
+          entidade: "ordens",
+          entidadeId: ordem.id,
+          acao: "pagamento_recusado",
+          ator: "cliente",
+          metadados: metadadosRecusaCadastroAsaas(error, metodo),
+        });
+      } catch {
+        console.error("[pagamento] não foi possível registrar a recusa do Asaas", {
+          ordemId: ordem.id,
+          code: error.code,
+          metodo,
+        });
+      }
+    }
+    throw error;
+  }
   try {
     const pagamento = await db.transaction(async (tx) => {
       const [atual] = await tx
@@ -110,7 +134,7 @@ export async function iniciarPagamento(
         .from(assinaturas)
         .where(eq(assinaturas.ordemId, ordem.id))
         .limit(1);
-      if (!atual) throw new Error("Ordem não encontrada");
+      if (!atual) throw new ErroNegocio("Esta proposta não está mais disponível para pagamento.");
       assertPodeIniciarPagamento(atual.status, Boolean(assinaturaAtual), atual.exigeAssinatura);
       const [duplicado] = await tx
         .select({ id: pagamentos.id })

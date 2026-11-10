@@ -3,6 +3,7 @@ import { z } from "zod";
 import { PagamentoSemAssinaturaError } from "@/modules/pagamentos/guard";
 import { obterOtpParaAssinatura } from "@/modules/assinatura/otp-policy";
 import { ErroNegocio, executarAcao, mensagemParaCliente, valorOuErro } from "./resultado-acao";
+import { ErroProvedorPagamento } from "@/providers/payment/erros";
 
 describe("resultado de ação do link do cliente", () => {
   it("mantém a mensagem de erro de negócio", async () => {
@@ -26,22 +27,40 @@ describe("resultado de ação do link do cliente", () => {
     });
   });
 
-  it("esconde erro de provedor, configuração e TypeError", () => {
-    for (const erro of [
-      new Error("Asaas respondeu HTTP 400 (invalid_customer: x)"),
-      new Error("ASAAS_API_KEY não configurada"),
-      new TypeError("Cannot read properties of undefined"),
-      new TypeError("fetch failed"),
-    ])
-      expect(mensagemParaCliente(erro)).toBe(
-        "Não foi possível concluir agora. Tente novamente em instantes.",
-      );
+  it("explica a recusa do Asaas sem expor os dados do cadastro", () => {
+    const erro = new ErroProvedorPagamento({
+      status: 400,
+      code: "invalid_cpfCnpj",
+      description: "CPF 123.456.789-00 inválido",
+    });
+    expect(mensagemParaCliente(erro)).toBe(
+      "O CPF do cadastro está inválido. Fale com seu corretor para corrigir.",
+    );
+    expect(mensagemParaCliente(erro)).not.toContain("123.456.789-00");
+  });
+
+  it("identifica configuração e indisponibilidade do Asaas", () => {
+    expect(mensagemParaCliente(new ErroProvedorPagamento({ status: 401, code: "invalid_api_key" })))
+      .toContain("configuração da conta");
+    expect(mensagemParaCliente(new ErroProvedorPagamento({ status: 503, code: "http_503" })))
+      .toContain("Asaas");
+  });
+
+  it("dá uma referência para erros inesperados sem mostrar detalhes internos", () => {
+    const mensagem = mensagemParaCliente(new TypeError("Cannot read properties of undefined"), {
+      rotulo: "painel.ordem.criar",
+      referencia: "A1B2C3",
+    });
+    expect(mensagem).toBe("Erro inesperado ao criar a ordem (ref. A1B2C3). Tente novamente.");
+    expect(mensagem).not.toContain("Cannot read");
   });
 
   it("esconde erro técnico e de validação", () => {
     const banco = Object.assign(new Error('column "x" does not exist'), { code: "42703" });
     expect(mensagemParaCliente(banco)).not.toContain("column");
-    expect(mensagemParaCliente(z.string().safeParse(1).error)).toContain("Confira");
+    expect(mensagemParaCliente(z.string().safeParse(1).error)).toContain("Informe um valor válido.");
+    expect(mensagemParaCliente(z.enum(["pix", "boleto"]).safeParse("cartao").error))
+      .toContain("Selecione uma opção válida.");
   });
 
   it("mostra a primeira validação com o nome do campo em português no painel", async () => {
@@ -52,7 +71,7 @@ describe("resultado de ação do link do cliente", () => {
       async () => {
         throw erro;
       },
-      { validacao: "campo" },
+      { validacao: "campo", rotulo: "painel.cliente.criar" },
     );
 
     expect(resultado).toEqual({ ok: false, erro: expect.stringMatching(/^Nome:/) });

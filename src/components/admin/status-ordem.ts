@@ -75,6 +75,19 @@ export function rotuloEventoOrdem(acao: string, metadados: Record<string, unknow
       return metadados.origem === "automatico"
         ? "Lembrete enviado (automático)"
         : "Lembrete enviado";
+    case "pagamento_recusado": {
+      const campos: Record<string, string> = {
+        invalid_cpfCnpj: "CPF inválido",
+        invalid_email: "e-mail inválido",
+        invalid_phone: "telefone inválido",
+        invalid_mobilePhone: "telefone inválido",
+        invalid_postalCode: "CEP inválido",
+      };
+      const code = typeof metadados.codigo === "string" ? metadados.codigo : "";
+      const metodo = typeof metadados.metodo === "string" ? rotuloMetodoPagamento(metadados.metodo) : null;
+      const detalhe = campos[code] ?? "dados do cadastro inválidos";
+      return `Pagamento recusado pelo Asaas: ${detalhe}${metodo ? ` (${metodo})` : ""}`;
+    }
     default:
       return acao
         .split(/[_-]/)

@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { ipDaRequisicao } from "@/lib/request-ip";
-import { resolverToken } from "@/modules/ordens/cliente";
+import { mensagemPropostaIndisponivel, resolverToken } from "@/modules/ordens/cliente";
 import { enviarOtp, validarOtp } from "./otp";
 import { assinaturaExigeOtp } from "./otp-policy";
 import { ErroNegocio, executarAcao } from "@/lib/resultado-acao";
@@ -15,7 +15,7 @@ async function solicitar(token: string) {
   if (!assinaturaExigeOtp()) throw new ErroNegocio("Verificação por código desativada");
   const ordem = await resolverToken(token);
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
-    throw new ErroNegocio("Ordem indisponível");
+    throw new ErroNegocio(mensagemPropostaIndisponivel(ordem.tipo, "assinatura"));
   const requestHeaders = await headers();
   return enviarOtp(ordem.dados.id, ipDaRequisicao(requestHeaders));
 }
@@ -28,6 +28,6 @@ async function confirmar(token: string, codigo: string) {
   if (!assinaturaExigeOtp()) throw new ErroNegocio("Verificação por código desativada");
   const ordem = await resolverToken(token);
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
-    return { erro: "expirado" } as const;
+    throw new ErroNegocio(mensagemPropostaIndisponivel(ordem.tipo, "assinatura"));
   return validarOtp(ordem.dados.id, codigo);
 }

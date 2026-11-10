@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import { assinaturas, auditoria, consentimentos, ordemBeneficiarios, ordens } from "@/db/schema";
-import { resolverToken } from "@/modules/ordens/cliente";
+import { mensagemPropostaIndisponivel, resolverToken } from "@/modules/ordens/cliente";
 import { getSignatureProvider } from "@/providers/signature";
 import { getStorageAdapter } from "@/providers/storage";
 import { fakePermitido } from "@/lib/modo-teste";
@@ -29,7 +29,7 @@ export async function concluirAssinatura(
   if (ordem.tipo === "ativa" && !ordem.dados.exige_assinatura)
     throw new ErroNegocio("Esta proposta não exige assinatura do contrato.");
   if (ordem.tipo !== "ativa" || ordem.dados.status !== "visualizada")
-    throw new ErroNegocio("Esta proposta não está mais disponível para assinatura.");
+    throw new ErroNegocio(mensagemPropostaIndisponivel(ordem.tipo, "assinatura"));
   const dados = concluirAssinaturaSchema.parse(input);
   const [titular] = await db
     .select({ cpf: ordemBeneficiarios.cpf, nome: ordemBeneficiarios.nome })

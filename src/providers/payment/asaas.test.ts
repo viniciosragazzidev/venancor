@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AsaasProvider } from "./asaas";
+import { ErroProvedorPagamento } from "./erros";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -9,6 +10,35 @@ afterEach(() => {
 });
 
 describe("AsaasProvider", () => {
+  it("preserva o código e status estruturados de uma recusa da API", async () => {
+    vi.stubEnv("ASAAS_API_KEY", "chave-de-teste");
+    vi.stubEnv("ASAAS_ENV", "sandbox");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json(
+          { errors: [{ code: "invalid_cpfCnpj", description: "CPF inválido" }] },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    await expect(
+      new AsaasProvider().criarCobranca({
+        ordemId: "ord_1",
+        cliente: { nome: "Ana", cpf: "12345678909" },
+        metodo: "pix",
+        valorCentavos: 15000,
+        vencimento: new Date("2026-10-10T12:00:00Z"),
+        descricao: "Teste",
+      }),
+    ).rejects.toMatchObject({
+      provedor: "asaas",
+      status: 400,
+      code: "invalid_cpfCnpj",
+    } satisfies Partial<ErroProvedorPagamento>);
+  });
+
   it("cria cobrança Pix no sandbox e retorna QR", async () => {
     process.env.ASAAS_API_KEY = "chave-de-teste";
     process.env.ASAAS_ENV = "sandbox";
