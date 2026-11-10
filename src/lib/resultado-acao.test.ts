@@ -122,3 +122,14 @@ describe("resumoErroSeguro (log e painel sem dados pessoais)", () => {
     expect(resumo).not.toMatch(/ana@x\.com|194\.123|abcdefghijklmnop/);
   });
 });
+
+describe("resumoErroSeguro com valores entre aspas do Postgres", () => {
+  it("esconde o valor e mantém o nome da constraint", async () => {
+    const { resumoErroSeguro } = await import("./resultado-acao");
+    expect(resumoErroSeguro(new Error('invalid input syntax for type integer: "Maria Souza"'))).not.toContain("Maria");
+    expect(resumoErroSeguro(new Error("valor 'João da Silva' recusado"))).not.toContain("João");
+    const chave = resumoErroSeguro(new Error('duplicate key value violates unique constraint "clientes_cpf_unique" Key (cpf)=(abc)'));
+    expect(chave).toContain("clientes_cpf_unique");
+    expect(chave).not.toContain("(abc)");
+  });
+});

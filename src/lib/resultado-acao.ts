@@ -136,6 +136,10 @@ export function resumoErroSeguro(erro: unknown): string {
   const texto = bruto
     .split(/\n\s*params:/i)[0]
     .replace(/^Failed query:[\s\S]*/i, "Falha na consulta ao banco")
+    // Values quoted by Postgres ("Key (cpf)=(...)", 'João', "Maria") hide; identifiers like "clientes_cpf_unique" stay.
+    .replace(/=\([^)]*\)/g, "=([valor])")
+    .replace(/'[^']*'/g, "'[valor]'")
+    .replace(/"([^"]*)"/g, (inteiro, conteudo: string) => (/^[a-z0-9_.]+$/.test(conteudo) ? inteiro : '"[valor]"'))
     .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "[e-mail]")
     .replace(/\d[\d\s()./-]{7,}\d/g, "[número]")
     .replace(/\b[A-Z0-9_-]{24,}\b/gi, "[token]")
