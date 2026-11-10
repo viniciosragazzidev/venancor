@@ -123,9 +123,32 @@ function codigoReferencia() {
   return Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0").slice(-6).toUpperCase();
 }
 
+/**
+ * Short, safe text of an unexpected error: name and message of the error (or of its database cause),
+ * without the query parameters, the "detail" of Postgres or anything that looks like personal data.
+ * A Drizzle "Failed query" carries the params (CPF, e-mail) in the message, so it is never logged whole.
+ */
+export function resumoErroSeguro(erro: unknown): string {
+  const alvo = erro instanceof Error && erro.cause instanceof Error && /^Failed query/i.test(erro.message) ? erro.cause : erro;
+  const nome = alvo instanceof Error ? alvo.name : typeof alvo;
+  const codigo = typeof (alvo as { code?: unknown })?.code === "string" ? ` [${(alvo as { code: string }).code}]` : "";
+  const bruto = alvo instanceof Error ? alvo.message : String(alvo ?? "");
+  const texto = bruto
+    .split(/\n\s*params:/i)[0]
+    .replace(/^Failed query:[\s\S]*/i, "Falha na consulta ao banco")
+    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "[e-mail]")
+    .replace(/\d[\d\s()./-]{7,}\d/g, "[número]")
+    .replace(/\b[A-Z0-9_-]{24,}\b/gi, "[token]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
+  return `${nome}${codigo}: ${texto || "sem mensagem"}`;
+}
+
 export function registrarErroInesperado(rotulo: string, erro: unknown): string {
   const referencia = codigoReferencia();
-  console.error(`[${rotulo}] erro inesperado ref=${referencia}`, erro);
+  // Never the whole error object: database errors carry the query params (CPF, e-mail).
+  console.error(`[${rotulo}] erro inesperado ref=${referencia} ${resumoErroSeguro(erro)}`);
   return referencia;
 }
 
@@ -184,7 +207,8 @@ export function mensagemParaPainel(erro: unknown, opcoes: OpcoesResultadoAcao = 
   if (erro instanceof ErroProvedorPagamento) return mensagemErroAsaasPainel(erro);
   if (erro instanceof ZodError) return mensagemValidacao(erro);
   const referencia = opcoes.referencia ?? codigoReferencia();
-  return `Erro inesperado ao ${nomeAcao(opcoes.rotulo)} (ref. ${referencia}).`;
+  // The panel shows the real (sanitized) error, not only the reference (Vinicios, 10/11).
+  return `Erro inesperado ao ${nomeAcao(opcoes.rotulo)}: ${resumoErroSeguro(erro)} (ref. ${referencia}).`;
 }
 
 export async function executarAcao<T>(

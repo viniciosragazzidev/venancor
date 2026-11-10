@@ -99,3 +99,26 @@ describe("erros de negócio do fluxo chegam ao cliente", () => {
     });
   });
 });
+
+describe("resumoErroSeguro (log e painel sem dados pessoais)", () => {
+  it("não leva os parâmetros de uma consulta que falhou", async () => {
+    const { resumoErroSeguro, mensagemParaPainel } = await import("./resultado-acao");
+    const causa = Object.assign(new Error('duplicate key value violates unique constraint "clientes_cpf_unique"'), { code: "23505" });
+    const erro = new Error("Failed query: insert into clientes values ($1, $2)\nparams: 19412345678,joao@exemplo.com", { cause: causa });
+    const resumo = resumoErroSeguro(erro);
+    expect(resumo).toContain("23505");
+    expect(resumo).toContain("clientes_cpf_unique");
+    expect(resumo).not.toContain("19412345678");
+    expect(resumo).not.toContain("joao@exemplo.com");
+    const painel = mensagemParaPainel(erro, { rotulo: "painel.cliente.criar", referencia: "ABC123" });
+    expect(painel).toContain("clientes_cpf_unique");
+    expect(painel).toContain("ABC123");
+    expect(painel).not.toContain("19412345678");
+  });
+
+  it("mascara e-mail, números longos e tokens soltos", async () => {
+    const { resumoErroSeguro } = await import("./resultado-acao");
+    const resumo = resumoErroSeguro(new Error("falhou para ana@x.com cpf 194.123.456-78 token abcdefghijklmnopqrstuvwxyz123"));
+    expect(resumo).not.toMatch(/ana@x\.com|194\.123|abcdefghijklmnop/);
+  });
+});

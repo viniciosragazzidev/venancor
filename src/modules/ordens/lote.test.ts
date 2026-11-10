@@ -44,11 +44,10 @@ describe("criação de ordens em lote", () => {
       const referencia = mensagem.match(/ref\. ([A-F0-9]{6})/)?.[1];
       expect(referencia).toBeDefined();
       expect(mensagem).toContain("Erro inesperado ao criar as ordens");
-      expect(mensagem).not.toContain("falha interna de teste");
-      expect(log).toHaveBeenCalledWith(
-        expect.stringContaining(`ref=${referencia}`),
-        expect.any(TypeError),
-      );
+      // Painel: mostra o erro real (sem dados pessoais) junto da referência.
+      expect(mensagem).toContain("falha interna de teste");
+      // O log leva só o resumo seguro, nunca o objeto de erro inteiro.
+      expect(log).toHaveBeenCalledWith(expect.stringContaining(`ref=${referencia} TypeError: falha interna de teste`));
     } finally {
       log.mockRestore();
     }

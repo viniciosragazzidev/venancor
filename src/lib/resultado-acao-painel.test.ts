@@ -31,7 +31,7 @@ describe("panel actions never throw (production hides the message, React #441)",
     const resultado = await executarAcaoPainel("teste", async () => {
       throw new Error("duplicate key value violates unique constraint");
     });
-    expect(resultado).toMatchObject({ ok: false, erro: expect.stringMatching(/^Erro inesperado ao teste \(ref\. [A-F0-9]{6}\)\.$/) });
+    expect(resultado).toMatchObject({ ok: false, erro: expect.stringMatching(/^Erro inesperado ao teste: .+ \(ref\. [A-F0-9]{6}\)\.$/) });
   });
 
   it("returns the value when it works", async () => {
