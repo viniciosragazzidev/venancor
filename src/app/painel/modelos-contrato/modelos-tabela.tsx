@@ -38,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { valorOuErro } from "@/lib/resultado-acao";
 import {
   atualizarContratoModelo,
   criarContratoModelo,
@@ -117,16 +118,16 @@ export function ModelosTabela({ modelos, planos }: { modelos: Modelo[]; planos: 
         ativo: editando ? editando.ativo : true,
       };
       if (editando) {
-        await atualizarContratoModelo(editando.id, payload);
+        valorOuErro(await atualizarContratoModelo(editando.id, payload));
         toast.success("Modelo atualizado.");
       } else {
-        await criarContratoModelo(payload);
+        valorOuErro(await criarContratoModelo(payload));
         toast.success("Modelo criado.");
       }
       setFormAberto(false);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o salvamento do modelo. Atualize a página e tente novamente.");
     } finally {
       setEnviando(false);
     }
@@ -135,12 +136,12 @@ export function ModelosTabela({ modelos, planos }: { modelos: Modelo[]; planos: 
   async function confirmarDesativacao() {
     if (!desativando) return;
     try {
-      await desativarContratoModelo(desativando.id);
+      valorOuErro(await desativarContratoModelo(desativando.id));
       toast.success("Modelo desativado.");
       setDesativando(null);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível desativar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a desativação do modelo. Atualize a página e tente novamente.");
     }
   }
 

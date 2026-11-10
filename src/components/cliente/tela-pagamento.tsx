@@ -32,7 +32,7 @@ async function copiar(texto: string, mensagem: string) {
     await navigator.clipboard.writeText(texto);
     toast.success(mensagem);
   } catch {
-    toast.error("Não foi possível copiar. Tente novamente.");
+    toast.error("O navegador bloqueou a cópia. Selecione e copie o código manualmente.");
   }
 }
 
@@ -62,7 +62,7 @@ export function TelaPagamento({
       const cobranca = await onIniciarPagamento(metodo, parcelasAtual);
       setCobrancas((atual) => ({ ...atual, [metodo]: cobranca }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.");
+      toast.error(error instanceof Error ? error.message : "O pagamento não foi iniciado. Confira a conexão e tente novamente.");
     } finally {
       setGerando(null);
     }
@@ -325,7 +325,7 @@ export function TelaPagamento({
             try {
               await onSimularPagamento(cobrancas[metodoAtual]!.id);
             } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Falha na simulação.");
+              toast.error(error instanceof Error ? error.message : "A simulação não foi concluída. Confira o modo de teste e tente novamente.");
             } finally {
               setSimulando(false);
             }

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { clientes, dependentes, ordens } from "@/db/schema";
 import { registrarAuditoria } from "@/lib/audit";
-import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
+import { ErroNegocio, executarAcaoPainel, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import { cepSchema } from "@/lib/validators";
 import { criarClienteNaTransacao, exigirCpfLivre } from "./criar";
@@ -28,10 +28,9 @@ export async function criarCliente(
   input: ClienteInput,
 ): Promise<ResultadoAcao<typeof clientes.$inferSelect>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.cliente.criar",
     () => db.transaction((tx) => criarClienteNaTransacao(tx, input, admin.id)),
-    { validacao: "campo" },
   );
 }
 
@@ -40,7 +39,7 @@ export async function atualizarCliente(
   input: ClienteAtualizacaoInput,
 ): Promise<ResultadoAcao<typeof clientes.$inferSelect>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.cliente.atualizar",
     async () => {
       const data = clienteAtualizacaoSchema.parse(input);
@@ -59,13 +58,12 @@ export async function atualizarCliente(
       });
       return cliente;
     },
-    { validacao: "campo" },
   );
 }
 
 export async function excluirCliente(id: string): Promise<ResultadoAcao<void>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.cliente.excluir", async () => {
+  return executarAcaoPainel("painel.cliente.excluir", async () => {
     const [ordem] = await db
       .select({ id: ordens.id })
       .from(ordens)
@@ -87,16 +85,18 @@ export async function excluirCliente(id: string): Promise<ResultadoAcao<void>> {
   });
 }
 
-export async function listarDependentes(clienteId: string) {
+export async function listarDependentes(clienteId: string): Promise<ResultadoAcao<(typeof dependentes.$inferSelect)[]>> {
   await requireAdmin();
-  return db.select().from(dependentes).where(eq(dependentes.clienteId, clienteId));
+  return executarAcaoPainel("painel.dependente.listar", () =>
+    db.select().from(dependentes).where(eq(dependentes.clienteId, clienteId)),
+  );
 }
 
 export async function criarDependente(
   input: DependenteInput,
 ): Promise<ResultadoAcao<typeof dependentes.$inferSelect>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.dependente.criar",
     async () => {
       const data = dependenteSchema.parse(input);
@@ -110,7 +110,6 @@ export async function criarDependente(
       });
       return dependente;
     },
-    { validacao: "campo" },
   );
 }
 
@@ -119,7 +118,7 @@ export async function atualizarDependente(
   input: DependenteAtualizacaoInput,
 ): Promise<ResultadoAcao<typeof dependentes.$inferSelect>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.dependente.atualizar",
     async () => {
       const data = dependenteAtualizacaoSchema.parse(input);
@@ -138,13 +137,12 @@ export async function atualizarDependente(
       });
       return dependente;
     },
-    { validacao: "campo" },
   );
 }
 
 export async function excluirDependente(id: string): Promise<ResultadoAcao<void>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.dependente.excluir", async () => {
+  return executarAcaoPainel("painel.dependente.excluir", async () => {
     const [dependente] = await db
       .delete(dependentes)
       .where(eq(dependentes.id, id))
@@ -159,21 +157,30 @@ export async function excluirDependente(id: string): Promise<ResultadoAcao<void>
   });
 }
 
-export async function buscarCep(input: string) {
+export async function buscarCep(input: string): Promise<ResultadoAcao<ReturnType<typeof enderecoViaCepSchema.parse>>> {
   await requireAdmin();
-  const cep = cepSchema.parse(input);
-  const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
-    signal: AbortSignal.timeout(5000),
-  });
-  if (!response.ok) throw new Error("Não foi possível consultar o CEP");
-  const data = (await response.json()) as Record<string, unknown>;
-  if (data.erro) throw new ErroNegocio("CEP não encontrado");
-  return enderecoViaCepSchema.parse({
-    cep,
-    logradouro: data.logradouro,
-    complemento: data.complemento,
-    bairro: data.bairro,
-    cidade: data.localidade,
-    uf: data.uf,
+  return executarAcaoPainel("painel.cliente.buscar_cep", async () => {
+    const validacao = cepSchema.safeParse(input);
+    if (!validacao.success) throw new ErroNegocio("Informe um CEP válido com 8 dígitos.");
+    const cep = validacao.data;
+    let response: Response;
+    try {
+      response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch {
+      throw new ErroNegocio("A consulta de CEP está indisponível. Tente novamente em alguns minutos.");
+    }
+    if (!response.ok) throw new ErroNegocio("A consulta de CEP está indisponível. Tente novamente em alguns minutos.");
+    const data = (await response.json()) as Record<string, unknown>;
+    if (data.erro) throw new ErroNegocio("CEP não encontrado. Confira os números informados.");
+    return enderecoViaCepSchema.parse({
+      cep,
+      logradouro: data.logradouro,
+      complemento: data.complemento,
+      bairro: data.bairro,
+      cidade: data.localidade,
+      uf: data.uf,
+    });
   });
 }

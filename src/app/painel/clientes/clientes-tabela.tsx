@@ -81,7 +81,7 @@ import {
 } from "@/modules/clientes/schemas";
 
 type Cliente = Awaited<ReturnType<typeof listarClientes>>[number];
-type Dependente = Awaited<ReturnType<typeof listarDependentes>>[number];
+type Dependente = Extract<Awaited<ReturnType<typeof listarDependentes>>, { ok: true }>["valor"][number];
 
 const formSchema = clienteSchema.omit({ whatsapp: true });
 type FormValores = z.input<typeof formSchema>;
@@ -204,7 +204,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     if (digitos.length !== 8) return;
     setBuscandoCep(true);
     try {
-      const endereco = await buscarCep(digitos);
+      const endereco = valorOuErro(await buscarCep(digitos));
       setValue("logradouro", endereco.logradouro, { shouldDirty: true });
       setValue("bairro", endereco.bairro, { shouldDirty: true });
       setValue("cidade", endereco.cidade, { shouldDirty: true });
@@ -214,7 +214,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       }
       toast.success("Endereço preenchido pelo CEP.");
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível consultar o CEP.");
+      toast.error(erro instanceof Error ? erro.message : "O endereço não foi preenchido. Confira o CEP e tente novamente.");
     } finally {
       setBuscandoCep(false);
     }
@@ -244,7 +244,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       setFormAberto(false);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o salvamento do cliente. Atualize a página e tente de novo.");
     } finally {
       setEnviando(false);
     }
@@ -258,7 +258,7 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
       setExcluindo(null);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a exclusão do cliente. Atualize a página e tente de novo.");
     }
   }
 
@@ -268,9 +268,9 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     setEditandoDep(null);
     setDepsCarregando(true);
     try {
-      setDependentes(await listarDependentes(cliente.id));
+      setDependentes(valorOuErro(await listarDependentes(cliente.id)));
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Erro ao carregar dependentes.");
+      toast.error(erro instanceof Error ? erro.message : "A lista de dependentes não foi carregada. Tente novamente.");
       setClienteSel(null);
     } finally {
       setDepsCarregando(false);
@@ -311,10 +311,10 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
         );
         toast.success("Dependente adicionado.");
       }
-      setDependentes(await listarDependentes(clienteSel.id));
+      setDependentes(valorOuErro(await listarDependentes(clienteSel.id)));
       setVista("lista");
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o salvamento do dependente. Atualize a página e tente de novo.");
     } finally {
       setEnviandoDep(false);
     }
@@ -324,9 +324,9 @@ export function ClientesTabela({ dados }: { dados: Cliente[] }) {
     try {
       valorOuErro(await excluirDependente(dependente.id));
       toast.success("Dependente excluído.");
-      if (clienteSel) setDependentes(await listarDependentes(clienteSel.id));
+      if (clienteSel) setDependentes(valorOuErro(await listarDependentes(clienteSel.id)));
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a exclusão do dependente. Atualize a página e tente de novo.");
     }
   }
 

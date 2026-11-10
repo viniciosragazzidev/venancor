@@ -24,7 +24,7 @@ const mensagensErroOtp: Record<OtpErro, string> = {
   invalido: "Código incorreto. Confira os 6 dígitos e tente novamente.",
   expirado: "O código expirou. Solicite um novo código.",
   bloqueado: "Muitas tentativas. Peça ao seu corretor um novo código.",
-  falha: "Não foi possível concluir agora. Tente novamente.",
+  falha: "A confirmação do código não foi concluída. Tente novamente ou peça ajuda ao corretor.",
 };
 
 type Consentimentos = { contrato: boolean; lgpd: boolean };

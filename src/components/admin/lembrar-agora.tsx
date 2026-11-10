@@ -27,7 +27,7 @@ export function LembrarAgoraDialog({
       toast.success("Lembrete enviado no WhatsApp do cliente.");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível enviar o lembrete.");
+      toast.error(erro instanceof Error ? erro.message : "O lembrete não foi enviado. Confira a conexão e tente novamente.");
     }
   }
 

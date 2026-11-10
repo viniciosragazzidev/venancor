@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { valorOuErro } from "@/lib/resultado-acao";
 import {
   Table,
   TableBody,
@@ -58,11 +59,11 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
     }
     setEnviandoLogo(operadora.id);
     try {
-      await salvarLogoOperadora(operadora.id, arquivo);
+      valorOuErro(await salvarLogoOperadora(operadora.id, arquivo));
       toast.success(`Logo da ${operadora.nome} salva. Ela aparece no boleto.`);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar a logo.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o envio da logo. Confira o arquivo e tente novamente.");
     } finally {
       setEnviandoLogo(null);
     }
@@ -99,16 +100,16 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
     setEnviando(true);
     try {
       if (editando) {
-        await atualizarOperadora(editando.id, valores);
+        valorOuErro(await atualizarOperadora(editando.id, valores));
         toast.success("Operadora atualizada.");
       } else {
-        await criarOperadora(valores as OperadoraInput);
+        valorOuErro(await criarOperadora(valores as OperadoraInput));
         toast.success("Operadora criada.");
       }
       setFormAberto(false);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o salvamento da operadora. Atualize a página e tente novamente.");
     } finally {
       setEnviando(false);
     }
@@ -117,12 +118,12 @@ export function OperadorasTabela({ dados }: { dados: Operadora[] }) {
   async function confirmarDesativacao() {
     if (!desativando) return;
     try {
-      await desativarOperadora(desativando.id);
+      valorOuErro(await desativarOperadora(desativando.id));
       toast.success("Operadora desativada.");
       setDesativando(null);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível desativar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a desativação da operadora. Atualize a página e tente novamente.");
     }
   }
 

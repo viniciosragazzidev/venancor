@@ -3,6 +3,7 @@
 import { and, count, eq, max } from "drizzle-orm";
 import { db } from "@/db/client";
 import { auditoria } from "@/db/schema";
+import { ErroNegocio, executarAcaoPainel } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import { enviarLembrete } from "./enviar";
 import { LEMBRETE_ACAO, MENSAGENS_BLOQUEIO } from "./regras";
@@ -41,24 +42,16 @@ export async function lembrarAgora(
   ordemId: string,
 ): Promise<{ ok: true } | { ok: false; erro: string }> {
   const admin = await requireAdmin();
-  try {
+  const resultado = await executarAcaoPainel("painel.lembrete.enviar", async () => {
     const resultado = await enviarLembrete(ordemId, {
       origem: "manual",
       ator: `admin:${admin.id}`,
     });
-    if (resultado.enviado) return { ok: true };
-    return {
-      ok: false,
-      erro:
-        resultado.motivo === "indisponivel"
-          ? "Ordem indisponível para lembrete."
-          : MENSAGENS_BLOQUEIO[resultado.motivo],
-    };
-  } catch (erro) {
-    console.error("[lembretes] lembrar agora falhou", erro);
-    return {
-      ok: false,
-      erro: erro instanceof Error ? erro.message : "Não foi possível enviar o lembrete.",
-    };
-  }
+    if (resultado.enviado) return true;
+    const mensagem = resultado.motivo === "indisponivel"
+      ? "Esta ordem não está disponível para envio de lembrete. Confira o status da proposta."
+      : MENSAGENS_BLOQUEIO[resultado.motivo];
+    throw new ErroNegocio(mensagem);
+  });
+  return resultado.ok ? { ok: true } : resultado;
 }

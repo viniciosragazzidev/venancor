@@ -120,7 +120,7 @@ export function FluxoCliente({
     try {
       await acoes.onCompartilharLink();
     } catch {
-      toast.error("Não foi possível copiar o link.");
+      toast.error("O navegador bloqueou a cópia do link. Selecione e copie o endereço manualmente.");
     }
   }
 

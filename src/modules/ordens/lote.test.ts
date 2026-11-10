@@ -30,4 +30,27 @@ describe("criação de ordens em lote", () => {
   it("fixa o limite operacional em 50 clientes por lote", () => {
     expect(MAX_CLIENTES_ORDEM_LOTE).toBe(50);
   });
+
+  it("mostra referência curta e registra o erro inesperado no log", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const resultado = await executarCriacaoOrdensLote(
+        [{ id: "1", nome: "Ana" }],
+        async () => {
+          throw new TypeError("falha interna de teste");
+        },
+      );
+      const mensagem = resultado.falhas[0]?.erro ?? "";
+      const referencia = mensagem.match(/ref\. ([A-F0-9]{6})/)?.[1];
+      expect(referencia).toBeDefined();
+      expect(mensagem).toContain("Erro inesperado ao criar as ordens");
+      expect(mensagem).not.toContain("falha interna de teste");
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining(`ref=${referencia}`),
+        expect.any(TypeError),
+      );
+    } finally {
+      log.mockRestore();
+    }
+  });
 });

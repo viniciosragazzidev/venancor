@@ -4,7 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { ordemModelos } from "@/db/schema";
 import { registrarAuditoria } from "@/lib/audit";
-import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
+import { ErroNegocio, executarAcaoPainel, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   ordemModeloAtualizacaoSchema,
@@ -35,7 +35,7 @@ export async function criarOrdemModelo(
   input: OrdemModeloInput,
 ): Promise<ResultadoAcao<OrdemModelo>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.ordem_modelo.criar",
     async () => {
       const dados = normalizar(ordemModeloSchema.parse(input));
@@ -52,7 +52,6 @@ export async function criarOrdemModelo(
       });
       return modelo;
     },
-    { validacao: "campo" },
   );
 }
 
@@ -61,7 +60,7 @@ export async function atualizarOrdemModelo(
   input: Partial<OrdemModeloInput>,
 ): Promise<ResultadoAcao<OrdemModelo>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.ordem_modelo.atualizar",
     async () => {
       const dados = normalizar(ordemModeloAtualizacaoSchema.parse(input));
@@ -80,13 +79,12 @@ export async function atualizarOrdemModelo(
       });
       return modelo;
     },
-    { validacao: "campo" },
   );
 }
 
 export async function desativarOrdemModelo(id: string): Promise<ResultadoAcao<OrdemModelo>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.ordem_modelo.desativar", async () => {
+  return executarAcaoPainel("painel.ordem_modelo.desativar", async () => {
     const [modelo] = await db
       .update(ordemModelos)
       .set({ ativo: false, atualizadoEm: new Date() })

@@ -93,7 +93,7 @@ import { GerenciarModelosDialog, SalvarModeloDialog, type OrdemModelo } from "./
 type Ordem = Awaited<ReturnType<typeof listarOrdens>>[number];
 type Cliente = Awaited<ReturnType<typeof listarClientes>>[number];
 type Plano = Awaited<ReturnType<typeof listarPlanos>>[number];
-type Dependente = Awaited<ReturnType<typeof listarDependentes>>[number];
+type Dependente = Extract<Awaited<ReturnType<typeof listarDependentes>>, { ok: true }>["valor"][number];
 export interface ContratoOpcao {
   id: string;
   nome: string;
@@ -335,7 +335,7 @@ export function OrdensTabela({
       const { clienteId, dependenteIds, ...condicoes } = resultado.valores;
       abrirFormulario("Duplicar ordem", clienteId, condicoes, resultado.dependentes, dependenteIds);
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível duplicar a ordem.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a duplicação da ordem. Atualize a página e tente novamente.");
     } finally {
       setDuplicandoId(null);
     }
@@ -402,7 +402,7 @@ export function OrdensTabela({
     }
     setCarregandoDeps(true);
     try {
-      setDeps(await listarDependentes(clienteId));
+      setDeps(valorOuErro(await listarDependentes(clienteId)));
     } catch {
       setDeps([]);
     } finally {
@@ -474,7 +474,7 @@ export function OrdensTabela({
       setVista("sucesso");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível criar a ordem.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a criação da ordem. Atualize a página e tente novamente.");
     } finally {
       setEnviando(false);
     }
@@ -486,7 +486,7 @@ export function OrdensTabela({
       await navigator.clipboard.writeText(linkCriado);
       toast.success("Link copiado.");
     } catch {
-      toast.error("Não foi possível copiar o link.");
+      toast.error("O navegador bloqueou a cópia. Copie o link manualmente.");
     }
   }
 
@@ -514,7 +514,7 @@ export function OrdensTabela({
         toast.success(`${resultado.excluidas.length} ordem(ns) excluída(s).`);
       }
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível excluir as ordens.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a exclusão das ordens. Atualize a página e tente novamente.");
     }
   }
 

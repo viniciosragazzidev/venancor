@@ -175,7 +175,7 @@ export function GerenciarModelosDialog({
       );
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível atualizar o modelo.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a atualização do modelo. Atualize a página e tente novamente.");
     } finally {
       setAlterandoAssinaturaId(null);
     }

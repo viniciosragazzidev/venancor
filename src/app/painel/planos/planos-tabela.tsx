@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { valorOuErro } from "@/lib/resultado-acao";
 import {
   atualizarPlano,
   criarPlano,
@@ -117,7 +118,7 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
   async function abrirEdicao(plano: Plano) {
     setCarregandoId(plano.id);
     try {
-      const precos = await listarPrecos(plano.id);
+      const precos = valorOuErro(await listarPrecos(plano.id));
       const porFaixa = new Map(precos.map((preco) => [preco.faixaEtaria, preco.valor]));
       setEditando(plano);
       reset({
@@ -143,7 +144,7 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
       );
       setFormAberto(true);
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível carregar os preços.");
+      toast.error(erro instanceof Error ? erro.message : "Os preços deste plano não foram carregados. Atualize a página e tente novamente.");
     } finally {
       setCarregandoId(null);
     }
@@ -172,16 +173,16 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
         ativo: editando ? editando.ativo : true,
       } satisfies PlanoInput;
       if (editando) {
-        await atualizarPlano(editando.id, payload);
+        valorOuErro(await atualizarPlano(editando.id, payload));
         toast.success("Plano atualizado.");
       } else {
-        await criarPlano(payload);
+        valorOuErro(await criarPlano(payload));
         toast.success("Plano criado.");
       }
       setFormAberto(false);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível salvar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o salvamento do plano. Atualize a página e tente novamente.");
     } finally {
       setEnviando(false);
     }
@@ -190,12 +191,12 @@ export function PlanosTabela({ planos, operadoras }: { planos: Plano[]; operador
   async function confirmarDesativacao() {
     if (!desativando) return;
     try {
-      await desativarPlano(desativando.id);
+      valorOuErro(await desativarPlano(desativando.id));
       toast.success("Plano desativado.");
       setDesativando(null);
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível desativar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a desativação do plano. Atualize a página e tente novamente.");
     }
   }
 

@@ -18,7 +18,7 @@ import {
   pagamentos,
   planos,
 } from "@/db/schema";
-import { ErroNegocio, executarAcao, type ResultadoAcao } from "@/lib/resultado-acao";
+import { ErroNegocio, executarAcaoPainel, type ResultadoAcao } from "@/lib/resultado-acao";
 import { requireAdmin } from "@/lib/require-admin";
 import { decifrarToken, gerarToken } from "@/lib/tokens";
 import { getMessagingProvider } from "@/providers/messaging";
@@ -49,14 +49,13 @@ export async function criarOrdemNoPainel(
   input: CriarOrdemInput,
 ): Promise<ResultadoAcao<{ ordemId: string; link: string }>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.ordem.criar",
     async () => {
       const dados = criarOrdemSchema.parse(input);
       const { ordem, link } = await criarOrdemComo(dados, admin.id);
       return { ordemId: ordem.id, link };
     },
-    { validacao: "campo" },
   );
 }
 
@@ -64,7 +63,7 @@ export async function criarOrdensEmLote(
   input: CriarOrdensLoteInput,
 ): Promise<ResultadoAcao<Awaited<ReturnType<typeof executarCriacaoOrdensLote>>>> {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.ordens.criar_lote",
     async () => {
       const dados = criarOrdensLoteSchema.parse(input);
@@ -98,7 +97,6 @@ export async function criarOrdensEmLote(
         .map((id) => ({ id, nome: "Cliente indisponível", erro: "Cliente não encontrado." }));
       return { criadas: resultado.criadas, falhas: [...resultado.falhas, ...ausentes] };
     },
-    { validacao: "campo" },
   );
 }
 
@@ -114,7 +112,7 @@ export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
   }>
 > {
   const admin = await requireAdmin();
-  return executarAcao(
+  return executarAcaoPainel(
     "painel.ordens.excluir_lote",
     async () => {
       const { ordemIds: ids } = excluirOrdensLoteSchema.parse({ ordemIds: [...new Set(ordemIds)] });
@@ -192,7 +190,6 @@ export async function excluirOrdensEmMassa(ordemIds: string[]): Promise<
         return { excluidas, puladas };
       });
     },
-    { validacao: "campo" },
   );
 }
 
@@ -204,7 +201,7 @@ export async function obterDuplicacaoOrdem(
   | { ok: false; erro: string }
 > {
   await requireAdmin();
-  try {
+  const resultado = await executarAcaoPainel("painel.ordem.duplicar", async () => {
     const [ordem] = await db.select().from(ordens).where(eq(ordens.id, ordemId)).limit(1);
     if (!ordem) throw new ErroNegocio("Ordem não encontrada.");
     const [beneficiarios, familiares] = await Promise.all([
@@ -215,17 +212,11 @@ export async function obterDuplicacaoOrdem(
       db.select().from(dependentes).where(eq(dependentes.clienteId, ordem.clienteId)),
     ]);
     return {
-      ok: true,
       valores: ordemParaDuplicacao(ordem, beneficiarios, familiares),
       dependentes: familiares,
     };
-  } catch (erro) {
-    console.error("[ordens] duplicar falhou", erro);
-    return {
-      ok: false,
-      erro: erro instanceof Error ? erro.message : "Não foi possível duplicar a ordem.",
-    };
-  }
+  });
+  return resultado.ok ? { ok: true, ...resultado.valor } : resultado;
 }
 
 export async function listarOrdens() {
@@ -295,7 +286,7 @@ async function gerarNovoLinkComoAdmin(ordemId: string, adminId: string) {
 
 export async function gerarNovoLink(ordemId: string): Promise<ResultadoAcao<string>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.ordem.gerar_link", () => gerarNovoLinkComoAdmin(ordemId, admin.id));
+  return executarAcaoPainel("painel.ordem.gerar_link", () => gerarNovoLinkComoAdmin(ordemId, admin.id));
 }
 
 async function enviarOrdemComoAdmin(ordemId: string, adminId: string) {
@@ -322,7 +313,7 @@ async function enviarOrdemComoAdmin(ordemId: string, adminId: string) {
 
 export async function enviarOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.ordem.enviar", () => enviarOrdemComoAdmin(ordemId, admin.id));
+  return executarAcaoPainel("painel.ordem.enviar", () => enviarOrdemComoAdmin(ordemId, admin.id));
 }
 
 export async function reenviarOrdem(ordemId: string): Promise<ResultadoAcao<string>> {
@@ -332,12 +323,12 @@ export async function reenviarOrdem(ordemId: string): Promise<ResultadoAcao<stri
 /** Copies the current link (same link already sent); `novo` is true only for old orders without one. */
 export async function copiarLinkOrdem(ordemId: string): Promise<ResultadoAcao<{ link: string; novo: boolean }>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.ordem.copiar_link", () => linkAtualComoAdmin(ordemId, admin.id));
+  return executarAcaoPainel("painel.ordem.copiar_link", () => linkAtualComoAdmin(ordemId, admin.id));
 }
 
 export async function cancelarOrdem(ordemId: string): Promise<ResultadoAcao<void>> {
   const admin = await requireAdmin();
-  return executarAcao("painel.ordem.cancelar", async () => {
+  return executarAcaoPainel("painel.ordem.cancelar", async () => {
     const [ordem] = await db
       .select({ status: ordens.status })
       .from(ordens)

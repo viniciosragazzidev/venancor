@@ -46,7 +46,7 @@ export function MensagemWhatsApp({
       await navigator.clipboard.writeText(texto);
       toast.success("Mensagem copiada. É só colar no WhatsApp do cliente.");
     } catch {
-      toast.error("Não foi possível copiar. Selecione o texto e copie à mão.");
+      toast.error("O navegador bloqueou a cópia. Selecione o texto e copie manualmente.");
     }
   }
 
@@ -79,7 +79,7 @@ export function MensagemWhatsApp({
       router.refresh();
     } catch (erro) {
       copiaNoGesto?.catch(() => undefined);
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível copiar o link.");
+      toast.error(erro instanceof Error ? erro.message : "O navegador bloqueou a cópia do link. Copie o endereço manualmente.");
     } finally {
       setOcupado(false);
     }

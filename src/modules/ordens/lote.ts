@@ -1,4 +1,4 @@
-import { mensagemParaCliente } from "@/lib/resultado-acao";
+import { erroEhInesperado, mensagemParaCliente, registrarErroInesperado } from "@/lib/resultado-acao";
 
 export const MAX_CLIENTES_ORDEM_LOTE = 50;
 
@@ -27,9 +27,15 @@ export async function executarCriacaoOrdensLote(
     try {
       resultado.criadas.push({ ...cliente, ...(await criar(cliente)) });
     } catch (erro) {
+      const inesperado = erroEhInesperado(erro);
+      const referencia = inesperado ? registrarErroInesperado("painel.ordens.criar_lote", erro) : undefined;
       resultado.falhas.push({
         ...cliente,
-        erro: mensagemParaCliente(erro, { validacao: "campo" }),
+        erro: mensagemParaCliente(erro, {
+          validacao: "campo",
+          rotulo: "painel.ordens.criar_lote",
+          ...(referencia ? { referencia } : {}),
+        }),
       });
     }
   }

@@ -45,7 +45,7 @@ export function OrdemAcoes({
       toast.success("Proposta enviada no WhatsApp do cliente, com o mesmo link.");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível enviar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o envio da proposta. Atualize a página e tente novamente.");
     } finally {
       setOcupado(null);
     }
@@ -60,7 +60,7 @@ export function OrdemAcoes({
       else toast.success("Link copiado. É o mesmo link que o cliente já tem.");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível copiar o link.");
+      toast.error(erro instanceof Error ? erro.message : "O navegador bloqueou a cópia. Copie o link manualmente.");
     } finally {
       setOcupado(null);
     }
@@ -75,7 +75,7 @@ export function OrdemAcoes({
       toast.warning("O link anterior deixou de funcionar. Mande este novo ao cliente.");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível gerar o link.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou a geração do link. Atualize a página e tente novamente.");
     } finally {
       setOcupado(null);
     }
@@ -87,7 +87,7 @@ export function OrdemAcoes({
       toast.success("Ordem cancelada.");
       router.refresh();
     } catch (erro) {
-      toast.error(erro instanceof Error ? erro.message : "Não foi possível cancelar.");
+      toast.error(erro instanceof Error ? erro.message : "O servidor não confirmou o cancelamento. Atualize a página e tente novamente.");
     }
   }
 
