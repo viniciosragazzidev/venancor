@@ -116,6 +116,7 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
           telefone={cliente?.whatsapp ?? null}
           plano={plano?.nome ?? "Plano"}
           valor={formatarCentavos(ordem.valorCobrado)}
+          valorSemDesconto={ordem.desconto > 0 ? formatarCentavos(ordem.valorCobrado + ordem.desconto) : null}
           formasPagamento={ordem.formasPagamento ?? []}
         />
       ) : null}
@@ -125,12 +126,16 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
           <dl className="flex flex-col gap-2.5">
             <Linha rotulo="Mensalidade" valor={formatarCentavos(ordem.valorMensal)} />
             <Linha rotulo="Taxa de adesão" valor={formatarCentavos(ordem.valorAdesao)} />
-            <Linha rotulo="Desconto" valor={`- ${formatarCentavos(ordem.desconto)}`} />
+            {/* Composição: total sem desconto, desconto (só quando existe) e valor a pagar. */}
+            <Linha rotulo="Total sem desconto" valor={formatarCentavos(ordem.valorCobrado + ordem.desconto)} />
+            {ordem.desconto > 0 ? (
+              <Linha rotulo="Desconto" valor={`- ${formatarCentavos(ordem.desconto)}`} />
+            ) : null}
             {ordem.descontoObs ? (
               <p className="text-xs text-pretty text-muted-foreground">{ordem.descontoObs}</p>
             ) : null}
             <div className="border-t pt-2.5">
-              <Linha rotulo="Total cobrado" valor={formatarCentavos(ordem.valorCobrado)} destaque />
+              <Linha rotulo="Valor a pagar" valor={formatarCentavos(ordem.valorCobrado)} destaque />
             </div>
             <p className="text-xs text-pretty text-muted-foreground">
               {rotuloValorCobrado(ordem.valorCobradoTipo)}

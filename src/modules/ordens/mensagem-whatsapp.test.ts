@@ -24,3 +24,17 @@ describe("mensagemPropostaWhatsApp", () => {
     );
   });
 });
+
+describe("composição do valor na mensagem", () => {
+  const base = { nomeCliente: "Maria das Graças", plano: "Porto Seguro Odonto Ouro", formasPagamento: ["pix"], link: "https://x/y" };
+
+  it("sem desconto, mostra só o valor a pagar", () => {
+    const texto = mensagemPropostaWhatsApp({ ...base, valor: "R$ 259,80" });
+    expect(texto).toContain("no valor de *R$ 259,80*");
+  });
+
+  it("com desconto, mostra de X por Y (total sem desconto e valor a pagar)", () => {
+    const texto = mensagemPropostaWhatsApp({ ...base, valor: "R$ 129,90", valorSemDesconto: "R$ 259,80" });
+    expect(texto).toContain("de *R$ 259,80* por *R$ 129,90*");
+  });
+});

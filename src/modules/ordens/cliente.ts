@@ -173,8 +173,9 @@ export async function resolverToken(
           .join("\n")
       : "Nenhum dependente",
     "valor.total": brl(ordem.valorCobrado),
-    // Monthly fee the client will pay: the table price minus the discount.
-    "valor.mensal": brl(ordem.valorMensal - ordem.desconto),
+    // Monthly fee the client will pay: the table price minus the discount, never negative (the discount
+    // may exceed the monthly fee when the charge is adesão + mensalidade, see pricing.ts).
+    "valor.mensal": brl(Math.max(0, ordem.valorMensal - ordem.desconto)),
     "valor.adesao": brl(ordem.valorAdesao),
     "beneficiarios.tabela": beneficiarios
       .map((b) => `${b.nome} (${b.faixaEtaria}): ${brl(b.valor)}`)

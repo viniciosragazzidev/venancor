@@ -1151,7 +1151,8 @@ export function OrdensTabela({
                         render={({ field }) => (
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger className={`${inputPill} w-full justify-between`}>
-                              <SelectValue />
+                              {/* Rótulo em português, não o código (total_adesao_mensalidade_so, print de 11/11). */}
+                              <SelectValue>{TIPOS_VALOR.find((tipo) => tipo.valor === field.value)?.rotulo ?? "Escolha"}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {TIPOS_VALOR.map((tipo) => (

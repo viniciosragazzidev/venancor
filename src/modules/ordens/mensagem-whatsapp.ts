@@ -11,16 +11,22 @@ function listaFormas(formas: readonly string[]) {
 export function mensagemPropostaWhatsApp(dados: {
   nomeCliente: string;
   plano: string;
+  /** Valor a pagar (já com desconto). */
   valor: string;
+  /** Total sem desconto, quando há desconto: a mensagem mostra "de X por Y". */
+  valorSemDesconto?: string | null;
   formasPagamento: readonly string[];
   link: string;
 }) {
   const primeiroNome = dados.nomeCliente.trim().split(/\s+/)[0] ?? "";
   const formas = listaFormas(dados.formasPagamento);
+  const composicao = dados.valorSemDesconto
+    ? `de *${dados.valorSemDesconto}* por *${dados.valor}*`
+    : `no valor de *${dados.valor}*`;
   return [
     `Olá, ${primeiroNome}! Tudo bem?`,
     "",
-    `Segue a sua proposta do plano *${dados.plano}* no valor de *${dados.valor}*.`,
+    `Segue a sua proposta do plano *${dados.plano}* ${composicao}.`,
     "",
     `Pelo link abaixo você confere o resumo, lê o contrato, assina pelo celular e paga${formas ? ` por ${formas}` : ""}:`,
     dados.link,

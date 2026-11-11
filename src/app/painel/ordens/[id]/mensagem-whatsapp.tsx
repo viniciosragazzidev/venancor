@@ -20,6 +20,7 @@ export function MensagemWhatsApp({
   telefone,
   plano,
   valor,
+  valorSemDesconto,
   formasPagamento,
 }: {
   ordemId: string;
@@ -27,6 +28,7 @@ export function MensagemWhatsApp({
   telefone: string | null;
   plano: string;
   valor: string;
+  valorSemDesconto?: string | null;
   formasPagamento: readonly string[];
 }) {
   const router = useRouter();
@@ -37,6 +39,7 @@ export function MensagemWhatsApp({
     nomeCliente,
     plano,
     valor,
+    valorSemDesconto,
     formasPagamento,
     link: link ?? SEM_LINK,
   });
@@ -54,7 +57,7 @@ export function MensagemWhatsApp({
     setOcupado(true);
     const pedido = copiarLinkOrdem(ordemId).then((resultado) => valorOuErro(resultado).link);
     const montar = (novo: string) =>
-      mensagemPropostaWhatsApp({ nomeCliente, plano, valor, formasPagamento, link: novo });
+      mensagemPropostaWhatsApp({ nomeCliente, plano, valor, valorSemDesconto, formasPagamento, link: novo });
     // Safari perde o gesto do clique depois de um await: o ClipboardItem recebe a Promise do
     // texto e copia quando o link chega, ainda dentro do clique. Sem suporte, copia depois.
     const copiaNoGesto =

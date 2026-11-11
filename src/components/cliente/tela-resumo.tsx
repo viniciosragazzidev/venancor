@@ -86,6 +86,18 @@ export function TelaResumo({
               <dt className="text-muted-foreground">Taxa de adesão</dt>
               <dd className="tabular-nums">{formatarBRL(ordem.valor_adesao)}</dd>
             </div>
+            {ordem.desconto > 0 ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <dt className="text-muted-foreground">Total sem desconto</dt>
+                  <dd className="tabular-nums">{formatarBRL(ordem.valor_cobrado + ordem.desconto)}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-muted-foreground">Desconto</dt>
+                  <dd className="tabular-nums">- {formatarBRL(ordem.desconto)}</dd>
+                </div>
+              </>
+            ) : null}
             <div className="flex items-baseline justify-between border-t pt-2.5">
               <dt className="font-medium">Total a pagar agora</dt>
               <dd className="text-xl font-medium tabular-nums">
