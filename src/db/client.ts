@@ -10,9 +10,29 @@ if (!connectionString) throw new Error("DATABASE_URL não configurada");
 // (EMAXCONNSESSION, limite de 15 clientes). Em serverless cada instância usa poucas conexões.
 const globalForDb = globalThis as unknown as { medlinkSql?: ReturnType<typeof postgres> };
 
+/**
+ * Em produção (serverless) usa o modo transação do pooler do Supabase (porta 6543): a conexão volta ao pool
+ * ao fim de cada transação. No modo sessão (5432) cada instância da Vercel prende conexões e, com várias
+ * instâncias (ex.: logo após um deploy), o limite de 15 estoura e o login cai com 500 (incidente 11/11).
+ * `prepare: false` abaixo é o que o modo transação exige.
+ */
+export function urlDoPooler(url: string, producao: boolean) {
+  if (!producao) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith(".pooler.supabase.com") && parsed.port === "5432") {
+      parsed.port = "6543";
+      return parsed.toString();
+    }
+  } catch {
+    // URL fora do formato padrão: usa como veio.
+  }
+  return url;
+}
+
 export const client =
   globalForDb.medlinkSql ??
-  postgres(connectionString, {
+  postgres(urlDoPooler(connectionString, process.env.NODE_ENV === "production"), {
     max: process.env.NODE_ENV === "production" ? 3 : 5,
     idle_timeout: 20,
     prepare: false,
