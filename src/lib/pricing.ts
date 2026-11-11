@@ -55,6 +55,43 @@ export function faixaPorIdade(nascimento: Date, ref = new Date()): FaixaEtaria {
   return "59+";
 }
 
+/** Desconto acima do total que a cobrança escolhida representa. Erro de validação para o painel. */
+export class DescontoAcimaDoTotalError extends Error {
+  constructor(
+    readonly descontoCentavos: number,
+    readonly totalCentavos: number,
+  ) {
+    super(
+      descontoCentavos > totalCentavos
+        ? `O desconto (${formatarReais(descontoCentavos)}) é maior que o total cobrado (${formatarReais(totalCentavos)}). Reduza o desconto.`
+        : `O desconto (${formatarReais(descontoCentavos)}) zera a cobrança de ${formatarReais(totalCentavos)}. Reduza o desconto para sobrar um valor a pagar.`,
+    );
+    this.name = "DescontoAcimaDoTotalError";
+  }
+}
+
+export function formatarReais(centavos: number) {
+  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+/**
+ * Total que o desconto abate, por tipo de cobrança. Adesão + mensalidade: mensalidade e adesão juntas.
+ * Mensalidade: só a mensalidade. Adesão: só a adesão. Personalizado: o valor informado.
+ */
+export function baseDoDesconto(tipo: ValorCobradoTipo, valorMensal: number, adesao: number, custom?: number) {
+  switch (tipo) {
+    case "primeira_mensalidade_adesao":
+    case "total_adesao_mensalidade_so":
+      return valorMensal + adesao;
+    case "mensalidade_so":
+      return valorMensal;
+    case "adesao_so":
+      return adesao;
+    case "personalizado":
+      return custom ?? 0;
+  }
+}
+
 export function calcularOrdem(
   benef: { nascimento: Date }[],
   precos: Record<FaixaEtaria, number>,
@@ -74,26 +111,31 @@ export function calcularOrdem(
   });
   const valorMensal = itens.reduce((total, item) => total + item.valor, 0);
   if (!Number.isSafeInteger(valorMensal)) throw new Error("Valor mensal excede o limite seguro");
-  if (desconto > valorMensal) throw new Error("Desconto maior que a mensalidade");
-  const mensalidadeLiquida = valorMensal - desconto;
+  if (tipo === "personalizado") {
+    if (custom === undefined) throw new Error("Informe o valor personalizado");
+    centavosValidos(custom, "Valor personalizado");
+  }
+  // O desconto abate o total que a cobrança representa (baseDoDesconto), não só a mensalidade.
+  const base = baseDoDesconto(tipo, valorMensal, adesao, custom);
+  if (desconto > base) throw new DescontoAcimaDoTotalError(desconto, base);
   let valorCobrado: number;
   switch (tipo) {
     case "primeira_mensalidade_adesao":
     case "total_adesao_mensalidade_so": // Sem prazo contratual no MVP: ambos representam 1 mensalidade + adesão.
-      valorCobrado = mensalidadeLiquida + adesao;
+      valorCobrado = base - desconto;
       break;
     case "adesao_so":
-      valorCobrado = adesao;
+      valorCobrado = adesao - desconto;
       break;
     case "mensalidade_so":
-      valorCobrado = mensalidadeLiquida;
+      valorCobrado = valorMensal - desconto;
       break;
     case "personalizado":
-      if (custom === undefined) throw new Error("Informe o valor personalizado");
-      centavosValidos(custom, "Valor personalizado");
-      valorCobrado = custom;
+      valorCobrado = (custom as number) - desconto;
       break;
   }
+  // Cobrança zerada não existe (o Asaas não cobra R$ 0): o desconto tem de deixar algum valor a pagar.
+  if (valorCobrado <= 0) throw new DescontoAcimaDoTotalError(desconto, base);
   if (!Number.isSafeInteger(valorCobrado)) throw new Error("Valor cobrado excede o limite seguro");
   return { itens, valorMensal, valorAdesao: adesao, desconto, valorCobrado };
 }

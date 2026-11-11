@@ -12,7 +12,7 @@ import {
   planoPrecos,
   planos,
 } from "@/db/schema";
-import { calcularOrdem, type FaixaEtaria } from "@/lib/pricing";
+import { calcularOrdem, DescontoAcimaDoTotalError, type FaixaEtaria } from "@/lib/pricing";
 import { ErroNegocio } from "@/lib/resultado-acao";
 import { gerarToken } from "@/lib/tokens";
 import { urlCliente } from "./link";
@@ -66,14 +66,21 @@ export async function criarOrdemComo(
     number
   >;
   const pessoas = [cliente, ...familiares];
-  const calculo = calcularOrdem(
-    pessoas.map((pessoa) => ({ nascimento: new Date(`${pessoa.nascimento}T12:00:00Z`) })),
-    precos,
-    plano.taxaAdesao,
-    dados.desconto,
-    dados.valorCobradoTipo,
-    dados.valorPersonalizado,
-  );
+  let calculo: ReturnType<typeof calcularOrdem>;
+  try {
+    calculo = calcularOrdem(
+      pessoas.map((pessoa) => ({ nascimento: new Date(`${pessoa.nascimento}T12:00:00Z`) })),
+      precos,
+      plano.taxaAdesao,
+      dados.desconto,
+      dados.valorCobradoTipo,
+      dados.valorPersonalizado,
+    );
+  } catch (error) {
+    // Desconto maior que o total da cobrança é erro de preenchimento: vira mensagem para o campo, não erro interno.
+    if (error instanceof DescontoAcimaDoTotalError) throw new ErroNegocio(error.message);
+    throw error;
+  }
   const [modelo] = await db
     .select()
     .from(contratoModelos)
