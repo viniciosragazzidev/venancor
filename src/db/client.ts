@@ -32,7 +32,9 @@ export function urlDoPooler(url: string, producao: boolean) {
 
 export const client =
   globalForDb.medlinkSql ??
-  postgres(urlDoPooler(connectionString, process.env.NODE_ENV === "production"), {
+  postgres(connectionString, {
+    // Session pooler (5432), como até 10/11. O modo transação (urlDoPooler, porta 6543) foi testado em 11/11 e o
+    // login parou (getSession do Better Auth vazio): não usar sem testar o login de ponta a ponta.
     max: process.env.NODE_ENV === "production" ? 3 : 5,
     idle_timeout: 20,
     prepare: false,
