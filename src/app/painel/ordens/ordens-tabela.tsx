@@ -155,6 +155,12 @@ export function OrdensTabela({
   const etapa: FiltroEtapa = FILTROS_ETAPA.some((filtro) => filtro.valor === etapaParam)
     ? (etapaParam as FiltroEtapa)
     : "todos";
+  // Canceladas ficam ocultas por padrão; o filtro fica na URL (?canceladas=1), como o da etapa.
+  const [canceladasParam, setCanceladasParam] = useQueryState("canceladas", {
+    defaultValue: "0",
+    scroll: false,
+  });
+  const mostrarCanceladas = canceladasParam === "1";
   const contagem = contarPorFiltro(ordens, agora);
   const [lembrarId, setLembrarId] = useState<string | null>(null);
   const [formAberto, setFormAberto] = useState(false);
@@ -224,6 +230,7 @@ export function OrdensTabela({
     planos.find((plano) => plano.id === id)?.nome ?? "Não informado";
 
   const filtradas = filtrarPorEtapa(ordens, etapa, agora).filter((ordem) => {
+    if (!mostrarCanceladas && ordem.status === "cancelada") return false;
     const termo = busca.trim().toLowerCase();
     if (!termo) return true;
     return (
@@ -608,6 +615,16 @@ export function OrdensTabela({
           </Button>
         </div>
       ) : null}
+
+      <label className="inline-flex w-max items-center gap-2 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          className="size-4"
+          checked={mostrarCanceladas}
+          onChange={(evento) => void setCanceladasParam(evento.target.checked ? "1" : null)}
+        />
+        Mostrar canceladas
+      </label>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div
