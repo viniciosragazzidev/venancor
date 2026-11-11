@@ -113,8 +113,8 @@ export function FluxoReal({
         return { erro: "falha" as OtpErro };
       }
     },
-    onConcluirAssinatura: async ({ nome, cpf, imagemDataUrl }) => {
-      valorOuErro(await concluirAssinatura(token, { nome, cpf, imagemBase64: imagemDataUrl }));
+    onConcluirAssinatura: async ({ nome, cpfConfirmado, imagemDataUrl }) => {
+      valorOuErro(await concluirAssinatura(token, { nome, cpfConfirmado, imagemBase64: imagemDataUrl }));
       setStatus("assinada");
     },
     onIniciarPagamento: async (metodo, parcelas) => {

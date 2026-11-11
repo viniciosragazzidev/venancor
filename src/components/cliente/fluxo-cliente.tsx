@@ -71,7 +71,7 @@ export type AcoesFluxo = {
   onValidarOtp: (codigo: string) => Promise<{ ok: true } | { erro: OtpErro }>;
   onConcluirAssinatura: (dados: {
     nome: string;
-    cpf: string;
+    cpfConfirmado: true;
     imagemDataUrl: string;
     consentimentos: Consentimentos;
   }) => Promise<void>;

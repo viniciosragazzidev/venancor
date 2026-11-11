@@ -43,10 +43,12 @@ export async function concluirAssinatura(
     throw new ErroNegocio(
       "O nome não confere com o do titular da proposta. Confira e tente novamente.",
     );
-  if (dados.cpf !== titular.cpf)
+  // CPF confirmado na ficha (padrão novo): vale o CPF do titular da ordem. Digitado: tem de bater com ele.
+  if (!dados.cpfConfirmado && dados.cpf !== titular.cpf)
     throw new ErroNegocio(
       "O CPF digitado não confere com o do titular da proposta. Confira os números.",
     );
+  const cpfAssinatura = dados.cpfConfirmado ? titular.cpf : (dados.cpf ?? titular.cpf);
   const otp = await obterOtpParaAssinatura(() => otpValidado(ordem.dados.id));
   const aceites = await db
     .select({ tipo: consentimentos.tipo })
@@ -73,7 +75,7 @@ export async function concluirAssinatura(
   const assinada = await getSignatureProvider().assinar({
     ordemId: ordem.dados.id,
     nome: dados.nome,
-    cpf: dados.cpf,
+    cpf: cpfAssinatura,
     telefoneOtp: otp?.telefone,
     otpValidadoEm: otp?.validadoEm,
     imagemPng: imagem,
@@ -110,7 +112,7 @@ export async function concluirAssinatura(
         evidenciasPdfPath,
         hashSha256: assinada.hashSha256,
         nome: dados.nome,
-        cpf: dados.cpf,
+        cpf: cpfAssinatura,
         ip: contexto.ip,
         userAgent: contexto.userAgent,
         geo: dados.geo,

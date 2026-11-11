@@ -49,7 +49,7 @@ export function TelaAssinatura({
   onConcluirAssinatura: (
     dados: {
       nome: string;
-      cpf: string;
+      cpfConfirmado: true;
       imagemDataUrl: string;
       consentimentos: Consentimentos;
     },
@@ -59,8 +59,9 @@ export function TelaAssinatura({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const padRef = useRef<SignaturePad | null>(null);
   const [nome, setNome] = useState(cliente.nome);
-  // CPF nunca pré-preenchido: o cliente digita e o servidor valida contra a ordem (Cofre, F5.3).
-  const [cpf, setCpf] = useState("");
+  // 11/11: o CPF já vem da ficha (mascarado). O cliente só confirma que é o dele; o servidor usa o CPF da ordem,
+  // que nunca sai para a tela (ver docs/DECISIONS.md, 11/11).
+  const [cpfConfirmado, setCpfConfirmado] = useState(false);
   const [temTrazo, setTemTrazo] = useState(false);
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoTeste, setCodigoTeste] = useState<string | null>(null);
@@ -70,9 +71,7 @@ export function TelaAssinatura({
   const [validando, setValidando] = useState(false);
 
   const nomeOk = nome.trim().length >= 3;
-  const cpfOk = cpf.length === 11;
-  const cpfTocado = cpf.length > 0;
-  const podeAssinar = nomeOk && cpfOk && temTrazo;
+  const podeAssinar = nomeOk && cpfConfirmado && temTrazo;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,7 +129,7 @@ export function TelaAssinatura({
           onConcluirAssinatura(
             {
               nome: nome.trim(),
-              cpf,
+              cpfConfirmado: true,
               imagemDataUrl: padRef.current?.toDataURL("image/png") ?? "",
               consentimentos,
             },
@@ -154,7 +153,7 @@ export function TelaAssinatura({
       const resultado = await onValidarOtp(codigo);
       if ("ok" in resultado) {
         const imagemDataUrl = padRef.current?.toDataURL("image/png") ?? "";
-        await onConcluirAssinatura({ nome: nome.trim(), cpf, imagemDataUrl, consentimentos });
+        await onConcluirAssinatura({ nome: nome.trim(), cpfConfirmado: true, imagemDataUrl, consentimentos });
       } else setErroOtp(mensagensErroOtp[resultado.erro]);
     } catch (error) {
       setErroOtp(error instanceof Error ? error.message : mensagensErroOtp.falha);
@@ -170,7 +169,7 @@ export function TelaAssinatura({
       await onConcluirAssinatura(
         {
           nome: nome.trim(),
-          cpf,
+          cpfConfirmado: true,
           imagemDataUrl: padRef.current?.toDataURL("image/png") ?? "",
           consentimentos,
         },
@@ -206,26 +205,21 @@ export function TelaAssinatura({
                 </p>
               ) : null}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="assinatura-cpf" className="font-normal text-muted-foreground">
-                CPF
-              </Label>
-              <Input
-                id="assinatura-cpf"
-                className="h-12 rounded-full border-border px-5 text-base tabular-nums md:text-sm"
-                value={cpf}
-                onChange={(evento) => setCpf(evento.target.value.replace(/\D/g, ""))}
-                inputMode="numeric"
-                maxLength={11}
-                placeholder={formatarCpfMascarado(cliente.cpf)}
-                autoComplete="off"
-                aria-invalid={cpfTocado && !cpfOk ? true : undefined}
-              />
-              {cpfTocado && !cpfOk ? (
-                <p className="text-xs text-destructive" role="alert">
-                  Informe os 11 dígitos do seu CPF.
-                </p>
-              ) : null}
+            <div className="flex flex-col gap-2">
+              <span className="font-normal text-muted-foreground text-sm">CPF do titular</span>
+              {/* CPF da ficha, mascarado: o cliente confere e confirma. */}
+              <p className="h-12 rounded-full border border-border bg-muted/30 px-5 text-base leading-[3rem] tabular-nums md:text-sm">
+                {formatarCpfMascarado(cliente.cpf)}
+              </p>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={cpfConfirmado}
+                  onChange={(evento) => setCpfConfirmado(evento.target.checked)}
+                />
+                <span>Confirmo que este é o meu CPF.</span>
+              </label>
             </div>
           </div>
 
