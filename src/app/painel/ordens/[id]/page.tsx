@@ -22,6 +22,9 @@ import { listarOrdens } from "@/modules/ordens/actions";
 import { listarEventosOrdem, obterDownloadsOrdem } from "@/modules/ordens/queries";
 import { listarPlanos } from "@/modules/planos/actions";
 
+import { motivoExclusaoDaOrdem } from "@/modules/ordens/exclusao-servico";
+
+import { ExcluirOrdemCancelada } from "./excluir-ordem";
 import { MensagemWhatsApp } from "./mensagem-whatsapp";
 import { OrdemAcoes } from "./ordem-acoes";
 
@@ -108,6 +111,14 @@ export default async function OrdemDetalhePage({ params }: { params: Promise<{ i
       </div>
 
       <OrdemAcoes ordemId={ordem.id} status={ordem.status} podeLembrar={podeLembrar} />
+
+      {ordem.status === "cancelada" ? (
+        <ExcluirOrdemCancelada
+          ordemId={ordem.id}
+          numero={ordem.numero}
+          bloqueio={await motivoExclusaoDaOrdem(ordem.id, ordem.status)}
+        />
+      ) : null}
 
       {["rascunho", "enviada", "visualizada"].includes(ordem.status) ? (
         <MensagemWhatsApp
